@@ -508,6 +508,74 @@ hooks.WrsByGameLength = {
   },
 };
 
+hooks.PercentageTimeInRank = {
+  mounted() {
+    const ctx = this.el;
+    const data = {
+      type: "doughnut",
+      data: {
+        datasets: [
+          {
+            data: [],
+            backgroundColor: MUI_COLORS,
+          },
+        ],
+      },
+      // plugins: [annotationPlugin],
+
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.formattedValue}%`,
+            },
+          },
+          title: {
+            display: false,
+            text: "Percentage Time in Rank",
+          },
+        },
+      },
+    };
+
+    const chart = new Chart(ctx, data);
+
+    this.handleEvent("update-percentage-time-in-rank", (event) => {
+      setScales(chart, localStorage.getItem("theme") === "dark");
+      setFiftyPercentLine(chart, localStorage.getItem("theme") === "dark");
+
+      window.addEventListener("themeChanged", (e) => {
+        const { isDark } = e.detail;
+        setScales(chart, isDark);
+        setFiftyPercentLine(chart, isDark);
+      });
+
+      const split = Object.entries(event.byLength);
+
+      const sortedSplit = split.sort((a, b) => getMinutesFromBucket(a[0]).order - getMinutesFromBucket(b[0]).order);
+      console.log(sortedSplit);
+
+      chart.data.datasets.push({
+        data: sortedSplit.map(([length, wr]) => wr),
+        label: "Win Rate",
+        borderColor: MUI_COLORS.slice(0, sortedSplit.length),
+        backgroundColor: MUI_COLORS.map((color) => `${color.slice(0, -4)}, 0.8)`).slice(0, sortedSplit.length),
+        borderWidth: 1,
+        barThickness: 50,
+      });
+      chart.data.labels = sortedSplit.map(([length]) => getMinutesFromBucket(length).label);
+      chart.update();
+    });
+  },
+  beforeUnmount() {
+    this.handleEvent("update-wrs", null);
+  },
+};
+
 hooks.DarkThemeToggle = toggleThemeHook;
 
 // *****

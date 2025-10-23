@@ -39,7 +39,10 @@ defmodule WololoWeb.RatingLive do
         socket =
           socket
           |> assign(:stats, AsyncResult.ok(%AsyncResult{}, stats))
-          |> push_event("update-player", %{movingAverages: stats.moving_averages})
+          |> push_event("update-player", %{
+            movingAverages: stats.moving_averages,
+            percentageTimeInRank: stats.percentage_time_in_rank
+          })
 
         {:noreply, socket}
     end
@@ -66,7 +69,8 @@ defmodule WololoWeb.RatingLive do
         max_rating_7d: player_stats[:max_rating_7d],
         max_rating_1m: player_stats[:max_rating_1m],
         average_rating: player_stats[:average_rating],
-        total_count: player_stats[:total_count]
+        total_count: player_stats[:total_count],
+        percentage_time_in_rank: player_stats[:percentage_time_in_rank]
       }
     else
       {:games, {:error, reason}} ->

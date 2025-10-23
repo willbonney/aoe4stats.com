@@ -75,7 +75,8 @@ defmodule Wololo.PlayerStatsAPI do
             else: "N/A"
           ),
         min_rank: Enum.max_by(rank_history, fn %{rank: rank} -> rank end).rank,
-        max_rank: Enum.min_by(rank_history, fn %{rank: rank} -> rank end).rank
+        max_rank: Enum.min_by(rank_history, fn %{rank: rank} -> rank end).rank,
+        percentage_time_in_rank: get_percentage_time_in_rank(rating_history) || []
       }
     else
       _ -> %{error: "Invalid data structure"}
@@ -105,16 +106,15 @@ defmodule Wololo.PlayerStatsAPI do
   def calculate_average_rank(_, _), do: 0
 
   def get_percentage_time_in_rank(rating_history) do
-    foreach rank_bucket in @rank_buckets do
+    Enum.map(@rank_buckets, fn {rank_bucket, _} ->
       count =
         Enum.count(rating_history, fn {_, %{"rating" => rating}} ->
           get_rank_bucket(rating) == rank_bucket
         end)
 
       percentage = count / length(rating_history) * 100
-      %{rank_bucket => percentage}
-    end
-    |> Enum.into(%{})
+      {rank_bucket, percentage}
+    end)
   end
 
   defp get_rank_bucket(rating) do
