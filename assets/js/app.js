@@ -535,6 +535,20 @@ hooks.PercentageTimeInRank = {
           tooltip: {
             callbacks: {
               label: (context) => `${context.formattedValue}%`,
+              afterBody: function (context) {
+                const label = context[0].label;
+
+                if (label === "other" && chart.otherRanks) {
+                  // Get the other ranks data, filtering out 0% entries
+                  const otherRanks = Object.entries(chart.otherRanks)
+                    .filter(([rank, percentage]) => percentage > 0)
+                    .map(([rank, percentage]) => `${rank}: ${percentage.toFixed(1)}%`);
+
+                  // Return each rank on its own line
+                  return ["", ...otherRanks];
+                }
+                return [];
+              },
             },
           },
           labels: {
@@ -559,10 +573,40 @@ hooks.PercentageTimeInRank = {
       console.log(event.percentageTimeInRank);
       const percentageTimeInRank = event.percentageTimeInRank;
       
-      // Extract data and colors from the new structure
-      const data = Object.values(percentageTimeInRank).map(item => item.percentage);
-      const colors = Object.values(percentageTimeInRank).map(item => item.color);
-      const labels = Object.keys(percentageTimeInRank);
+      // Apply threshold filtering similar to OpponentsByCountry
+      const threshold = 3; // Percentage threshold for "Other" category
+      let otherPercentage = 0;
+      const otherRanks = {};
+      const filteredData = Object.entries(percentageTimeInRank).reduce((acc, [rank, data]) => {
+        if (data.percentage >= threshold) {
+          acc[rank] = data;
+        } else {
+          otherPercentage += data.percentage;
+          // Store other ranks data for potential tooltip use
+          otherRanks[rank] = data.percentage;
+        }
+        return acc;
+      }, {});
+
+      if (otherPercentage > 0) {
+        filteredData.other = {
+          percentage: otherPercentage,
+          color: MUI_COLORS[3] // Use MUI_COLORS[3] for "Other" category
+        };
+        // Store other ranks data on chart for tooltip use
+        chart.otherRanks = otherRanks;
+      } else {
+        chart.otherRanks = null;
+      }
+      
+      // Extract data and colors from the filtered structure
+      const data = Object.values(filteredData).map(item => item.percentage);
+      const colors = Object.values(filteredData).map(item => item.color);
+      const labels = Object.keys(filteredData);
+      
+      console.log("Filtered data:", filteredData);
+      console.log("Labels:", labels);
+      console.log("Other percentage:", otherPercentage);
       
       chart.data.datasets[0].data = data;
       chart.data.datasets[0].backgroundColor = colors;
