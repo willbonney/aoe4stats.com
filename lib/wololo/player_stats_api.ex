@@ -45,7 +45,7 @@ defmodule Wololo.PlayerStatsAPI do
          current_rank when is_integer(current_rank) <- get_in(data, ["modes", "rm_solo", "rank"]),
          current_season when is_integer(current_season) <-
            get_in(data, ["modes", "rm_solo", "season"]) do
-      total_count = Enum.count(rating_history)
+      total_count = map_size(rating_history)
       total_seasons = Enum.count(previous_seasons) + 1
 
       rank_history =
@@ -106,14 +106,16 @@ defmodule Wololo.PlayerStatsAPI do
   def calculate_average_rank(_, _), do: 0
 
   def get_percentage_time_in_rank(rating_history) do
-    Enum.map(@rank_buckets, fn {rank_bucket, _} ->
+    total_count = map_size(rating_history)
+
+    Enum.into(@rank_buckets, %{}, fn {rank_bucket, rank_name} ->
       count =
         Enum.count(rating_history, fn {_, %{"rating" => rating}} ->
           get_rank_bucket(rating) == rank_bucket
         end)
 
-      percentage = count / length(rating_history) * 100
-      {rank_bucket, percentage}
+      percentage = if total_count > 0, do: count / total_count * 100, else: 0
+      {rank_name, percentage}
     end)
   end
 
