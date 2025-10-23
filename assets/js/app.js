@@ -25,6 +25,7 @@ import toggleThemeHook from "../vendor/toggle_theme";
 // from https://medium.com/@lionel.aimerie/integrating-chart-js-into-elixir-phoenix-for-visual-impact-9a3991f0690f
 import { Chart } from "chart.js/auto";
 import annotationPlugin from "chartjs-plugin-annotation";
+import AlwaysShowTooltipPlugin from "./always_show_tooltip_plugin.js";
 
 Chart.register(annotationPlugin);
 
@@ -285,20 +286,20 @@ hooks.MovingAverages = {
         {
           data: sortByDate(sorted).map(({ moving_average_5g }) => moving_average_5g),
           label: "5 Game",
-          borderColor: MUI_COLORS[4],
-          backgroundColor: MUI_COLORS[4],
+          borderColor: MUI_COLORS[3],
+          backgroundColor: MUI_COLORS[3],
         },
         {
           data: sortByDate(sorted).map(({ moving_average_10g }) => moving_average_10g),
           label: "10 Game",
-          borderColor: MUI_COLORS[7],
-          backgroundColor: MUI_COLORS[7],
+          borderColor: MUI_COLORS[6],
+          backgroundColor: MUI_COLORS[6],
         },
         {
           data: sortByDate(sorted).map(({ moving_average_20g }) => moving_average_20g),
           label: "20 Game",
-          borderColor: MUI_COLORS[10],
-          backgroundColor: MUI_COLORS[10],
+          borderColor: MUI_COLORS[9],
+          backgroundColor: MUI_COLORS[9],
         }
       );
       chart.data.labels = sorted.map((m) =>
@@ -511,6 +512,7 @@ hooks.WrsByGameLength = {
 hooks.PercentageTimeInRank = {
   mounted() {
     const ctx = this.el;
+    
     const data = {
       type: "doughnut",
       data: {
@@ -521,9 +523,10 @@ hooks.PercentageTimeInRank = {
           },
         ],
       },
-      // plugins: [annotationPlugin],
+      plugins: [AlwaysShowTooltipPlugin],
 
       options: {
+
         responsive: true,
         plugins: {
           legend: {
@@ -543,6 +546,10 @@ hooks.PercentageTimeInRank = {
             display: false,
             text: "Percentage Time in Rank",
           },
+          alwaysShowTooltip: {
+            color: 'white', // Set tooltip text color,
+            valueFormatter: (value) => `${value.toFixed(2)}%`,
+          },
         },
       },
     };
@@ -551,8 +558,15 @@ hooks.PercentageTimeInRank = {
     this.handleEvent("update-player", (event) => {
       console.log(event.percentageTimeInRank);
       const percentageTimeInRank = event.percentageTimeInRank;
-      chart.data.datasets[0].data = Object.values(percentageTimeInRank);
-      chart.data.labels = Object.keys(percentageTimeInRank);
+      
+      // Extract data and colors from the new structure
+      const data = Object.values(percentageTimeInRank).map(item => item.percentage);
+      const colors = Object.values(percentageTimeInRank).map(item => item.color);
+      const labels = Object.keys(percentageTimeInRank);
+      
+      chart.data.datasets[0].data = data;
+      chart.data.datasets[0].backgroundColor = colors;
+      chart.data.labels = labels;
 
       chart.update();
     });

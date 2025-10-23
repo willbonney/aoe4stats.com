@@ -121,7 +121,12 @@ defmodule Wololo.PlayerStatsAPI do
         end)
 
       percentage = if total_count > 0, do: count / total_count * 100, else: 0
-      {rank_name, percentage}
+
+      # Get the representative rating for this bucket to determine color
+      representative_rating = get_representative_rating(rank_bucket)
+      color = Wololo.Utils.full_rating_to_color_map(representative_rating)
+
+      {rank_name, %{percentage: percentage, color: color}}
     end)
   end
 
@@ -145,6 +150,30 @@ defmodule Wololo.PlayerStatsAPI do
       rating >= 750 -> :_750_to_799
       rating >= 700 -> :_700_to_749
       true -> :_lt_700
+    end
+  end
+
+  defp get_representative_rating(rank_bucket) do
+    # Extract the rating range from the atom name and calculate the middle
+    case rank_bucket do
+      :_gte_1600 -> 1650
+      :_1500_to_1599 -> 1550
+      :_1400_to_1499 -> 1450
+      :_1350_to_1399 -> 1375
+      :_1300_to_1349 -> 1325
+      :_1250_to_1299 -> 1275
+      :_1200_to_1249 -> 1225
+      :_1150_to_1199 -> 1175
+      :_1100_to_1149 -> 1125
+      :_1050_to_1099 -> 1075
+      :_1000_to_1049 -> 1025
+      :_950_to_999 -> 975
+      :_900_to_949 -> 925
+      :_850_to_899 -> 875
+      :_800_to_849 -> 825
+      :_750_to_799 -> 775
+      :_700_to_749 -> 725
+      :_lt_700 -> 650
     end
   end
 end
