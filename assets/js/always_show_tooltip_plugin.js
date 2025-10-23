@@ -56,7 +56,14 @@ const AlwaysShowTooltipPlugin = {
         if (chartType === "pie" || chartType === "doughnut") {
           const { x, y } = element.getCenterPoint();
           ctx.fillStyle = color;
-          ctx.fillText(formattedValue, x, y);
+
+          // For pie/doughnut charts, show both label and percentage
+          const label = chart.data.labels[index];
+          const percentage = formattedValue;
+
+          // Draw label above the percentage
+          ctx.fillText(label, x, y - 8);
+          ctx.fillText(percentage, x, y + 8);
         }
       });
     });
