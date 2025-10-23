@@ -3,6 +3,27 @@ defmodule Wololo.PlayerStatsAPI do
 
   @base_url Application.compile_env(:wololo, :api_base_url)
 
+  @rank_buckets %{
+    _gte_1600: "Conqueror III",
+    _1500_to_1599: "Conqueror II",
+    _1400_to_1499: "Conqueror I",
+    _1350_to_1399: "Diamond III",
+    _1300_to_1349: "Diamond II",
+    _1250_to_1299: "Diamond I",
+    _1200_to_1249: "Platinum III",
+    _1150_to_1199: "Platinum II",
+    _1100_to_1149: "Platinum I",
+    _1050_to_1099: "Gold III",
+    _1000_to_1049: "Gold II",
+    _950_to_999: "Gold I",
+    _900_to_949: "Silver III",
+    _850_to_899: "Silver II",
+    _800_to_849: "Silver I",
+    _750_to_799: "Bronze III",
+    _700_to_749: "Bronze II",
+    _lt_700: "Bronze I"
+  }
+
   def fetch_player_data(profile_id, with_stats \\ false) do
     endpoint = "#{@base_url}/players/#{profile_id}?full_history=true"
 
@@ -82,4 +103,40 @@ defmodule Wololo.PlayerStatsAPI do
 
   # Handle zero count case
   def calculate_average_rank(_, _), do: 0
+
+  def get_percentage_time_in_rank(rating_history) do
+    foreach rank_bucket in @rank_buckets do
+      count =
+        Enum.count(rating_history, fn {_, %{"rating" => rating}} ->
+          get_rank_bucket(rating) == rank_bucket
+        end)
+
+      percentage = count / length(rating_history) * 100
+      %{rank_bucket => percentage}
+    end
+    |> Enum.into(%{})
+  end
+
+  defp get_rank_bucket(rating) do
+    cond do
+      rating >= 1600 -> :_gte_1600
+      rating >= 1500 -> :_1500_to_1599
+      rating >= 1400 -> :_1400_to_1499
+      rating >= 1350 -> :_1350_to_1399
+      rating >= 1300 -> :_1300_to_1349
+      rating >= 1250 -> :_1250_to_1299
+      rating >= 1200 -> :_1200_to_1249
+      rating >= 1150 -> :_1150_to_1199
+      rating >= 1100 -> :_1100_to_1149
+      rating >= 1050 -> :_1050_to_1099
+      rating >= 1000 -> :_1000_to_1049
+      rating >= 950 -> :_950_to_999
+      rating >= 900 -> :_900_to_949
+      rating >= 850 -> :_850_to_899
+      rating >= 800 -> :_800_to_849
+      rating >= 750 -> :_750_to_799
+      rating >= 700 -> :_700_to_749
+      true -> :_lt_700
+    end
+  end
 end

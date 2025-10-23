@@ -56,5 +56,11 @@
       data-points={Jason.encode!(stats[:moving_averages])}
     >
     </canvas>
+    <canvas
+      id="percentage-time-in-rank"
+      phx-hook="MovingAverages"
+      data-points={Jason.encode!(stats[:moving_averages])}
+    >
+    </canvas>
   </.async_result>
 </div>
