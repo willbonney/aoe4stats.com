@@ -22,6 +22,21 @@
 const AlwaysShowTooltipPlugin = {
   id: "alwaysShowTooltip",
 
+  // Helper function to determine if background is light or dark
+  getContrastColor(backgroundColor) {
+    // Convert hex to RGB
+    const hex = backgroundColor.replace("#", "");
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    // Return black for light backgrounds, white for dark backgrounds
+    return luminance > 0.5 ? "#000000" : "#FFFFFF";
+  },
+
   afterDatasetsDraw(chart, _, pluginOptions) {
     const { ctx } = chart;
     const chartType = chart.config.type;
@@ -55,7 +70,13 @@ const AlwaysShowTooltipPlugin = {
 
         if (chartType === "pie" || chartType === "doughnut") {
           const { x, y } = element.getCenterPoint();
-          ctx.fillStyle = color;
+
+          // Get the background color for this segment
+          const backgroundColor = dataset.backgroundColor[index];
+
+          // Determine appropriate text color based on background
+          const textColor = this.getContrastColor(backgroundColor);
+          ctx.fillStyle = textColor;
 
           // For pie/doughnut charts, show both label and percentage
           const label = chart.data.labels[index];
