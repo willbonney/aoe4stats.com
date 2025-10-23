@@ -534,6 +534,11 @@ hooks.PercentageTimeInRank = {
               label: (context) => `${context.formattedValue}%`,
             },
           },
+          labels: {
+            font: {
+              size: 14,
+            },
+          },
           title: {
             display: false,
             text: "Percentage Time in Rank",
@@ -544,6 +549,7 @@ hooks.PercentageTimeInRank = {
 
     const chart = new Chart(ctx, data);
     this.handleEvent("update-player", (event) => {
+      console.log(event.percentageTimeInRank);
       const percentageTimeInRank = event.percentageTimeInRank;
       chart.data.datasets[0].data = Object.values(percentageTimeInRank);
       chart.data.labels = Object.keys(percentageTimeInRank);

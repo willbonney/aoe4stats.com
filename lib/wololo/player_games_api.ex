@@ -199,15 +199,7 @@ defmodule Wololo.PlayerGamesAPI do
           end)
           |> Enum.into(%{})
 
-        result = %{countries: countries_percentages, ratings: ratings}
-
-        # Log the structure for debugging
-        require Logger
-        Logger.info("Processed games result type: #{inspect(result)}")
-        Logger.info("Countries type: #{inspect(countries_percentages)}")
-        Logger.info("Ratings type: #{inspect(ratings)}")
-
-        result
+        %{countries: countries_percentages, ratings: ratings}
       end)
   end
 

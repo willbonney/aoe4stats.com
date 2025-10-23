@@ -1,14 +1,14 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "type": "mix_task",
-      "name": "mix task",
-      "request": "launch",
-      "task": "pxh.server",
-      "taskArgs": [],
-      "projectDir": "${workspaceRoot}",
-      "exitAfterTaskReturns": false
-    }
-  ]
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "mix_task",
+			"name": "mix task",
+			"request": "launch",
+			"task": "phx.server",
+			"taskArgs": [],
+			"projectDir": "${workspaceRoot}",
+			"exitAfterTaskReturns": false
+		}
+	]
 }

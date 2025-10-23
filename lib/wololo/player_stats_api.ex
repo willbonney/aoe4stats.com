@@ -106,11 +106,17 @@ defmodule Wololo.PlayerStatsAPI do
   def calculate_average_rank(_, _), do: 0
 
   def get_percentage_time_in_rank(rating_history) do
-    total_count = map_size(rating_history)
+    # Sort by timestamp (key) to ensure chronological order, then skip first 5 entries (placement matches)
+    rating_entries =
+      rating_history
+      |> Enum.sort_by(fn {timestamp, _} -> timestamp end)
+      |> Enum.drop(5)
+
+    total_count = length(rating_entries)
 
     Enum.into(@rank_buckets, %{}, fn {rank_bucket, rank_name} ->
       count =
-        Enum.count(rating_history, fn {_, %{"rating" => rating}} ->
+        Enum.count(rating_entries, fn {_, %{"rating" => rating}} ->
           get_rank_bucket(rating) == rank_bucket
         end)
 
