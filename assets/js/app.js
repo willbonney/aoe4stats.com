@@ -30,35 +30,56 @@ import AlwaysShowTooltipPlugin from "./always_show_tooltip_plugin.js";
 Chart.register(annotationPlugin);
 
 const MUI_COLORS = [
-  "rgba(255, 193, 7, 1)", // #FFC107
-  "rgba(255, 152, 0, 1)", // #FF9800
-  "rgba(255, 105, 180, 1)", // #FF69B4
+  // RED
   "rgba(233, 30, 99, 1)", // #E91E63
-  "rgba(156, 39, 176, 1)", // #9C27B0
-  "rgba(103, 58, 183, 1)", // #673AB7
-  "rgba(63, 81, 181, 1)", // #3F51B5
-  "rgba(33, 150, 243, 1)", // #2196F3
-  "rgba(3, 169, 244, 1)", // #03A9F4
-  "rgba(0, 188, 212, 1)", // #00BCD4
-  "rgba(0, 150, 136, 1)", // #009688
-  "rgba(76, 175, 80, 1)", // #4CAF50
-  "rgba(139, 195, 74, 1)", // #8BC34A
-  "rgba(205, 220, 57, 1)", // #CDDC39
-  "rgba(255, 235, 59, 1)", // #FFEB3B
-  "rgba(255, 196, 0, 1)", // #FFC400
-  "rgba(255, 171, 64, 1)", // #FFAB40
-  "rgba(255, 102, 204, 1)", // #FF66CC
   "rgba(230, 74, 25, 1)", // #E64A19
-  "rgba(121, 85, 72, 1)", // #795548
-  "rgba(96, 125, 139, 1)", // #607D8B
+  // ORANGE
+  "rgba(255, 152, 0, 1)", // #FF9800
+  "rgba(255, 171, 64, 1)", // #FFAB40
+  // YELLOW
+  "rgba(255, 193, 7, 1)", // #FFC107
+  "rgba(255, 196, 0, 1)", // #FFC400
+  "rgba(255, 235, 59, 1)", // #FFEB3B
+  // YELLOW-GREEN
+  "rgba(205, 220, 57, 1)", // #CDDC39
+  "rgba(139, 195, 74, 1)", // #8BC34A
+  // GREEN
+  "rgba(76, 175, 80, 1)", // #4CAF50
+  "rgba(0, 150, 136, 1)", // #009688
+  // CYAN
+  "rgba(0, 188, 212, 1)", // #00BCD4
+  "rgba(3, 169, 244, 1)", // #03A9F4
+  // BLUE
+  "rgba(33, 150, 243, 1)", // #2196F3
+  "rgba(63, 81, 181, 1)", // #3F51B5
+  // INDIGO/PURPLE
+  "rgba(103, 58, 183, 1)", // #673AB7
+  "rgba(156, 39, 176, 1)", // #9C27B0
+  // PINK/MAGENTA
+  "rgba(255, 105, 180, 1)", // #FF69B4
+  "rgba(255, 102, 204, 1)", // #FF66CC
+  // NEUTRALS
+  "rgba(121, 85, 72, 1)", // #795548 - Brown
+  "rgba(96, 125, 139, 1)", // #607D8B - Blue Grey
   "rgba(69, 90, 100, 1)", // #455A64
   "rgba(55, 71, 79, 1)", // #37474F
   "rgba(38, 50, 56, 1)", // #263238
-  "rgba(33, 33, 33, 1)", // #212121
+  "rgba(33, 33, 33, 1)", // #212121 - Black
 ];
 
 const TW_STONE_800 = "rgb(41, 37, 36)";
 const TW_ZINC_100 = "rgba(244, 244, 245,0.5)";
+
+// Function to distribute colors evenly across the spectrum
+const getDistributedColors = (count) => {
+  const colorCount = MUI_COLORS.length;
+  const colors = [];
+  for (let i = 0; i < count; i++) {
+    const index = Math.floor((i * colorCount) / count);
+    colors.push(MUI_COLORS[index]);
+  }
+  return colors;
+};
 
 const getMinutesFromBucket = (bucket) => {
   const bucketLabels = {
@@ -138,12 +159,14 @@ hooks.OpponentsByCountry = {
         datasets: [
           {
             data: [],
-            backgroundColor: MUI_COLORS,
+            // Use all MUI_COLORS excluding neutrals (indices 0-18)
+            backgroundColor: MUI_COLORS.slice(0, 19),
           },
         ],
         hoverOffset: 4,
         borderJoinStyle: "bevel",
       },
+      plugins: [AlwaysShowTooltipPlugin],
       options: {
         responsive: true,
         plugins: {
@@ -151,6 +174,10 @@ hooks.OpponentsByCountry = {
             callbacks: {
               label: (context) => `${context.formattedValue}%`,
               afterBody: function (context) {
+                if (!context || !context[0]) {
+                  return [];
+                }
+                
                 const label = context[0].label;
 
                 if (label === "Other" && chart.otherCountries) {
@@ -180,6 +207,11 @@ hooks.OpponentsByCountry = {
               size: 16,
               weight: "bold",
             },
+            filter: function(tooltipItem) {
+              // Only show tooltip for "Other" category
+              const label = tooltipItem.label || '';
+              return label.toLowerCase().includes('other');
+            },
           },
           legend: {
             position: "top",
@@ -188,6 +220,10 @@ hooks.OpponentsByCountry = {
           title: {
             display: false,
             text: "Opponents by Country",
+          },
+          alwaysShowTooltip: {
+            valueFormatter: (value) => `${value.toFixed(0)}%`,
+            skipLabels: ['other'],
           },
         },
       },
@@ -215,6 +251,10 @@ hooks.OpponentsByCountry = {
       if (otherPercentage > 0) {
         filteredData.other = otherPercentage;
       }
+
+      // Distribute colors evenly based on number of countries
+      const colorCount = Object.keys(filteredData).length;
+      chart.data.datasets[0].backgroundColor = getDistributedColors(colorCount);
 
       chart.data.datasets[0].data = Object.values(filteredData);
       chart.data.labels = Object.keys(filteredData).map((country) =>
@@ -286,20 +326,20 @@ hooks.MovingAverages = {
         {
           data: sortByDate(sorted).map(({ moving_average_5g }) => moving_average_5g),
           label: "5 Game",
-          borderColor: MUI_COLORS[3],
-          backgroundColor: MUI_COLORS[3],
+          borderColor: MUI_COLORS[11],
+          backgroundColor: MUI_COLORS[11],
         },
         {
           data: sortByDate(sorted).map(({ moving_average_10g }) => moving_average_10g),
           label: "10 Game",
-          borderColor: MUI_COLORS[6],
-          backgroundColor: MUI_COLORS[6],
+          borderColor: MUI_COLORS[13],
+          backgroundColor: MUI_COLORS[13],
         },
         {
           data: sortByDate(sorted).map(({ moving_average_20g }) => moving_average_20g),
           label: "20 Game",
-          borderColor: MUI_COLORS[9],
-          backgroundColor: MUI_COLORS[9],
+          borderColor: MUI_COLORS[14],
+          backgroundColor: MUI_COLORS[14],
         }
       );
       chart.data.labels = sorted.map((m) =>
@@ -539,6 +579,10 @@ hooks.PercentageTimeInRank = {
             callbacks: {
               label: (context) => `${context.raw.toFixed(0)}%`,
               afterBody: function (context) {
+                if (!context || !context[0]) {
+                  return [];
+                }
+                
                 const label = context[0].label;
 
                 if (label === "other" && chart.otherRanks) {
@@ -553,6 +597,11 @@ hooks.PercentageTimeInRank = {
                 return [];
               },
             },
+            filter: function(tooltipItem) {
+              // Only show tooltip for "Other" category
+              const label = tooltipItem.label || '';
+              return label.toLowerCase().includes('other');
+            },
           },
           labels: {
             font: {
@@ -566,6 +615,7 @@ hooks.PercentageTimeInRank = {
           alwaysShowTooltip: {
             color: 'white', // Set tooltip text color,
             valueFormatter: (value) => `${value.toFixed(0)}%`,
+            skipLabels: ['other'],
           },
         },
       },
@@ -631,22 +681,22 @@ hooks.Analysis = {
             label: "Performance Metrics",
             data: [],
             backgroundColor: [
-              MUI_COLORS[0],
-              MUI_COLORS[3],
-              MUI_COLORS[6],
-              MUI_COLORS[9],
-              MUI_COLORS[12],
-              MUI_COLORS[15],
-              MUI_COLORS[18],
+              MUI_COLORS[0],  
+              MUI_COLORS[1],  
+              MUI_COLORS[2],  
+              MUI_COLORS[5], 
+              MUI_COLORS[7], 
+              MUI_COLORS[8], 
+              MUI_COLORS[9], 
             ].map((color) => `${color.slice(0, -4)}, 0.7)`),
             borderColor: [
               MUI_COLORS[0],
-              MUI_COLORS[3],
-              MUI_COLORS[6],
+              MUI_COLORS[1],
+              MUI_COLORS[2],
+              MUI_COLORS[5],
+              MUI_COLORS[7],
+              MUI_COLORS[8],
               MUI_COLORS[9],
-              MUI_COLORS[12],
-              MUI_COLORS[15],
-              MUI_COLORS[18],
             ],
             borderWidth: 2,
           },
@@ -701,6 +751,29 @@ hooks.Analysis = {
 
     const chart = new Chart(ctx, data);
     
+    const setPolarScales = (chart, isDark) => {
+      const color = isDark ? TW_ZINC_100 : TW_STONE_800;
+      chart.options.scales.r = {
+        ...chart.options.scales.r,
+        grid: {
+          color: color,
+        },
+        angleLines: {
+          color: color,
+        },
+        pointLabels: {
+          ...chart.options.scales.r.pointLabels,
+          color: color,
+        },
+        ticks: {
+          ...chart.options.scales.r.ticks,
+          color: color,
+          backdropColor: isDark ? 'rgba(39, 39, 42, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+        },
+      };
+      chart.update();
+    };
+    
     // Set up hover interactions between metric boxes and chart segments
     const setupHoverInteractions = () => {
       const metricBoxes = document.querySelectorAll("#metric-descriptions [data-metric]");
@@ -743,6 +816,15 @@ hooks.Analysis = {
       // Extract data and labels in the correct order
       chart.data.labels = metrics.map((m) => m.label);
       chart.data.datasets[0].data = metrics.map((m) => analysis[m.key] || 50.0);
+      
+      // Set initial theme
+      setPolarScales(chart, localStorage.getItem("theme") === "dark");
+      
+      // Listen for theme changes
+      window.addEventListener("themeChanged", (e) => {
+        const { isDark } = e.detail;
+        setPolarScales(chart, isDark);
+      });
       
       chart.update();
       
