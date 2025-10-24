@@ -70,6 +70,15 @@ active_link_classes = "font-semibold text-stone-800 dark:text-zinc-100" %>
         </.link>
 
         <.link
+          patch={~p"/player/#{@profile_id}/analysis"}
+          class={[common_link_classes, @active == :analysis && active_link_classes]}
+        >
+          <div class="rounded-md">
+            Analysis
+          </div>
+        </.link>
+
+        <.link
           patch={~p"/player/#{@profile_id}/game_length"}
           class={[common_link_classes, @active == :game_length && active_link_classes]}
         >

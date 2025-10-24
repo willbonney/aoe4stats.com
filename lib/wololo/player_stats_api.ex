@@ -47,6 +47,7 @@ defmodule Wololo.PlayerStatsAPI do
            get_in(data, ["modes", "rm_solo", "season"]) do
       total_count = map_size(rating_history)
       total_seasons = Enum.count(previous_seasons) + 1
+      civ_stats = get_in(data, ["modes", "rm_solo", "civilizations"])
 
       rank_history =
         Enum.map(previous_seasons, fn season ->
@@ -76,7 +77,8 @@ defmodule Wololo.PlayerStatsAPI do
           ),
         min_rank: Enum.max_by(rank_history, fn %{rank: rank} -> rank end).rank,
         max_rank: Enum.min_by(rank_history, fn %{rank: rank} -> rank end).rank,
-        percentage_time_in_rank: get_percentage_time_in_rank(rating_history) || []
+        percentage_time_in_rank: get_percentage_time_in_rank(rating_history) || [],
+        civ_stats: civ_stats
       }
     else
       _ -> %{error: "Invalid data structure"}

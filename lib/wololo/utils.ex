@@ -1,4 +1,9 @@
 defmodule Wololo.Utils do
+  # Rank thresholds (promotion/demotion boundaries)
+  @rank_thresholds [700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600]
+
+  def get_rank_thresholds, do: @rank_thresholds
+
   def rating_to_color_map(rating) do
     cond do
       rating == "N/A" -> "#DDDDDD"

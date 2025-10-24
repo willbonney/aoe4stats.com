@@ -5,9 +5,9 @@ defmodule WololoWeb.PlayerLive do
   alias WololoWeb.InsightsLive
   alias WololoWeb.RatingLive
   alias WololoWeb.RankLive
-  alias Wololo.PlayerStatsAPI
-
   alias WololoWeb.GameLengthLive
+  alias WololoWeb.AnalysisLive
+  alias Wololo.PlayerStatsAPI
 
   @initial_assigns [
     active: nil,
@@ -110,6 +110,7 @@ defmodule WololoWeb.PlayerLive do
         "insights" -> :insights
         "game_length" -> :game_length
         "rank" -> :rank
+        "analysis" -> :analysis
         _ -> :rating
       end
 
@@ -133,6 +134,11 @@ defmodule WololoWeb.PlayerLive do
         :rank ->
           ~H"""
           <.live_component module={RankLive} id="rank" profile_id={@profile_id} />
+          """
+
+        :analysis ->
+          ~H"""
+          <.live_component module={AnalysisLive} id="analysis" profile_id={@profile_id} />
           """
 
         :game_length ->
