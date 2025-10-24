@@ -618,6 +618,143 @@ hooks.PercentageTimeInRank = {
   },
 };
 
+hooks.Analysis = {
+  mounted() {
+    const ctx = this.el;
+    
+    const data = {
+      type: "polarArea",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "Performance Metrics",
+            data: [],
+            backgroundColor: [
+              MUI_COLORS[0],
+              MUI_COLORS[3],
+              MUI_COLORS[6],
+              MUI_COLORS[9],
+              MUI_COLORS[12],
+              MUI_COLORS[15],
+              MUI_COLORS[18],
+            ].map((color) => `${color.slice(0, -4)}, 0.7)`),
+            borderColor: [
+              MUI_COLORS[0],
+              MUI_COLORS[3],
+              MUI_COLORS[6],
+              MUI_COLORS[9],
+              MUI_COLORS[12],
+              MUI_COLORS[15],
+              MUI_COLORS[18],
+            ],
+            borderWidth: 2,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          r: {
+            min: 0,
+            max: 100,
+            ticks: {
+              stepSize: 20,
+            },
+            pointLabels: {
+              display: true,
+              centerPointLabels: true,
+              font: {
+                size: 14,
+              },
+            },
+          },
+        },
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.label}: ${context.raw.toFixed(1)}`,
+              afterLabel: (context) => {
+                const descriptions = {
+                  "Consistency": "Performance stability across games",
+                  "Recovery": "Speed of bouncing back from losses",
+                  "Momentum": "Ability to maintain winning streaks",
+                  "Anti-Tilt": "Mental resilience after losses",
+                  "Pressure": "Performance near rank thresholds",
+                  "Efficiency": "Rating gained per game played",
+                  "Versatility": "Success across multiple civs",
+                };
+                return descriptions[context.label] || "";
+              },
+            },
+          },
+          title: {
+            display: false,
+            text: "Performance Analysis",
+          },
+        },
+      },
+    };
+
+    const chart = new Chart(ctx, data);
+    
+    // Set up hover interactions between metric boxes and chart segments
+    const setupHoverInteractions = () => {
+      const metricBoxes = document.querySelectorAll("#metric-descriptions [data-metric]");
+      
+      metricBoxes.forEach((box, index) => {
+        box.addEventListener("mouseenter", () => {
+          // Trigger hover on the corresponding chart segment
+          const activeElements = [{
+            datasetIndex: 0,
+            index: index,
+          }];
+          chart.setActiveElements(activeElements);
+          chart.tooltip.setActiveElements(activeElements);
+          chart.update();
+        });
+        
+        box.addEventListener("mouseleave", () => {
+          // Clear hover state
+          chart.setActiveElements([]);
+          chart.tooltip.setActiveElements([]);
+          chart.update();
+        });
+      });
+    };
+    
+    this.handleEvent("update-analysis", (event) => {
+      const analysis = event.analysis;
+      
+      // Define the metric labels and order
+      const metrics = [
+        { key: "consistency", label: "Consistency" },
+        { key: "recovery", label: "Recovery" },
+        { key: "momentum", label: "Momentum" },
+        { key: "anti_tilt", label: "Anti-Tilt" },
+        { key: "pressure_performance", label: "Pressure" },
+        { key: "rating_efficiency", label: "Efficiency" },
+        { key: "versatility", label: "Versatility" },
+      ];
+      
+      // Extract data and labels in the correct order
+      chart.data.labels = metrics.map((m) => m.label);
+      chart.data.datasets[0].data = metrics.map((m) => analysis[m.key] || 50.0);
+      
+      chart.update();
+      
+      // Set up hover interactions after chart is updated
+      setTimeout(setupHoverInteractions, 100);
+    });
+  },
+  beforeUnmount() {
+    this.handleEvent("update-analysis", null);
+  },
+};
+
 hooks.DarkThemeToggle = toggleThemeHook;
 
 // *****
