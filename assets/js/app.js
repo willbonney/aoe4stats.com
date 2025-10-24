@@ -303,10 +303,13 @@ hooks.MovingAverages = {
         }
       );
       chart.data.labels = sorted.map((m) =>
-        new Date(m.updated_at).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })
+        (() => {
+          const date = new Date(m.updated_at);
+          const day = date.getDate();
+          const month = date.toLocaleDateString(undefined, { month: "short" });
+          const year = date.getFullYear().toString().slice(-2);
+          return `${day}-${month}-${year}`.toUpperCase();
+        })()
       );
       chart.update();
     });
@@ -534,7 +537,7 @@ hooks.PercentageTimeInRank = {
           },
           tooltip: {
             callbacks: {
-              label: (context) => `${context.formattedValue}%`,
+              label: (context) => `${context.raw.toFixed(0)}%`,
               afterBody: function (context) {
                 const label = context[0].label;
 
@@ -562,7 +565,7 @@ hooks.PercentageTimeInRank = {
           },
           alwaysShowTooltip: {
             color: 'white', // Set tooltip text color,
-            valueFormatter: (value) => `${value.toFixed(2)}%`,
+            valueFormatter: (value) => `${value.toFixed(0)}%`,
           },
         },
       },
@@ -570,11 +573,10 @@ hooks.PercentageTimeInRank = {
 
     const chart = new Chart(ctx, data);
     this.handleEvent("update-player", (event) => {
-      console.log(event.percentageTimeInRank);
       const percentageTimeInRank = event.percentageTimeInRank;
       
       // Apply threshold filtering similar to OpponentsByCountry
-      const threshold = 3; // Percentage threshold for "Other" category
+      const threshold = 3;
       let otherPercentage = 0;
       const otherRanks = {};
       const filteredData = Object.entries(percentageTimeInRank).reduce((acc, [rank, data]) => {
@@ -603,10 +605,6 @@ hooks.PercentageTimeInRank = {
       const data = Object.values(filteredData).map(item => item.percentage);
       const colors = Object.values(filteredData).map(item => item.color);
       const labels = Object.keys(filteredData);
-      
-      console.log("Filtered data:", filteredData);
-      console.log("Labels:", labels);
-      console.log("Other percentage:", otherPercentage);
       
       chart.data.datasets[0].data = data;
       chart.data.datasets[0].backgroundColor = colors;
