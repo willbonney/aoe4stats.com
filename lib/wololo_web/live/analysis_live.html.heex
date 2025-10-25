@@ -14,10 +14,13 @@
     </h1>
     
     <!-- Metric Descriptions -->
-    <div class="max-w-4xl mx-auto mb-8 space-y-2" id="metric-descriptions">
-      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-3 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Consistency">
-        <div class="flex items-start gap-2">
-          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative" title="Calculation">
+    <div class="max-w-6xl mx-auto mb-8 grid grid-cols-1 md:grid-cols-2 gap-4" id="metric-descriptions">
+      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Consistency">
+        <div class="flex items-center gap-2 mb-2">
+          <.icon name="hero-chart-bar" class="h-6 w-6 text-blue-500 flex-shrink-0" />
+          <span class={common_stat_classes <> " !mx-0 text-xl font-medium"}>Consistency:</span>
+          <span class={common_stat_classes <> " !mx-0 text-xl font-bold"}><%= Float.round(analysis.consistency, 1) %></span>
+          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative ml-auto" title="Calculation">
             <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line leading-relaxed">1. Sort rating history by timestamp
 2. Extract all rating values
 3. Calculate differences between consecutive ratings
@@ -25,165 +28,115 @@
 5. Calculate standard deviation of changes
 6. Invert score: 100 - std_dev (capped at 100)
 Result: Lower volatility = higher consistency score</span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
+            <.icon name="hero-information-circle" class="h-4 w-4" />
           </span>
-          <div class="flex-1">
-            <div>
-              <span class={common_stat_classes <> " text-base font-medium"}>Consistency:</span>
-              <span class={common_stat_classes <> " text-lg font-bold ml-2"}><%= Float.round(analysis.consistency, 1) %></span>
-            </div>
-            <span class="text-stone-600 dark:text-zinc-300"> How stable your performance is across games. Higher scores mean fewer rating swings.</span>
-          </div>
         </div>
+        <p class="text-sm text-stone-600 dark:text-zinc-300">How stable your performance is across games. Higher scores mean fewer rating swings.</p>
       </div>
-      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-3 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Recovery">
-        <div class="flex items-start gap-2">
-          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative" title="Calculation">
-            <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line">
-              1. Sort rating history by timestamp
+      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Recovery">
+        <div class="flex items-center gap-2 mb-2">
+          <.icon name="hero-arrow-trending-up" class="h-6 w-6 text-green-500 flex-shrink-0" />
+          <span class={common_stat_classes <> " !mx-0 text-xl font-medium"}>Recovery:</span>
+          <span class={common_stat_classes <> " !mx-0 text-xl font-bold"}><%= Float.round(analysis.recovery, 1) %></span>
+          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative ml-auto" title="Calculation">
+            <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line leading-relaxed">1. Sort rating history by timestamp
 2. Track each losing streak (negative streak values)
 3. Record streak length when it breaks (becomes positive)
 4. Calculate average losing streak length
 5. Normalize: 100 - (avg_streak * 10)
-Result: Shorter losing streaks = higher recovery score
-            </span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
+Result: Shorter losing streaks = higher recovery score</span>
+            <.icon name="hero-information-circle" class="h-4 w-4" />
           </span>
-          <div class="flex-1">
-            <div>
-              <span class={common_stat_classes <> " text-base font-medium"}>Recovery:</span>
-              <span class={common_stat_classes <> " text-lg font-bold ml-2"}><%= Float.round(analysis.recovery, 1) %></span>
-            </div>
-            <span class="text-stone-600 dark:text-zinc-300"> How quickly you bounce back from losing streaks. Higher scores mean faster recovery.</span>
-          </div>
         </div>
+        <p class="text-sm text-stone-600 dark:text-zinc-300">How quickly you bounce back from losing streaks. Higher scores mean faster recovery.</p>
       </div>
-      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-3 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Momentum">
-        <div class="flex items-start gap-2">
-          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative" title="Calculation">
-            <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line">
-              1. Sort rating history by timestamp
+      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Momentum">
+        <div class="flex items-center gap-2 mb-2">
+          <.icon name="hero-rocket-launch" class="h-6 w-6 text-purple-500 flex-shrink-0" />
+          <span class={common_stat_classes <> " !mx-0 text-xl font-medium"}>Momentum:</span>
+          <span class={common_stat_classes <> " !mx-0 text-xl font-bold"}><%= Float.round(analysis.momentum, 1) %></span>
+          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative ml-auto" title="Calculation">
+            <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line leading-relaxed">1. Sort rating history by timestamp
 2. Extract all streak values
 3. Filter to positive streaks only (wins)
 4. Calculate average winning streak length
 5. Normalize: avg_streak * 20 (capped at 100)
-Result: Longer winning streaks = higher momentum score
-            </span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
+Result: Longer winning streaks = higher momentum score</span>
+            <.icon name="hero-information-circle" class="h-4 w-4" />
           </span>
-          <div class="flex-1">
-            <div>
-              <span class={common_stat_classes <> " text-base font-medium"}>Momentum:</span>
-              <span class={common_stat_classes <> " text-lg font-bold ml-2"}><%= Float.round(analysis.momentum, 1) %></span>
-            </div>
-            <span class="text-stone-600 dark:text-zinc-300"> Your ability to maintain winning streaks. Higher scores indicate longer win streaks.</span>
-          </div>
         </div>
+        <p class="text-sm text-stone-600 dark:text-zinc-300">Your ability to maintain winning streaks. Higher scores indicate longer win streaks.</p>
       </div>
-      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-3 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Anti-Tilt">
-        <div class="flex items-start gap-2">
-          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative" title="Calculation">
-            <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line">
-              1. Sort rating history by timestamp
+      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Anti-Tilt">
+        <div class="flex items-center gap-2 mb-2">
+          <.icon name="hero-shield-check" class="h-6 w-6 text-cyan-500 flex-shrink-0" />
+          <span class={common_stat_classes <> " !mx-0 text-xl font-medium"}>Anti-Tilt:</span>
+          <span class={common_stat_classes <> " !mx-0 text-xl font-bold"}><%= Float.round(analysis.anti_tilt, 1) %></span>
+          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative ml-auto" title="Calculation">
+            <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line leading-relaxed">1. Sort rating history by timestamp
 2. Look at consecutive game pairs
 3. Count: wins after wins, losses after wins, etc.
 4. Calculate win_after_win rate
 5. Calculate loss_after_loss rate
 6. Score = (win_after_win + (1 - loss_after_loss)) / 2
-Result: High wins after wins + low losses after losses = high score
-            </span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
+Result: High wins after wins + low losses after losses = high score</span>
+            <.icon name="hero-information-circle" class="h-4 w-4" />
           </span>
-          <div class="flex-1">
-            <div>
-              <span class={common_stat_classes <> " text-base font-medium"}>Anti-Tilt:</span>
-              <span class={common_stat_classes <> " text-lg font-bold ml-2"}><%= Float.round(analysis.anti_tilt, 1) %></span>
-            </div>
-            <span class="text-stone-600 dark:text-zinc-300"> Mental resilience after losses. Higher scores show you tilt less often.</span>
-          </div>
         </div>
+        <p class="text-sm text-stone-600 dark:text-zinc-300">Mental resilience after losses. Higher scores show you tilt less often.</p>
       </div>
-      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-3 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Pressure">
-        <div class="flex items-start gap-2">
-          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative" title="Calculation">
-            <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line">
-              1. Get rank thresholds (700, 800, 900, 1000, etc.)
+      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Pressure">
+        <div class="flex items-center gap-2 mb-2">
+          <.icon name="hero-fire" class="h-6 w-6 text-orange-500 flex-shrink-0" />
+          <span class={common_stat_classes <> " !mx-0 text-xl font-medium"}>Pressure:</span>
+          <span class={common_stat_classes <> " !mx-0 text-xl font-bold"}><%= Float.round(analysis.pressure_performance, 1) %></span>
+          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative ml-auto" title="Calculation">
+            <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line leading-relaxed">1. Get rank thresholds (700, 800, 900, 1000, etc.)
 2. Sort rating history by timestamp
 3. For each game, check if within ±25 of any threshold
 4. Count wins and total games in pressure situations
 5. Calculate win rate: pressure_wins / pressure_total
 6. Convert to 0-100 scale
-Result: Higher win rate near thresholds = higher clutch score
-            </span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
+Result: Higher win rate near thresholds = higher clutch score</span>
+            <.icon name="hero-information-circle" class="h-4 w-4" />
           </span>
-          <div class="flex-1">
-            <div>
-              <span class={common_stat_classes <> " text-base font-medium"}>Pressure:</span>
-              <span class={common_stat_classes <> " text-lg font-bold ml-2"}><%= Float.round(analysis.pressure_performance, 1) %></span>
-            </div>
-            <span class="text-stone-600 dark:text-zinc-300"> Win rate when near rank thresholds (±25 rating). Higher scores mean you perform better when your rank is on the line.</span>
-          </div>
         </div>
+        <p class="text-sm text-stone-600 dark:text-zinc-300">Win rate when near rank thresholds (±25 rating). Higher scores mean you perform better when your rank is on the line.</p>
       </div>
-      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-3 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Efficiency">
-        <div class="flex items-start gap-2">
-          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative" title="Calculation">
-            <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line">
-              1. Sort rating history by timestamp
+      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Efficiency">
+        <div class="flex items-center gap-2 mb-2">
+          <.icon name="hero-bolt" class="h-6 w-6 text-yellow-500 flex-shrink-0" />
+          <span class={common_stat_classes <> " !mx-0 text-xl font-medium"}>Efficiency:</span>
+          <span class={common_stat_classes <> " !mx-0 text-xl font-bold"}><%= Float.round(analysis.rating_efficiency, 1) %></span>
+          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative ml-auto" title="Calculation">
+            <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line leading-relaxed">1. Sort rating history by timestamp
 2. Get first rating and last rating
 3. Calculate rating change: last - first
 4. Calculate rating per game: change / games_played
 5. Normalize: (rating_per_game + 5) * 10
 6. Cap between 0 and 100
-Result: More rating gained per game = higher efficiency score
-            </span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
+Result: More rating gained per game = higher efficiency score</span>
+            <.icon name="hero-information-circle" class="h-4 w-4" />
           </span>
-          <div class="flex-1">
-            <div>
-              <span class={common_stat_classes <> " text-base font-medium"}>Efficiency:</span>
-              <span class={common_stat_classes <> " text-lg font-bold ml-2"}><%= Float.round(analysis.rating_efficiency, 1) %></span>
-            </div>
-            <span class="text-stone-600 dark:text-zinc-300"> How much rating you gain per game played. Higher scores mean faster climbing.</span>
-          </div>
         </div>
+        <p class="text-sm text-stone-600 dark:text-zinc-300">How much rating you gain per game played. Higher scores mean faster climbing.</p>
       </div>
-      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-3 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Versatility">
-        <div class="flex items-start gap-2">
-          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative" title="Calculation">
-            <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line">
-              1. Calculate total games across all civs
+      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition-shadow" data-metric="Versatility">
+        <div class="flex items-center gap-2 mb-2">
+          <.icon name="hero-sparkles" class="h-6 w-6 text-pink-500 flex-shrink-0" />
+          <span class={common_stat_classes <> " !mx-0 text-xl font-medium"}>Versatility:</span>
+          <span class={common_stat_classes <> " !mx-0 text-xl font-bold"}><%= Float.round(analysis.versatility, 1) %></span>
+          <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative ml-auto" title="Calculation">
+            <span class="invisible group-hover:visible absolute right-6 top-0 w-80 bg-gray-900 text-white text-xs rounded p-3 z-10 whitespace-pre-line leading-relaxed">1. Calculate total games across all civs
 2. Set min games threshold: max(5, total * 0.05)
 3. Filter to civs with games >= threshold
 4. Count civs with >50% win rate
 5. Calculate: (good_civs / civs_played_enough) * 100
-Result: Higher % of well-played civs = higher versatility score
-            </span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
+Result: Higher % of well-played civs = higher versatility score</span>
+            <.icon name="hero-information-circle" class="h-4 w-4" />
           </span>
-          <div class="flex-1">
-            <div>
-              <span class={common_stat_classes <> " text-base font-medium"}>Versatility:</span>
-              <span class={common_stat_classes <> " text-lg font-bold ml-2"}><%= Float.round(analysis.versatility, 1) %></span>
-            </div>
-            <span class="text-stone-600 dark:text-zinc-300"> Success across multiple civilizations. Higher scores mean you excel with more civs.</span>
-          </div>
         </div>
+        <p class="text-sm text-stone-600 dark:text-zinc-300">Success across multiple civilizations. Higher scores mean you excel with more civs.</p>
       </div>
     </div>
 

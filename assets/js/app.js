@@ -726,19 +726,8 @@ hooks.Analysis = {
           },
           tooltip: {
             callbacks: {
-              label: (context) => `${context.label}: ${context.raw.toFixed(1)}`,
-              afterLabel: (context) => {
-                const descriptions = {
-                  "Consistency": "Performance stability across games",
-                  "Recovery": "Speed of bouncing back from losses",
-                  "Momentum": "Ability to maintain winning streaks",
-                  "Anti-Tilt": "Mental resilience after losses",
-                  "Pressure": "Performance near rank thresholds",
-                  "Efficiency": "Rating gained per game played",
-                  "Versatility": "Success across multiple civs",
-                };
-                return descriptions[context.label] || "";
-              },
+              label: (context) => `${context.raw.toFixed(1)}%`
+            
             },
           },
           title: {
@@ -764,6 +753,9 @@ hooks.Analysis = {
         pointLabels: {
           ...chart.options.scales.r.pointLabels,
           color: color,
+          font: {
+            size: 18
+          }
         },
         ticks: {
           ...chart.options.scales.r.ticks,
@@ -828,7 +820,6 @@ hooks.Analysis = {
       
       chart.update();
       
-      // Set up hover interactions after chart is updated
       setTimeout(setupHoverInteractions, 100);
     });
   },

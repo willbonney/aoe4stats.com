@@ -35,10 +35,10 @@ active_link_classes = "font-semibold text-stone-800 dark:text-zinc-100" %>
               </button>
             </div>
             <%= if @rank do %>
-              <h6 class="text-stone-800 dark:text-zinc-100">#<%= @rank %></h6>
+              <h6 class="text-stone-800 dark:text-zinc-100">rank #<%= @rank %></h6>
             <% end %>
             <%= if @wr do %>
-              <h6 class="text-stone-800 dark:text-zinc-100"><%= @wr %> %</h6>
+              <h6 class="text-stone-800 dark:text-zinc-100">wr <%= @wr %> %</h6>
             <% end %>
           </div>
         </div>

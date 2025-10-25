@@ -5,10 +5,12 @@
     </div>
   <% else %>
     <div class="mx-auto my-auto w-full max-w-[600px] center">
-
+    <% common_stat_classes =
+    "font-zabal font-black text-3xl mx-auto text-center text-stone-800 dark:text-zinc-100" %>
+    <h1 class="font-zabal font-gray text-4xl my-8 mx-auto text-center text-stone-800 dark:text-zinc-100">
+      Opponents by Country  </h1>
         <canvas id="countries" phx-hook="OpponentsByCountry" data-points={Jason.encode!(@countries)}>
         </canvas>
-              <div class="flex justify-center items-center text-sm italic dark:text-zinc-100 text-stone-900 pt-12"><.icon name="hero-information-circle" class="w-4 h-4 inline-block" /><span class="ml-2">Hover over each slice to see details</span></div>
     </div>
   <% end %>
 </div>
