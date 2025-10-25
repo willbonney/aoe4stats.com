@@ -242,7 +242,8 @@ defmodule WololoWeb.AnalysisLive do
   defp calculate_pressure_performance(rating_history) when is_map(rating_history) do
     # Get rank thresholds from Utils module
     thresholds = Utils.get_rank_thresholds()
-    threshold_range = 25
+    # estimated by CascadeFury in the aoe4world discord
+    threshold_range = 22
 
     sorted_entries = sort_rating_history_by_time(rating_history)
 
