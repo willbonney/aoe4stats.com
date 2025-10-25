@@ -457,6 +457,8 @@ hooks.RankHistory = {
         chart.update();
       });
 
+      console.log("event: ", event);
+
       const rankData = event.rankHistory.map(({ rank }) => rank).reverse();
       const maxRankValue = Math.max(...rankData);
 
@@ -625,6 +627,10 @@ hooks.PercentageTimeInRank = {
     this.handleEvent("update-player", (event) => {
       const percentageTimeInRank = event.percentageTimeInRank;
       
+      if (!percentageTimeInRank) {
+        return;
+      }
+      
       // Apply threshold filtering similar to OpponentsByCountry
       const threshold = 3;
       let otherPercentage = 0;
@@ -767,27 +773,39 @@ hooks.Analysis = {
     };
     
     // Set up hover interactions between metric boxes and chart segments
-    const setupHoverInteractions = () => {
+    const setupHoverInteractions = (metricsWithData) => {
       const metricBoxes = document.querySelectorAll("#metric-descriptions [data-metric]");
       
-      metricBoxes.forEach((box, index) => {
-        box.addEventListener("mouseenter", () => {
-          // Trigger hover on the corresponding chart segment
-          const activeElements = [{
-            datasetIndex: 0,
-            index: index,
-          }];
-          chart.setActiveElements(activeElements);
-          chart.tooltip.setActiveElements(activeElements);
-          chart.update();
-        });
+      // Create a map of metric labels to chart indices
+      const metricToChartIndex = {};
+      metricsWithData.forEach((metric, index) => {
+        metricToChartIndex[metric.label] = index;
+      });
+      
+      metricBoxes.forEach((box) => {
+        const metricName = box.getAttribute("data-metric");
+        const chartIndex = metricToChartIndex[metricName];
         
-        box.addEventListener("mouseleave", () => {
-          // Clear hover state
-          chart.setActiveElements([]);
-          chart.tooltip.setActiveElements([]);
-          chart.update();
-        });
+        // Only set up hover if this metric has data in the chart
+        if (chartIndex !== undefined) {
+          box.addEventListener("mouseenter", () => {
+            // Trigger hover on the corresponding chart segment
+            const activeElements = [{
+              datasetIndex: 0,
+              index: chartIndex,
+            }];
+            chart.setActiveElements(activeElements);
+            chart.tooltip.setActiveElements(activeElements);
+            chart.update();
+          });
+          
+          box.addEventListener("mouseleave", () => {
+            // Clear hover state
+            chart.setActiveElements([]);
+            chart.tooltip.setActiveElements([]);
+            chart.update();
+          });
+        }
       });
     };
     
@@ -795,7 +813,7 @@ hooks.Analysis = {
       const analysis = event.analysis;
       
       // Define the metric labels and order
-      const metrics = [
+      const allMetrics = [
         { key: "consistency", label: "Consistency" },
         { key: "recovery", label: "Recovery" },
         { key: "momentum", label: "Momentum" },
@@ -805,9 +823,17 @@ hooks.Analysis = {
         { key: "versatility", label: "Versatility" },
       ];
       
+      // Only include metrics that have data (filter out insufficient data)
+      const metrics = allMetrics.filter((m) => analysis.hasOwnProperty(m.key));
+      
       // Extract data and labels in the correct order
       chart.data.labels = metrics.map((m) => m.label);
-      chart.data.datasets[0].data = metrics.map((m) => analysis[m.key] || 50.0);
+      chart.data.datasets[0].data = metrics.map((m) => analysis[m.key]);
+      
+      // Dynamically adjust colors based on number of metrics
+      const colors = getDistributedColors(metrics.length);
+      chart.data.datasets[0].backgroundColor = colors.map((color) => `${color.slice(0, -4)}, 0.7)`);
+      chart.data.datasets[0].borderColor = colors;
       
       // Set initial theme
       setPolarScales(chart, localStorage.getItem("theme") === "dark");
@@ -820,7 +846,7 @@ hooks.Analysis = {
       
       chart.update();
       
-      setTimeout(setupHoverInteractions, 100);
+      setTimeout(() => setupHoverInteractions(metrics), 100);
     });
   },
   beforeUnmount() {

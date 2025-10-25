@@ -1,5 +1,6 @@
 defmodule WololoWeb.RankLive do
   use WololoWeb, :live_component
+  require Logger
   import WololoWeb.Components.Spinner
   alias Wololo.PlayerStatsAPI
   alias Phoenix.LiveView.AsyncResult

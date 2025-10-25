@@ -4,9 +4,10 @@ defmodule WololoWeb.AnalysisLive do
   alias Wololo.PlayerStatsAPI
   alias Wololo.Utils
   alias Phoenix.LiveView.AsyncResult
+  require Logger
 
   # Default score when there's not enough data to calculate a metric
-  @default_score_insufficient_data 50.0
+  @default_score_insufficient_data nil
 
   defp sort_rating_history_by_time(rating_history) do
     rating_history
@@ -36,6 +37,8 @@ defmodule WololoWeb.AnalysisLive do
   def handle_async(:get_analysis, {:ok, result}, socket) do
     case result do
       {:error, reason} ->
+        Logger.error("Analysis failed with reason: #{inspect(reason)}")
+
         socket =
           socket
           |> assign(:analysis, AsyncResult.failed(%AsyncResult{}, reason))
@@ -44,10 +47,18 @@ defmodule WololoWeb.AnalysisLive do
         {:noreply, socket}
 
       analysis ->
+        Logger.info("Analysis succeeded, pushing to client")
+
+        # Filter out metrics with insufficient data (nil) for the chart
+        chart_data =
+          analysis
+          |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+          |> Map.new()
+
         socket =
           socket
           |> assign(:analysis, AsyncResult.ok(%AsyncResult{}, analysis))
-          |> push_event("update-analysis", %{analysis: analysis})
+          |> push_event("update-analysis", %{analysis: chart_data})
 
         {:noreply, socket}
     end
@@ -55,6 +66,8 @@ defmodule WololoWeb.AnalysisLive do
 
   @impl true
   def handle_async(:get_analysis, {status, reason}, socket) when status in [:error, :exit] do
+    Logger.error("Analysis async failed with status: #{status}, reason: #{inspect(reason)}")
+
     socket =
       socket
       |> assign(:analysis, AsyncResult.failed(%AsyncResult{}, reason))
@@ -74,7 +87,7 @@ defmodule WololoWeb.AnalysisLive do
       |> Enum.reject(&is_nil/1)
 
     if length(sorted_ratings) < 2 do
-      0.0
+      @default_score_insufficient_data
     else
       # Calculate the differences between consecutive ratings
       rating_changes =
@@ -102,7 +115,7 @@ defmodule WololoWeb.AnalysisLive do
     end
   end
 
-  defp calculate_consistency(_), do: 0.0
+  defp calculate_consistency(_), do: @default_score_insufficient_data
 
   # Calculate how quickly a player recovers from losing streaks
   # Higher score = faster recovery
@@ -240,7 +253,6 @@ defmodule WololoWeb.AnalysisLive do
   # Calculate performance under pressure (near rank thresholds)
   # Higher score = better clutch player
   defp calculate_pressure_performance(rating_history) when is_map(rating_history) do
-    # Get rank thresholds from Utils module
     thresholds = Utils.get_rank_thresholds()
     # estimated by CascadeFury in the aoe4world discord
     threshold_range = 22
@@ -351,15 +363,39 @@ defmodule WololoWeb.AnalysisLive do
   defp calculate_versatility(_), do: @default_score_insufficient_data
 
   def fetch_analysis(profile_id) do
+    Logger.info("Fetching analysis for profile_id: #{profile_id}")
+
     case PlayerStatsAPI.fetch_player_data(profile_id, false) do
       {:ok, player_data} ->
+        Logger.info("Successfully fetched player data")
         rating_history = get_in(player_data, ["modes", "rm_solo", "rating_history"])
         civ_stats = get_in(player_data, ["modes", "rm_solo", "civilizations"]) || []
 
-        if is_nil(rating_history) or map_size(rating_history) == 0 do
-          {:error, "No rating history available"}
-        else
+        Logger.info(
+          "rating_history is_nil: #{is_nil(rating_history)}, is_map: #{is_map(rating_history)}"
+        )
+
+        if is_map(rating_history),
+          do: Logger.info("rating_history size: #{map_size(rating_history)}")
+
+        if is_nil(rating_history) or (is_map(rating_history) and map_size(rating_history) == 0) do
+          Logger.warning(
+            "No rating history available for profile_id: #{profile_id}, returning default scores"
+          )
+
           %{
+            consistency: @default_score_insufficient_data,
+            recovery: @default_score_insufficient_data,
+            momentum: @default_score_insufficient_data,
+            anti_tilt: @default_score_insufficient_data,
+            pressure_performance: @default_score_insufficient_data,
+            rating_efficiency: @default_score_insufficient_data,
+            versatility: calculate_versatility(civ_stats)
+          }
+        else
+          Logger.info("Calculating analysis metrics...")
+
+          result = %{
             consistency: calculate_consistency(rating_history),
             recovery: calculate_recovery(rating_history),
             momentum: calculate_momentum(rating_history),
@@ -368,9 +404,13 @@ defmodule WololoWeb.AnalysisLive do
             rating_efficiency: calculate_rating_efficiency(rating_history),
             versatility: calculate_versatility(civ_stats)
           }
+
+          Logger.info("Analysis complete: #{inspect(result)}")
+          result
         end
 
       {:error, reason} ->
+        Logger.error("Failed to fetch player data: #{inspect(reason)}")
         {:error, reason}
     end
   end

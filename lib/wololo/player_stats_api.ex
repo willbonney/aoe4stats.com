@@ -37,51 +37,82 @@ defmodule Wololo.PlayerStatsAPI do
   end
 
   def process_player_stats(body) do
-    with {:ok, data} <- Jason.decode(body),
-         rating_history when is_map(rating_history) <-
-           get_in(data, ["modes", "rm_solo", "rating_history"]),
-         previous_seasons when is_list(previous_seasons) <-
-           get_in(data, ["modes", "rm_solo", "previous_seasons"]),
-         current_rank when is_integer(current_rank) <- get_in(data, ["modes", "rm_solo", "rank"]),
-         current_season when is_integer(current_season) <-
-           get_in(data, ["modes", "rm_solo", "season"]) do
-      total_count = map_size(rating_history)
-      total_seasons = Enum.count(previous_seasons) + 1
-      civ_stats = get_in(data, ["modes", "rm_solo", "civilizations"])
+    with {:ok, data} <- Jason.decode(body) do
+      rating_history = get_in(data, ["modes", "rm_solo", "rating_history"])
+      previous_seasons = get_in(data, ["modes", "rm_solo", "previous_seasons"])
+      current_rank = get_in(data, ["modes", "rm_solo", "rank"])
+      current_season = get_in(data, ["modes", "rm_solo", "season"])
 
-      rank_history =
-        Enum.map(previous_seasons, fn season ->
-          %{
-            rank: season["rank"],
-            season: season["season"]
-          }
-        end)
-        |> List.insert_at(0, %{rank: current_rank, season: current_season})
+      with previous_seasons when is_list(previous_seasons) <- previous_seasons,
+           current_season when is_integer(current_season) <- current_season do
+        total_count = if is_map(rating_history), do: map_size(rating_history), else: 0
+        total_seasons = Enum.count(previous_seasons) + 1
+        civ_stats = get_in(data, ["modes", "rm_solo", "civilizations"])
 
-      %{
-        max_rating: get_in(data, ["modes", "rm_solo", "max_rating"]) || "N/A",
-        max_rating_7d: get_in(data, ["modes", "rm_solo", "max_rating_7d"]) || "N/A",
-        max_rating_1m: get_in(data, ["modes", "rm_solo", "max_rating_1m"]) || "N/A",
-        average_rating:
-          if(total_count > 0,
-            do: calculate_average_rating(rating_history, total_count),
-            else: "N/A"
-          ),
-        total_count: total_count,
-        rank_history: rank_history,
-        total_seasons: total_seasons,
-        average_rank:
-          if(total_seasons > 0,
-            do: calculate_average_rank(rank_history, total_seasons),
-            else: "N/A"
-          ),
-        min_rank: Enum.max_by(rank_history, fn %{rank: rank} -> rank end).rank,
-        max_rank: Enum.min_by(rank_history, fn %{rank: rank} -> rank end).rank,
-        percentage_time_in_rank: get_percentage_time_in_rank(rating_history) || [],
-        civ_stats: civ_stats
-      }
+        rank_history =
+          Enum.reduce(
+            previous_seasons,
+            [],
+            fn season, acc ->
+              if season["rank"] != nil do
+                [
+                  %{
+                    rank: season["rank"],
+                    season: season["season"]
+                  }
+                  | acc
+                ]
+              else
+                acc
+              end
+            end
+          )
+          |> Enum.reverse()
+          |> then(fn seasons ->
+            if current_rank != nil do
+              [%{rank: current_rank, season: current_season} | seasons]
+            else
+              seasons
+            end
+          end)
+
+        %{
+          max_rating: get_in(data, ["modes", "rm_solo", "max_rating"]) || "N/A",
+          max_rating_7d: get_in(data, ["modes", "rm_solo", "max_rating_7d"]) || "N/A",
+          max_rating_1m: get_in(data, ["modes", "rm_solo", "max_rating_1m"]) || "N/A",
+          average_rating:
+            if(total_count > 0,
+              do: calculate_average_rating(rating_history, total_count),
+              else: "N/A"
+            ),
+          total_count: total_count,
+          rank_history: rank_history,
+          total_seasons: total_seasons,
+          average_rank:
+            if(total_seasons > 0,
+              do: calculate_average_rank(rank_history, total_seasons),
+              else: "N/A"
+            ),
+          min_rank:
+            Enum.max_by(rank_history, fn %{
+                                           rank: rank
+                                         } ->
+              rank
+            end).rank,
+          max_rank: Enum.min_by(rank_history, fn %{rank: rank} -> rank end).rank,
+          percentage_time_in_rank:
+            if(is_map(rating_history), do: get_percentage_time_in_rank(rating_history), else: nil),
+          civ_stats: civ_stats
+        }
+      else
+        error ->
+          Logger.error("Pattern match failed: #{inspect(error)}")
+          %{error: "Invalid data structure"}
+      end
     else
-      _ -> %{error: "Invalid data structure"}
+      error ->
+        Logger.error("Jason decode failed: #{inspect(error)}")
+        %{error: "Invalid data structure"}
     end
   end
 
