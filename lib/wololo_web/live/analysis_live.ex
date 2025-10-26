@@ -89,16 +89,13 @@ defmodule WololoWeb.AnalysisLive do
     if length(sorted_ratings) < 2 do
       @default_score_insufficient_data
     else
-      # Calculate the differences between consecutive ratings
       rating_changes =
         sorted_ratings
         |> Enum.chunk_every(2, 1, :discard)
         |> Enum.map(fn [rating1, rating2] -> abs(rating2 - rating1) end)
 
-      # Calculate average rating change
       avg_change = Enum.sum(rating_changes) / length(rating_changes)
 
-      # Calculate standard deviation
       variance =
         rating_changes
         |> Enum.map(fn change -> :math.pow(change - avg_change, 2) end)
@@ -120,7 +117,6 @@ defmodule WololoWeb.AnalysisLive do
   # Calculate how quickly a player recovers from losing streaks
   # Higher score = faster recovery
   defp calculate_recovery(rating_history) when is_map(rating_history) do
-    # Sort rating history by timestamp
     sorted_entries = sort_rating_history_by_time(rating_history)
 
     if length(sorted_entries) < 5 do
@@ -134,15 +130,13 @@ defmodule WololoWeb.AnalysisLive do
           streak = data["streak"]
 
           cond do
-            # Streak is negative (losing)
             streak < 0 ->
               {recoveries, abs(streak), true}
 
-            # Streak is positive and we were in a losing streak (recovery!)
+            # Recovery!
             streak > 0 and in_losing_streak ->
               {[current_streak | recoveries], 0, false}
 
-            # No change
             true ->
               {recoveries, current_streak, in_losing_streak}
           end
@@ -150,14 +144,11 @@ defmodule WololoWeb.AnalysisLive do
         |> elem(0)
 
       if length(recovery_times) == 0 do
-        # No losing streaks found - perfect recovery or not enough data
+        # No losing streaks found
         100.0
       else
-        # Average losing streak length before recovery
         avg_streak_before_recovery = Enum.sum(recovery_times) / length(recovery_times)
-
-        # Normalize: shorter streaks = better recovery (0-100 scale)
-        # Formula: 100 - (avg_streak * 10), capped between 0 and 100
+        # Shorter streaks = better recovery
         max(0.0, min(100.0, 100 - avg_streak_before_recovery * 10))
       end
     end
@@ -177,7 +168,6 @@ defmodule WololoWeb.AnalysisLive do
     if length(sorted_entries) < 5 do
       @default_score_insufficient_data
     else
-      # Find all positive streaks and calculate their average length
       positive_streaks =
         sorted_entries
         |> Enum.filter(fn streak -> streak > 0 end)
@@ -185,12 +175,8 @@ defmodule WololoWeb.AnalysisLive do
       if length(positive_streaks) == 0 do
         0.0
       else
-        # Average winning streak length
         avg_win_streak = Enum.sum(positive_streaks) / length(positive_streaks)
-
-        # Normalize to 0-100 scale with asymptotic growth
-        # Formula: 100 * (1 - 1.05 / avg_streak^2.3)
-        # Approaches 100 asymptotically: 4-game→95, 5-game→97, 6-game→98
+        # Asymptotic curve: 4-game→95, 5-game→97, 6-game→98
         max(0.0, 100.0 * (1.0 - 1.05 / :math.pow(avg_win_streak, 2.3)))
       end
     end
@@ -212,9 +198,6 @@ defmodule WololoWeb.AnalysisLive do
         |> Enum.chunk_every(2, 1, :discard)
         |> Enum.reduce({0, 0, 0, 0}, fn [{_, data1}, {_, data2}],
                                         {win_win, win_loss, loss_win, loss_loss} ->
-          # Determine if each game was a win or loss based on streak sign
-          # Positive streak = player is on a winning streak (last game was a win)
-          # Negative streak = player is on a losing streak (last game was a loss)
           game1_win = data1["streak"] > 0
           game2_win = data2["streak"] > 0
 
@@ -232,7 +215,6 @@ defmodule WololoWeb.AnalysisLive do
       if total == 0 do
         @default_score_insufficient_data
       else
-        # Calculate the ratio of wins following wins vs losses following losses
         win_after_win_rate =
           if win_win + win_loss > 0, do: win_win / (win_win + win_loss), else: 0.5
 
@@ -241,8 +223,6 @@ defmodule WololoWeb.AnalysisLive do
 
         # Good anti-tilt = high win_after_win, low loss_after_loss
         anti_tilt_score = (win_after_win_rate + (1 - loss_after_loss_rate)) / 2
-
-        # Convert to 0-100 scale
         anti_tilt_score * 100
       end
     end
@@ -262,21 +242,18 @@ defmodule WololoWeb.AnalysisLive do
     if length(sorted_entries) < 5 do
       @default_score_insufficient_data
     else
-      # Find games near thresholds and check win rate
       {pressure_wins, pressure_total} =
         sorted_entries
         |> Enum.reduce({0, 0}, fn {_, data}, {wins, total} ->
           rating = data["rating"]
           streak = data["streak"]
 
-          # Check if rating is near any threshold
           near_threshold =
             Enum.any?(thresholds, fn threshold ->
               abs(rating - threshold) <= threshold_range
             end)
 
           if near_threshold do
-            # Consider it a win if streak is positive
             win = if streak > 0, do: 1, else: 0
             {wins + win, total + 1}
           else
@@ -287,10 +264,7 @@ defmodule WololoWeb.AnalysisLive do
       if pressure_total == 0 do
         @default_score_insufficient_data
       else
-        # Calculate win rate under pressure
         pressure_win_rate = pressure_wins / pressure_total
-
-        # Convert to 0-100 scale
         pressure_win_rate * 100
       end
     end
@@ -313,9 +287,6 @@ defmodule WololoWeb.AnalysisLive do
       rating_change = last_rating - first_rating
       rating_per_game = rating_change / games_played
 
-      # Normalize to 0-100 scale
-      # Positive rating per game is good, negative is bad
-      # Formula: (rating_per_game + 5) * 10, capped between 0 and 100
       max(0.0, min(100.0, (rating_per_game + 5) * 10))
     end
   end
@@ -325,7 +296,6 @@ defmodule WololoWeb.AnalysisLive do
   # Calculate how versatile a player is across different civilizations
   # Higher score = more versatile (plays multiple civs well)
   defp calculate_versatility(civ_stats) when is_list(civ_stats) and length(civ_stats) > 0 do
-    # Calculate total games across all civs
     total_games = Enum.sum(Enum.map(civ_stats, fn civ -> civ["games_count"] end))
 
     if total_games < 10 do
