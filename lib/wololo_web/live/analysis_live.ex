@@ -211,11 +211,10 @@ defmodule WololoWeb.AnalysisLive do
         |> Enum.chunk_every(2, 1, :discard)
         |> Enum.reduce({0, 0, 0, 0}, fn [{_, data1}, {_, data2}],
                                         {win_win, win_loss, loss_win, loss_loss} ->
-          streak1 = data1["streak"]
-          streak2 = data2["streak"]
-
-          # Determine if streak increased (win) or decreased (loss)
-          game1_win = streak2 > streak1
+          # Determine if each game was a win or loss based on streak sign
+          # Positive streak = player is on a winning streak (last game was a win)
+          # Negative streak = player is on a losing streak (last game was a loss)
+          game1_win = data1["streak"] > 0
           game2_win = data2["streak"] > 0
 
           case {game1_win, game2_win} do

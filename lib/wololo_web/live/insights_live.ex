@@ -14,12 +14,29 @@ defmodule WololoWeb.InsightsLive do
 
     The format of your answer should be in HTML for easy parsing. Do not wrap the answer with any non-HTML syntax like ```. Do not include <html>, <head>, or <body> tags.
 
-    Structure your response as follows:
-    - Start with a <div> container
-    - Use <ul class="space-y-6 my-8"> for the list
-    - Each insight should be an <li class="text-base leading-relaxed"> element
-    - Use <strong> tags to emphasize key points and numbers
-    - The content will be wrapped in prose classes, so use semantic HTML (p, strong, em) for styling
+    Structure your response EXACTLY as follows:
+
+    <div class="space-y-6 my-8">
+      <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-md hover:shadow-lg transition-shadow p-8 border border-stone-200 dark:border-zinc-700">
+        <div class="flex items-center gap-8">
+          <div class="flex-shrink-0 flex items-center justify-center">
+            <span class="text-7xl font-bold text-stone-300 dark:text-zinc-700">1</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-base leading-relaxed text-stone-900 dark:text-zinc-100">
+              Your insight text here with <strong>emphasized numbers</strong> and key points.
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- Repeat for insights 2-5 with numbers 2, 3, 4, 5 -->
+    </div>
+
+    Each card should have:
+    - A large number (1-5) on the left side using text-7xl
+    - The number should be in light gray (text-stone-300 dark:text-zinc-700)
+    - The insight text with <strong> tags for emphasis on numbers and key stats
+    - Use the exact class structure shown above, including items-center for vertical centering
 
     Instead of using "the player" to refer to the player, use <strong>#{player_name}</strong> instead (already bolded).
 

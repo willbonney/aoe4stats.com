@@ -6,10 +6,10 @@
         
         <div class="text-center space-y-3">
           <p class="text-xl font-medium text-stone-700 dark:text-zinc-300">
-            Please be patient, querying LLM<span class="inline-flex w-6">
-              <span class="ml-3 font-2xl animate-[bounce_1.4s_ease-in-out_infinite]">.</span>
-              <span class=" font-2xl animate-[bounce_1.4s_ease-in-out_0.2s_infinite]">.</span>
-              <span class=" font-2xl animate-[bounce_1.4s_ease-in-out_0.4s_infinite]">.</span>
+            Please be patient, querying LLM<span class="inline-flex w-12 ml-1">
+              <span class="ml-3 text-3xl leading-none animate-[bounce_1.4s_ease-in-out_infinite]">.</span>
+              <span class="text-3xl leading-none animate-[bounce_1.4s_ease-in-out_0.2s_infinite]">.</span>
+              <span class="text-3xl leading-none animate-[bounce_1.4s_ease-in-out_0.4s_infinite]">.</span>
             </span>
           </p>
         </div>
@@ -20,12 +20,11 @@
         Failed to load insights. Please try again later.
       </div>
     </:failed>
-        <% common_stat_classes =
-    "font-zabal font-black text-3xl mx-auto text-center text-stone-800 dark:text-zinc-100" %>
-    <h1 class="font-zabal font-gray text-4xl my-8 mx-auto text-center text-stone-800 dark:text-zinc-100">
-      Insights   </h1>
-    <div class="prose prose-stone dark:prose-invert max-w-none">
-      <%= Phoenix.HTML.raw(insights) %>
-    </div>
+    
+    <h1 class="font-zabal text-4xl my-8 text-center text-stone-800 dark:text-zinc-100">
+      Insights
+    </h1>
+    
+    <%= Phoenix.HTML.raw(insights) %>
   </.async_result>
 </div>
