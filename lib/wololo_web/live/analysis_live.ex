@@ -188,9 +188,10 @@ defmodule WololoWeb.AnalysisLive do
         # Average winning streak length
         avg_win_streak = Enum.sum(positive_streaks) / length(positive_streaks)
 
-        # Normalize to 0-100 scale
-        # Formula: avg_streak * 20, capped at 100
-        min(avg_win_streak * 20, 100.0)
+        # Normalize to 0-100 scale with asymptotic growth
+        # Formula: 100 * (1 - 1.05 / avg_streak^2.3)
+        # Approaches 100 asymptotically: 4-game→95, 5-game→97, 6-game→98
+        max(0.0, 100.0 * (1.0 - 1.05 / :math.pow(avg_win_streak, 2.3)))
       end
     end
   end
