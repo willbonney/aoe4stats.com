@@ -324,7 +324,6 @@ defmodule WololoWeb.AnalysisLive do
 
   # Calculate how versatile a player is across different civilizations
   # Higher score = more versatile (plays multiple civs well)
-  # Uses civ_stats from the API which includes civilization, games_count, win_rate
   defp calculate_versatility(civ_stats) when is_list(civ_stats) and length(civ_stats) > 0 do
     # Calculate total games across all civs
     total_games = Enum.sum(Enum.map(civ_stats, fn civ -> civ["games_count"] end))
@@ -335,27 +334,37 @@ defmodule WololoWeb.AnalysisLive do
       # Define minimum games threshold (5% of total games, minimum 5)
       min_games_threshold = max(5, round(total_games * 0.05))
 
-      # Filter to civs played enough (at least min_games_threshold)
       civs_played_enough_list =
         civ_stats
         |> Enum.filter(fn civ -> civ["games_count"] >= min_games_threshold end)
 
-      civs_played_enough = length(civs_played_enough_list)
-
-      # Count civs with good performance (>50% win rate)
-      # win_rate from API is already a percentage (0-100), so divide by 100
-      good_civs =
+      good_civs_list =
         civs_played_enough_list
-        |> Enum.count(fn civ -> civ["win_rate"] >= 50.0 end)
+        |> Enum.filter(fn civ -> civ["win_rate"] >= 50.0 end)
 
-      # Calculate versatility score as percentage of civs played well
-      # out of the civs they've played enough
-      # Formula: (good_civs / civs_played_enough) * 100
-      # Example: 3 good civs out of 4 played enough = 75% versatility
-      if civs_played_enough > 0 do
-        good_civs / civs_played_enough * 100.0
+      good_civs_count = length(good_civs_list)
+
+      # Playing only 1 civ well = not versatile at all
+      if good_civs_count <= 1 do
+        0.0
       else
-        @default_score_insufficient_data
+        avg_wr =
+          good_civs_list
+          |> Enum.map(fn civ -> civ["win_rate"] end)
+          |> Enum.sum()
+          |> Kernel./(good_civs_count)
+
+        # Diversity score with diminishing returns: 100 * (1 - 1/n)
+        # 2 civs = 50, 3 civs = 66.7, 4 civs = 75, 5 civs = 80
+        diversity_score = 100.0 * (1.0 - 1.0 / good_civs_count) * 1.15
+
+        # Win rate multiplier with exponential scaling above 50%
+        # Ladder systems force ~50% WR, so higher WRs deserve bigger rewards
+        # 50% WR = 1.0x, 55% WR = 1.18x, 60% WR = 1.41x, 65% WR = 1.68x
+        wr_multiplier = :math.pow(avg_wr / 50.0, 1.8)
+
+        # Final score with cap at 100
+        min(100.0, diversity_score * wr_multiplier)
       end
     end
   end
