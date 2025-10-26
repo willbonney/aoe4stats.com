@@ -4,7 +4,7 @@ if Config.config_env() == :dev do
   DotenvParser.load_file(".env")
 end
 
-config :wololo, :open_ai_api_key, System.fetch_env!("OPEN_AI_API_KEY")
+config :wololo, :grok_api_key, System.get_env("GROK_API_KEY")
 
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the

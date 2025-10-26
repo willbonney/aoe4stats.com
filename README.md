@@ -17,7 +17,7 @@ The app is pulling data from another Age Of Empires IV API and tranforming it in
 - The Rating section shows 5, 10 and 20 game moving average rating information.
 - The Game Length section shows the player's win rates in different game length brackets which is significant due to how the game is played over time (progressing from Feudal to Castle to Imperial age). Early gameplay is more micromanagement oriented and conversely late-game is more about macro.
 - The Opponents section is geographical represenation of the origin of the player's opponents.
-- The Insights section throws the entire payload of player data at ChatGPT with a custom prompt to extract patterns pertaning to the player's performance.
+- The Insights section throws the entire payload of player data at `grok-4-fast-reasoning` with a custom prompt to extract patterns pertaning to the player's performance.
 
 ### Usage example
 

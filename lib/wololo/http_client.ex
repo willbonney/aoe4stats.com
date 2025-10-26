@@ -36,7 +36,7 @@ defmodule Wololo.HTTPClient do
       {:ok, body} ->
         {:ok, body}
 
-      {:error, reason} when retries > 0 ->
+      {:error, _reason} when retries > 0 ->
         Logger.info("Retrying HTTP request, #{retries} attempts remaining")
         # Wait 1 second before retry
         Process.sleep(1000)
@@ -54,8 +54,9 @@ defmodule Wololo.HTTPClient do
       {:ok, %Finch.Response{status: 200, body: response_body}} ->
         {:ok, response_body}
 
-      {:ok, %Finch.Response{status: status_code}} ->
+      {:ok, %Finch.Response{status: status_code, body: response_body}} ->
         Logger.error("HTTP POST request failed with status code: #{status_code}")
+        Logger.error("Response body: #{response_body}")
         {:error, "HTTP POST request failed with status code: #{status_code}"}
 
       {:error, %Finch.Error{reason: reason}} ->
