@@ -177,7 +177,7 @@ hooks.OpponentsByCountry = {
                 if (!context || !context[0]) {
                   return [];
                 }
-                
+
                 const label = context[0].label;
 
                 if (label === "Other" && chart.otherCountries) {
@@ -207,10 +207,10 @@ hooks.OpponentsByCountry = {
               size: 16,
               weight: "bold",
             },
-            filter: function(tooltipItem) {
+            filter: function (tooltipItem) {
               // Only show tooltip for "Other" category
-              const label = tooltipItem.label || '';
-              return label.toLowerCase().includes('other');
+              const label = tooltipItem.label || "";
+              return label.toLowerCase().includes("other");
             },
           },
           legend: {
@@ -223,7 +223,7 @@ hooks.OpponentsByCountry = {
           },
           alwaysShowTooltip: {
             valueFormatter: (value) => `${value.toFixed(0)}%`,
-            skipLabels: ['other'],
+            skipLabels: ["other"],
           },
         },
       },
@@ -557,7 +557,7 @@ hooks.WrsByGameLength = {
 hooks.PercentageTimeInRank = {
   mounted() {
     const ctx = this.el;
-    
+
     const data = {
       type: "doughnut",
       data: {
@@ -571,7 +571,6 @@ hooks.PercentageTimeInRank = {
       plugins: [AlwaysShowTooltipPlugin],
 
       options: {
-
         responsive: true,
         plugins: {
           legend: {
@@ -584,7 +583,7 @@ hooks.PercentageTimeInRank = {
                 if (!context || !context[0]) {
                   return [];
                 }
-                
+
                 const label = context[0].label;
 
                 if (label === "other" && chart.otherRanks) {
@@ -599,10 +598,10 @@ hooks.PercentageTimeInRank = {
                 return [];
               },
             },
-            filter: function(tooltipItem) {
+            filter: function (tooltipItem) {
               // Only show tooltip for "Other" category
-              const label = tooltipItem.label || '';
-              return label.toLowerCase().includes('other');
+              const label = tooltipItem.label || "";
+              return label.toLowerCase().includes("other");
             },
           },
           labels: {
@@ -615,9 +614,9 @@ hooks.PercentageTimeInRank = {
             text: "Percentage Time in Rank",
           },
           alwaysShowTooltip: {
-            color: 'white', // Set tooltip text color,
+            color: "white", // Set tooltip text color,
             valueFormatter: (value) => `${value.toFixed(0)}%`,
-            skipLabels: ['other'],
+            skipLabels: ["other"],
           },
         },
       },
@@ -626,11 +625,11 @@ hooks.PercentageTimeInRank = {
     const chart = new Chart(ctx, data);
     this.handleEvent("update-player", (event) => {
       const percentageTimeInRank = event.percentageTimeInRank;
-      
+
       if (!percentageTimeInRank) {
         return;
       }
-      
+
       // Apply threshold filtering similar to OpponentsByCountry
       const threshold = 3;
       let otherPercentage = 0;
@@ -649,19 +648,19 @@ hooks.PercentageTimeInRank = {
       if (otherPercentage > 0) {
         filteredData.other = {
           percentage: otherPercentage,
-          color: MUI_COLORS[3] // Use MUI_COLORS[3] for "Other" category
+          color: MUI_COLORS[3], // Use MUI_COLORS[3] for "Other" category
         };
         // Store other ranks data on chart for tooltip use
         chart.otherRanks = otherRanks;
       } else {
         chart.otherRanks = null;
       }
-      
+
       // Extract data and colors from the filtered structure
-      const data = Object.values(filteredData).map(item => item.percentage);
-      const colors = Object.values(filteredData).map(item => item.color);
+      const data = Object.values(filteredData).map((item) => item.percentage);
+      const colors = Object.values(filteredData).map((item) => item.color);
       const labels = Object.keys(filteredData);
-      
+
       chart.data.datasets[0].data = data;
       chart.data.datasets[0].backgroundColor = colors;
       chart.data.labels = labels;
@@ -677,7 +676,7 @@ hooks.PercentageTimeInRank = {
 hooks.Analysis = {
   mounted() {
     const ctx = this.el;
-    
+
     const data = {
       type: "polarArea",
       data: {
@@ -687,13 +686,13 @@ hooks.Analysis = {
             label: "Performance Metrics",
             data: [],
             backgroundColor: [
-              MUI_COLORS[0],  
-              MUI_COLORS[1],  
-              MUI_COLORS[2],  
-              MUI_COLORS[5], 
-              MUI_COLORS[7], 
-              MUI_COLORS[8], 
-              MUI_COLORS[9], 
+              MUI_COLORS[0],
+              MUI_COLORS[1],
+              MUI_COLORS[2],
+              MUI_COLORS[5],
+              MUI_COLORS[7],
+              MUI_COLORS[8],
+              MUI_COLORS[9],
             ].map((color) => `${color.slice(0, -4)}, 0.7)`),
             borderColor: [
               MUI_COLORS[0],
@@ -732,8 +731,7 @@ hooks.Analysis = {
           },
           tooltip: {
             callbacks: {
-              label: (context) => `${context.raw.toFixed(1)}%`
-            
+              label: (context) => `${context.raw.toFixed(1)}%`,
             },
           },
           title: {
@@ -745,7 +743,7 @@ hooks.Analysis = {
     };
 
     const chart = new Chart(ctx, data);
-    
+
     const setPolarScales = (chart, isDark) => {
       const color = isDark ? TW_ZINC_100 : TW_STONE_800;
       chart.options.scales.r = {
@@ -760,45 +758,47 @@ hooks.Analysis = {
           ...chart.options.scales.r.pointLabels,
           color: color,
           font: {
-            size: 18
-          }
+            size: 18,
+          },
         },
         ticks: {
           ...chart.options.scales.r.ticks,
           color: color,
-          backdropColor: isDark ? 'rgba(39, 39, 42, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+          backdropColor: isDark ? "rgba(39, 39, 42, 0.8)" : "rgba(255, 255, 255, 0.8)",
         },
       };
       chart.update();
     };
-    
+
     // Set up hover interactions between metric boxes and chart segments
     const setupHoverInteractions = (metricsWithData) => {
       const metricBoxes = document.querySelectorAll("#metric-descriptions [data-metric]");
-      
+
       // Create a map of metric labels to chart indices
       const metricToChartIndex = {};
       metricsWithData.forEach((metric, index) => {
         metricToChartIndex[metric.label] = index;
       });
-      
+
       metricBoxes.forEach((box) => {
         const metricName = box.getAttribute("data-metric");
         const chartIndex = metricToChartIndex[metricName];
-        
+
         // Only set up hover if this metric has data in the chart
         if (chartIndex !== undefined) {
           box.addEventListener("mouseenter", () => {
             // Trigger hover on the corresponding chart segment
-            const activeElements = [{
-              datasetIndex: 0,
-              index: chartIndex,
-            }];
+            const activeElements = [
+              {
+                datasetIndex: 0,
+                index: chartIndex,
+              },
+            ];
             chart.setActiveElements(activeElements);
             chart.tooltip.setActiveElements(activeElements);
             chart.update();
           });
-          
+
           box.addEventListener("mouseleave", () => {
             // Clear hover state
             chart.setActiveElements([]);
@@ -808,44 +808,44 @@ hooks.Analysis = {
         }
       });
     };
-    
+
     this.handleEvent("update-analysis", (event) => {
       const analysis = event.analysis;
-      
-      // Define the metric labels and order
+
+      // Define the metric labels, order, and colors (matching icon colors using MUI_COLORS)
       const allMetrics = [
-        { key: "consistency", label: "Consistency" },
-        { key: "recovery", label: "Recovery" },
-        { key: "momentum", label: "Momentum" },
-        { key: "anti_tilt", label: "Anti-Tilt" },
-        { key: "pressure_performance", label: "Pressure" },
-        { key: "rating_efficiency", label: "Efficiency" },
-        { key: "versatility", label: "Versatility" },
+        { key: "consistency", label: "Consistency", colorIndex: 13 }, // Blue #2196F3
+        { key: "recovery", label: "Recovery", colorIndex: 9 }, // Green #4CAF50
+        { key: "momentum", label: "Momentum", colorIndex: 16 }, // Purple #9C27B0
+        { key: "anti_tilt", label: "Anti-Tilt", colorIndex: 11 }, // Cyan #00BCD4
+        { key: "pressure_performance", label: "Pressure", colorIndex: 2 }, // Orange #FF9800
+        { key: "rating_efficiency", label: "Efficiency", colorIndex: 4 }, // Yellow #FFC107
+        { key: "versatility", label: "Versatility", colorIndex: 17 }, // Pink #FF69B4
       ];
-      
+
       // Only include metrics that have data (filter out insufficient data)
       const metrics = allMetrics.filter((m) => analysis.hasOwnProperty(m.key));
-      
+
       // Extract data and labels in the correct order
       chart.data.labels = metrics.map((m) => m.label);
       chart.data.datasets[0].data = metrics.map((m) => analysis[m.key]);
-      
-      // Dynamically adjust colors based on number of metrics
-      const colors = getDistributedColors(metrics.length);
+
+      // Use the MUI colors defined for each metric
+      const colors = metrics.map((m) => MUI_COLORS[m.colorIndex]);
       chart.data.datasets[0].backgroundColor = colors.map((color) => `${color.slice(0, -4)}, 0.7)`);
       chart.data.datasets[0].borderColor = colors;
-      
+
       // Set initial theme
       setPolarScales(chart, localStorage.getItem("theme") === "dark");
-      
+
       // Listen for theme changes
       window.addEventListener("themeChanged", (e) => {
         const { isDark } = e.detail;
         setPolarScales(chart, isDark);
       });
-      
+
       chart.update();
-      
+
       setTimeout(() => setupHoverInteractions(metrics), 100);
     });
   },
