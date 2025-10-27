@@ -2,6 +2,7 @@ defmodule WololoWeb.AnalysisLive do
   use WololoWeb, :live_component
   import WololoWeb.Components.Spinner
   alias Wololo.PlayerStatsAPI
+  alias Wololo.PlayerGamesAPI
   alias Wololo.Utils
   alias Phoenix.LiveView.AsyncResult
   require Logger
@@ -341,56 +342,141 @@ defmodule WololoWeb.AnalysisLive do
 
   defp calculate_versatility(_), do: @default_score_insufficient_data
 
+  # Calculate win rate when facing higher-rated opponents
+  # Uses standard deviation to determine what counts as "significantly higher rated"
+  defp calculate_underdog_success(games_data)
+       when is_list(games_data) and length(games_data) > 0 do
+    if length(games_data) < 20 do
+      @default_score_insufficient_data
+    else
+      # Calculate rating differences (opponent - player)
+      rating_diffs =
+        games_data
+        |> Enum.filter(fn game ->
+          get_in(game, ["player_rating"]) != nil and
+            get_in(game, ["opponent_rating"]) != nil
+        end)
+        |> Enum.map(fn game ->
+          opponent_rating = get_in(game, ["opponent_rating"])
+          player_rating = get_in(game, ["player_rating"])
+          opponent_rating - player_rating
+        end)
+
+      if length(rating_diffs) < 20 do
+        @default_score_insufficient_data
+      else
+        # Calculate standard deviation of rating differences
+        mean_diff = Enum.sum(rating_diffs) / length(rating_diffs)
+
+        variance =
+          rating_diffs
+          |> Enum.map(fn diff -> :math.pow(diff - mean_diff, 2) end)
+          |> Enum.sum()
+          |> Kernel./(length(rating_diffs))
+
+        std_dev = :math.sqrt(variance)
+
+        # Define underdog threshold as mean + 0.75 * std_dev
+        # This typically means opponent is meaningfully higher rated
+        underdog_threshold = mean_diff + 0.75 * std_dev
+
+        # Find games where we're the underdog and calculate win rate
+        underdog_games =
+          games_data
+          |> Enum.filter(fn game ->
+            opponent_rating = get_in(game, ["opponent_rating"])
+            player_rating = get_in(game, ["player_rating"])
+
+            opponent_rating != nil and player_rating != nil and
+              opponent_rating - player_rating >= underdog_threshold
+          end)
+
+        if length(underdog_games) < 5 do
+          @default_score_insufficient_data
+        else
+          underdog_wins =
+            underdog_games
+            |> Enum.count(fn game -> game["result"] == "win" end)
+
+          underdog_win_rate = underdog_wins / length(underdog_games)
+          underdog_win_rate * 100
+        end
+      end
+    end
+  end
+
+  defp calculate_underdog_success(_), do: @default_score_insufficient_data
+
   def fetch_analysis(profile_id) do
     Logger.info("Fetching analysis for profile_id: #{profile_id}")
 
-    case PlayerStatsAPI.fetch_player_data(profile_id, false) do
-      {:ok, player_data} ->
-        Logger.info("Successfully fetched player data")
-        rating_history = get_in(player_data, ["modes", "rm_solo", "rating_history"])
-        civ_stats = get_in(player_data, ["modes", "rm_solo", "civilizations"]) || []
+    with {:ok, player_data} <- PlayerStatsAPI.fetch_player_data(profile_id, false),
+         {:ok, games_json} <- PlayerGamesAPI.get_players_games_statistics(profile_id, false) do
+      Logger.info("Successfully fetched player data and games")
+      rating_history = get_in(player_data, ["modes", "rm_solo", "rating_history"])
+      civ_stats = get_in(player_data, ["modes", "rm_solo", "civilizations"]) || []
 
-        Logger.info(
-          "rating_history is_nil: #{is_nil(rating_history)}, is_map: #{is_map(rating_history)}"
+      # Process games for underdog success
+      games_data = extract_games_with_opponent_rating(games_json, profile_id)
+
+      Logger.info(
+        "rating_history is_nil: #{is_nil(rating_history)}, is_map: #{is_map(rating_history)}"
+      )
+
+      if is_map(rating_history),
+        do: Logger.info("rating_history size: #{map_size(rating_history)}")
+
+      if is_nil(rating_history) or (is_map(rating_history) and map_size(rating_history) == 0) do
+        Logger.warning(
+          "No rating history available for profile_id: #{profile_id}, returning default scores"
         )
 
-        if is_map(rating_history),
-          do: Logger.info("rating_history size: #{map_size(rating_history)}")
+        %{
+          consistency: @default_score_insufficient_data,
+          recovery: @default_score_insufficient_data,
+          momentum: @default_score_insufficient_data,
+          anti_tilt: @default_score_insufficient_data,
+          pressure_performance: @default_score_insufficient_data,
+          rating_efficiency: @default_score_insufficient_data,
+          versatility: calculate_versatility(civ_stats),
+          underdog_success: calculate_underdog_success(games_data)
+        }
+      else
+        Logger.info("Calculating analysis metrics...")
 
-        if is_nil(rating_history) or (is_map(rating_history) and map_size(rating_history) == 0) do
-          Logger.warning(
-            "No rating history available for profile_id: #{profile_id}, returning default scores"
-          )
+        result = %{
+          consistency: calculate_consistency(rating_history),
+          recovery: calculate_recovery(rating_history),
+          momentum: calculate_momentum(rating_history),
+          anti_tilt: calculate_anti_tilt(rating_history),
+          pressure_performance: calculate_pressure_performance(rating_history),
+          rating_efficiency: calculate_rating_efficiency(rating_history),
+          versatility: calculate_versatility(civ_stats),
+          underdog_success: calculate_underdog_success(games_data)
+        }
 
-          %{
-            consistency: @default_score_insufficient_data,
-            recovery: @default_score_insufficient_data,
-            momentum: @default_score_insufficient_data,
-            anti_tilt: @default_score_insufficient_data,
-            pressure_performance: @default_score_insufficient_data,
-            rating_efficiency: @default_score_insufficient_data,
-            versatility: calculate_versatility(civ_stats)
-          }
-        else
-          Logger.info("Calculating analysis metrics...")
-
-          result = %{
-            consistency: calculate_consistency(rating_history),
-            recovery: calculate_recovery(rating_history),
-            momentum: calculate_momentum(rating_history),
-            anti_tilt: calculate_anti_tilt(rating_history),
-            pressure_performance: calculate_pressure_performance(rating_history),
-            rating_efficiency: calculate_rating_efficiency(rating_history),
-            versatility: calculate_versatility(civ_stats)
-          }
-
-          Logger.info("Analysis complete: #{inspect(result)}")
-          result
-        end
-
+        Logger.info("Analysis complete: #{inspect(result)}")
+        result
+      end
+    else
       {:error, reason} ->
         Logger.error("Failed to fetch player data: #{inspect(reason)}")
         {:error, reason}
     end
+  end
+
+  defp extract_games_with_opponent_rating(games_json, profile_id) do
+    games_json
+    |> Jason.decode!()
+    |> Map.get("games", [])
+    |> Enum.map(fn game ->
+      {player, opponent} = PlayerGamesAPI.extract_player_opponent(game, profile_id)
+
+      %{
+        "player_rating" => player["player"]["rating"],
+        "opponent_rating" => opponent["player"]["rating"],
+        "result" => if(player["player"]["result"] == "win", do: "win", else: "loss")
+      }
+    end)
   end
 end

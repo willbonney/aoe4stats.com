@@ -109,20 +109,20 @@ defmodule Wololo.PlayerGamesAPI do
     }
   end
 
-  @type country_percentage :: {String.t(), float()}
-  @type game_rating :: %{
-          player_rating: integer() | nil,
-          updated_at: String.t(),
-          moving_average_5g: float(),
-          moving_average_10g: float(),
-          moving_average_20g: float()
-        }
-  @type processed_games :: %{
-          countries: %{String.t() => float()},
-          ratings: [game_rating()]
-        }
+  # Extract player and opponent data from a game
+  # Returns {player_data, opponent_data} tuple
+  def extract_player_opponent(game, profile_id) do
+    {player_team, opponent_team} =
+      Enum.split_with(game["teams"], fn [team | _] ->
+        to_string(team["player"]["profile_id"]) == profile_id
+      end)
 
-  @spec process_games(String.t(), String.t()) :: processed_games()
+    [[opponent]] = opponent_team
+    [[player]] = player_team
+
+    {player, opponent}
+  end
+
   def process_games(body, profile_id) do
     games =
       body
@@ -130,77 +130,70 @@ defmodule Wololo.PlayerGamesAPI do
       |> Map.get("games")
       |> Enum.reverse()
 
-    result =
-      games
-      |> Enum.reduce(%{countries: %{}, ratings: []}, fn game, acc ->
-        {player_team, opponent_team} =
-          Enum.split_with(game["teams"], fn [team | _] ->
-            to_string(team["player"]["profile_id"]) == profile_id
-          end)
+    games
+    |> Enum.reduce(%{countries: %{}, ratings: []}, fn game, acc ->
+      {player, opponent} = extract_player_opponent(game, profile_id)
+      opponent_country = opponent["player"]["country"]
 
-        [[opponent]] = opponent_team
-        [[player]] = player_team
-        opponent_country = opponent["player"]["country"]
-
-        acc =
-          if acc[:countries][opponent_country] == nil do
-            # Initialize counter for this country
-            update_in(acc, [:countries], &Map.put(&1, opponent_country, 1))
-          else
-            update_in(
-              acc,
-              [:countries],
-              &Map.update(&1, opponent_country, 1, fn count -> count + 1 end)
-            )
-          end
-
-        player_rating = player["player"]["rating"]
-        updated_at = game["updated_at"]
-
-        acc =
-          Map.update(
+      acc =
+        if acc[:countries][opponent_country] == nil do
+          # Initialize counter for this country
+          update_in(acc, [:countries], &Map.put(&1, opponent_country, 1))
+        else
+          update_in(
             acc,
-            :ratings,
-            [
-              %{
-                player_rating: player_rating,
-                updated_at: updated_at,
-                moving_average_5g: 0,
-                moving_average_10g: 0,
-                moving_average_20g: 0
-              }
-            ],
-            fn ratings ->
-              if player_rating == nil do
-                ratings
-              else
-                ratings ++
-                  [
-                    %{
-                      player_rating: player_rating,
-                      updated_at: updated_at,
-                      moving_average_5g: get_moving_average(ratings, 5),
-                      moving_average_10g: get_moving_average(ratings, 10),
-                      moving_average_20g: get_moving_average(ratings, 20)
-                    }
-                  ]
-              end
-            end
+            [:countries],
+            &Map.update(&1, opponent_country, 1, fn count -> count + 1 end)
           )
+        end
 
-        acc
-      end)
-      |> then(fn %{countries: countries, ratings: ratings} ->
-        # Convert raw counts to percentages
-        countries_percentages =
-          countries
-          |> Enum.map(fn {country, count} ->
-            {country, Float.round(count / length(games) * 100, 1)}
-          end)
-          |> Enum.into(%{})
+      player_rating = player["player"]["rating"]
+      updated_at = game["updated_at"]
 
-        %{countries: countries_percentages, ratings: ratings}
-      end)
+      acc =
+        Map.update(
+          acc,
+          :ratings,
+          [
+            %{
+              player_rating: player_rating,
+              updated_at: updated_at,
+              moving_average_5g: 0,
+              moving_average_10g: 0,
+              moving_average_20g: 0
+            }
+          ],
+          fn ratings ->
+            if player_rating == nil do
+              ratings
+            else
+              ratings ++
+                [
+                  %{
+                    player_rating: player_rating,
+                    updated_at: updated_at,
+                    moving_average_5g: get_moving_average(ratings, 5),
+                    moving_average_10g: get_moving_average(ratings, 10),
+                    moving_average_20g: get_moving_average(ratings, 20)
+                  }
+                ]
+            end
+          end
+        )
+
+      acc
+    end)
+    |> then(fn %{countries: countries, ratings: ratings} ->
+      # Convert raw counts to percentages
+      countries_percentages =
+        countries
+        |> Enum.map(fn {country, count} ->
+          {country, Float.round(count / length(games) * 100, 1)}
+        end)
+        |> Enum.into(%{})
+
+      %{countries: countries_percentages, ratings: ratings}
+    end)
   end
 
   defp count_games_by_length(games) do
@@ -212,12 +205,7 @@ defmodule Wololo.PlayerGamesAPI do
 
   defp count_wins_by_game_length(games, profile_id) do
     Enum.reduce(games, @game_length_buckets, fn game, acc ->
-      {player_team, _} =
-        Enum.split_with(game["teams"], fn [team | _] ->
-          to_string(team["player"]["profile_id"]) == profile_id
-        end)
-
-      [[player]] = player_team
+      {player, _opponent} = extract_player_opponent(game, profile_id)
       won = if player["player"]["result"] == "win", do: 1, else: 0
       bucket = get_duration_bucket(game["duration"])
 

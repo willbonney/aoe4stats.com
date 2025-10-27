@@ -17,7 +17,8 @@ defmodule WololoWeb.PlayerLive do
     url: nil,
     rank: nil,
     wr: nil,
-    error: nil
+    error: nil,
+    country_code: nil
   ]
 
   @impl true
@@ -61,7 +62,7 @@ defmodule WololoWeb.PlayerLive do
   def handle_event(event, _params, socket) do
     case event do
       "reset" ->
-        {:noreply, socket |> assign(show_search: true, profile_id: nil)}
+        {:noreply, socket |> assign(@initial_assigns ++ [show_search: true])}
 
       "copy_success" ->
         {:noreply, put_flash(socket, :info, "Copied player link to clipboard!")}
@@ -87,7 +88,8 @@ defmodule WololoWeb.PlayerLive do
            wr: get_in(stats, ["modes", "rm_solo", "win_rate"]),
            error: nil,
            show_search: false,
-           current_url: url(socket, ~p"/player/#{profile_id}/rating")
+           current_url: url(socket, ~p"/player/#{profile_id}/rating"),
+           country_code: stats["country"]
          )}
 
       {:error, reason} ->
@@ -96,9 +98,20 @@ defmodule WololoWeb.PlayerLive do
          |> assign(
            error: reason,
            profile_id: profile_id,
-           show_search: false
+           show_search: false,
+           country_code: nil
          )}
     end
+  end
+
+  def get_country_code_emoji(nil), do: nil
+
+  def get_country_code_emoji(country_code) when is_binary(country_code) do
+    country_code
+    |> String.upcase()
+    |> String.to_charlist()
+    |> Enum.map(fn char_code -> char_code + 127_397 end)
+    |> List.to_string()
   end
 
   @impl true

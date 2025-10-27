@@ -821,6 +821,7 @@ hooks.Analysis = {
         { key: "pressure_performance", label: "Pressure", colorIndex: 2 }, // Orange #FF9800
         { key: "rating_efficiency", label: "Efficiency", colorIndex: 4 }, // Yellow #FFC107
         { key: "versatility", label: "Versatility", colorIndex: 17 }, // Pink #FF69B4
+        { key: "underdog_success", label: "Underdog Power", colorIndex: 0 }, // Red/Pink #E91E63
       ];
 
       // Only include metrics that have data (filter out insufficient data)
