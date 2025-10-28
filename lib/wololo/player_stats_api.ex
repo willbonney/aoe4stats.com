@@ -93,6 +93,7 @@ defmodule Wololo.PlayerStatsAPI do
               do: calculate_average_rank(rank_history, total_seasons),
               else: "N/A"
             ),
+          rating_spread: calculate_rating_spread(rating_history),
           min_rank:
             Enum.max_by(rank_history, fn %{
                                            rank: rank
@@ -137,6 +138,30 @@ defmodule Wololo.PlayerStatsAPI do
 
   # Handle zero count case
   def calculate_average_rank(_, _), do: 0
+
+  def calculate_rating_spread(rating_history)
+      when is_map(rating_history) and map_size(rating_history) > 1 do
+    ratings =
+      rating_history
+      |> Enum.map(fn {_, %{"rating" => rating}} -> rating end)
+      |> Enum.reject(&is_nil/1)
+
+    if length(ratings) > 1 do
+      mean = Enum.sum(ratings) / length(ratings)
+
+      variance =
+        ratings
+        |> Enum.map(fn rating -> :math.pow(rating - mean, 2) end)
+        |> Enum.sum()
+        |> Kernel./(length(ratings))
+
+      :math.sqrt(variance) |> Float.round(1)
+    else
+      0.0
+    end
+  end
+
+  def calculate_rating_spread(_), do: 0.0
 
   def get_percentage_time_in_rank(rating_history) do
     # Sort by timestamp (key) to ensure chronological order, then skip first 5 entries (placement matches)

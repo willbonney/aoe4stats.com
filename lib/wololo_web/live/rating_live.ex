@@ -70,6 +70,7 @@ defmodule WololoWeb.RatingLive do
         max_rating_1m: player_stats[:max_rating_1m],
         average_rating: player_stats[:average_rating],
         total_count: player_stats[:total_count],
+        rating_spread: player_stats[:rating_spread],
         percentage_time_in_rank: player_stats[:percentage_time_in_rank]
       }
     else

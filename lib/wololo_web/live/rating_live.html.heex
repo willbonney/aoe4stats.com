@@ -46,6 +46,16 @@
         <%= stats[:average_rating] %>
       </span>
     </h1>
+    <h1 class={[common_stat_classes, "flex items-center justify-center gap-2"]}>
+      <span>Standard Deviation:</span>
+      <span style="color: rgba(230, 74, 25, 1);">
+        ±<%= stats[:rating_spread] %>
+      </span>
+      <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative">
+              <.icon name="hero-information-circle" class="h-4 w-4" />
+              <span class="invisible group-hover:visible absolute right-6 top-0 w-96 bg-gray-900 text-white text-sm rounded p-4 z-10 whitespace-pre-line leading-relaxed font-mono">Standard deviation of all your ratings. High = "feast or famine" player with large swings. Low = stable rating band.</span>
+            </span>
+    </h1>
     <div class="border-b border-gray-200 mt-8"></div>
     <h1 class="font-zabal font-gray text-4xl my-8 mx-auto text-center text-stone-800 dark:text-zinc-100">
       Moving Averages
