@@ -21,7 +21,7 @@
     <div class="hidden md:block">
       <.table id="aoe4_civilizations" rows={@maps}>
         <:col :let={map} label={civ_header(%{image: nil, label: "Map"})}>
-          <div class="p-2 w-full h-full">
+          <div class="p-2 w-full h-full text-stone-800 dark:text-zinc-100">
             <%= map.name %>
           </div>
         </:col>
