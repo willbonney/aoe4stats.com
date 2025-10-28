@@ -814,7 +814,7 @@ hooks.Analysis = {
 
       // Define the metric labels, order, and colors (matching icon colors using MUI_COLORS)
       const allMetrics = [
-        { key: "consistency", label: "Consistency", colorIndex: 13 }, // Blue #2196F3
+        { key: "peak_proximity", label: "Peak Proximity", colorIndex: 13 }, // Blue #2196F3
         { key: "recovery", label: "Recovery", colorIndex: 9 }, // Green #4CAF50
         { key: "momentum", label: "Momentum", colorIndex: 16 }, // Purple #9C27B0
         { key: "anti_tilt", label: "Anti-Tilt", colorIndex: 11 }, // Cyan #00BCD4

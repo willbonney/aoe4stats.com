@@ -77,43 +77,40 @@ defmodule WololoWeb.AnalysisLive do
     {:noreply, socket}
   end
 
-  # Calculate how stable a player's performance is
-  # Lower score = more volatile, Higher score = more consistent
-  # Uses standard deviation of rating changes between consecutive games
-  defp calculate_consistency(rating_history) when is_map(rating_history) do
+  # Calculate how consistently a player performs near their peak rating
+  # Higher score = consistently play near peak, Lower score = peak was a fluke or long ago
+  defp calculate_peak_proximity(rating_history) when is_map(rating_history) do
     sorted_ratings =
       rating_history
       |> sort_rating_history_by_time()
       |> Enum.map(fn {_, data} -> data["rating"] end)
       |> Enum.reject(&is_nil/1)
 
-    if length(sorted_ratings) < 2 do
+    if length(sorted_ratings) < 10 do
       @default_score_insufficient_data
     else
-      rating_changes =
+      peak_rating = Enum.max(sorted_ratings)
+
+      # Calculate average distance from peak in rating points
+      avg_distance_from_peak =
         sorted_ratings
-        |> Enum.chunk_every(2, 1, :discard)
-        |> Enum.map(fn [rating1, rating2] -> abs(rating2 - rating1) end)
-
-      avg_change = Enum.sum(rating_changes) / length(rating_changes)
-
-      variance =
-        rating_changes
-        |> Enum.map(fn change -> :math.pow(change - avg_change, 2) end)
+        |> Enum.map(fn rating -> peak_rating - rating end)
         |> Enum.sum()
-        |> Kernel./(length(rating_changes))
+        |> Kernel./(length(sorted_ratings))
 
-      std_dev = :math.sqrt(variance)
-
-      # Normalize to 0-100 scale (higher is better)
-      # Invert the score: lower std_dev = higher consistency score
-      # Cap std_dev at 100, then invert
-      inverted_score = 100.0 - min(std_dev, 100.0)
-      max(inverted_score, 0.0)
+      # Direct penalty: every 3 rating points away = -1 score point
+      # Examples:
+      #   0 points away (always at peak) = 100 score
+      #   30 points away on average = 90 score
+      #   60 points away = 80 score
+      #   150 points away = 50 score
+      #   300+ points away = 0 score
+      score = 100.0 - avg_distance_from_peak / 3.0
+      max(0.0, min(100.0, score))
     end
   end
 
-  defp calculate_consistency(_), do: @default_score_insufficient_data
+  defp calculate_peak_proximity(_), do: @default_score_insufficient_data
 
   # Calculate how quickly a player recovers from losing streaks
   # Higher score = faster recovery
@@ -432,7 +429,7 @@ defmodule WololoWeb.AnalysisLive do
         )
 
         %{
-          consistency: @default_score_insufficient_data,
+          peak_proximity: @default_score_insufficient_data,
           recovery: @default_score_insufficient_data,
           momentum: @default_score_insufficient_data,
           anti_tilt: @default_score_insufficient_data,
@@ -445,7 +442,7 @@ defmodule WololoWeb.AnalysisLive do
         Logger.info("Calculating analysis metrics...")
 
         result = %{
-          consistency: calculate_consistency(rating_history),
+          peak_proximity: calculate_peak_proximity(rating_history),
           recovery: calculate_recovery(rating_history),
           momentum: calculate_momentum(rating_history),
           anti_tilt: calculate_anti_tilt(rating_history),
