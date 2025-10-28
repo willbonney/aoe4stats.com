@@ -64,6 +64,12 @@ defmodule WololoWeb.PlayerLive do
       "reset" ->
         {:noreply, socket |> assign(@initial_assigns ++ [show_search: true])}
 
+      "show_search" ->
+        {:noreply, assign(socket, show_search: true)}
+
+      "close_search" ->
+        {:noreply, assign(socket, show_search: false)}
+
       "copy_success" ->
         {:noreply, put_flash(socket, :info, "Copied player link to clipboard!")}
 

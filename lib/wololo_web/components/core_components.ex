@@ -456,11 +456,14 @@ defmodule WololoWeb.CoreComponents do
     <header class="px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between py-3 text-sm">
         <div class="flex items-center gap-4">
-          <a href="/">
             <%= if @show_home_link? do %>
+          <a href="/">
               <.icon name="hero-home" class="h-6 w-6 dark:text-zinc-100" />
-            <% end %>
           </a>
+          <button class="cursor-pointer" phx-click="show_search">
+            <.icon name="hero-magnifying-glass" class="h-6 w-6 text-stone-800 dark:text-zinc-100 hover:text-gray-600 dark:hover:text-gray-400" />
+          </button>
+            <% end %>
         </div>
         <div class="flex items-center">
           <DarktoggleWeb.Components.ToggleTheme.render />
