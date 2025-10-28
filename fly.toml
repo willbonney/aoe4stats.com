@@ -9,6 +9,10 @@ kill_signal = 'SIGTERM'
 
 [build]
 
+[processes]
+  app = "mix phx.server"
+  cron = "supercronic /app/crontab"
+
 [env]
   PHX_HOST = 'aoe4stats.com'
   PORT = '8080'

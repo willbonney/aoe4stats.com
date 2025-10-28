@@ -23,10 +23,12 @@ defmodule WololoWeb.Router do
     live("/player", PlayerLive)
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", WololoWeb do
-  #   pipe_through :api
-  # end
+  # API routes
+  scope "/api", WololoWeb do
+    pipe_through(:api)
+
+    get("/leaderboard", LeaderboardController, :index)
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:wololo, :dev_routes) do

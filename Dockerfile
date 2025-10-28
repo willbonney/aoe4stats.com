@@ -82,8 +82,15 @@ RUN mix release
 FROM ${RUNNER_IMAGE}
 
 RUN apt-get update -y && \
-  apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates \
+  apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates curl \
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+# Install supercronic for cron jobs
+ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.29/supercronic-linux-amd64 \
+    SUPERCRONIC=supercronic-linux-amd64
+RUN curl -fsSLO "$SUPERCRONIC_URL" \
+ && chmod +x "$SUPERCRONIC" \
+ && mv "$SUPERCRONIC" /usr/local/bin/supercronic
 
 # Set the locale
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
@@ -100,6 +107,9 @@ ENV MIX_ENV="prod"
 
 # Only copy the final release from the build stage
 COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/wololo ./
+
+# Copy crontab file
+COPY --chown=nobody:root crontab /app/crontab
 
 USER nobody
 
