@@ -328,18 +328,21 @@ hooks.MovingAverages = {
           label: "5 Game",
           borderColor: MUI_COLORS[14],
           backgroundColor: MUI_COLORS[14],
+          spanGaps: true,
         },
         {
           data: sortByDate(sorted).map(({ moving_average_10g }) => moving_average_10g),
           label: "10 Game",
           borderColor: MUI_COLORS[15],
           backgroundColor: MUI_COLORS[15],
+          spanGaps: true,
         },
         {
           data: sortByDate(sorted).map(({ moving_average_20g }) => moving_average_20g),
           label: "20 Game",
           borderColor: MUI_COLORS[14],
           backgroundColor: MUI_COLORS[14],
+          spanGaps: true,
         }
       );
       chart.data.labels = sorted.map((m) =>
