@@ -9,44 +9,55 @@
     </:loading>
     <:failed :let={_reason}>Failed to load stats</:failed>
 
-        <h1 class="font-zabal font-gray text-4xl my-8 mx-auto text-center text-stone-800 dark:text-zinc-100">
-      Rank Over Time
-    </h1>
-    <h1 class={[common_stat_classes]}>
-      Highest:
-      <span style="color: rgba(139, 195, 74, 1);">
-        #<%= stats[:max_rank] %>
-      </span>
-    </h1>
-    <h1 class={[common_stat_classes]}>
-      Lowest:
-      <span style="color: rgba(233, 30, 99, 1);">
-        #<%= stats[:min_rank] %>
-      </span>
-    </h1>
-    <h1 class={[common_stat_classes]}>
-      Average:
-      <span style="color: rgba(230, 74, 25, 1);">
-        #<%= stats[:average_rank] %>
-      </span>
-    </h1>
-    <%!-- line break --%>
-    <div class="border-b border-gray-200 mt-8"></div>
-    <h1 class="font-zabal font-gray text-4xl my-8 mx-auto text-center text-stone-800 dark:text-zinc-100">
-      Rank History
-    </h1>
-    <p class=" text-sm text-gray-500 mb-4 dark:text-stone-400">
-      Rank over time might be a better way to assess skill because as the game gets less popular, higher ELO
-      players will be shifted down to fill the gaps (lower ELO players are more likely to abandon the game).
-    </p>
-    <p class="text-sm text-gray-500 mb-4 dark:text-stone-400">
-      This can be verified by checking that as Rank stays constant, ELO goes down (for example, a constant rank #2000 player in Season 9 might be Diamond II but in Season 11 they are Platinum III)
-    </p>
-    <canvas
-      id="rank-history"
-      phx-hook="RankHistory"
-      data-points={Jason.encode!(stats[:rank_history])}
-    >
-    </canvas>
+    <%= if stats[:rank_history] && length(stats[:rank_history]) > 0 do %>
+      <h1 class="font-zabal font-gray text-4xl my-8 mx-auto text-center text-stone-800 dark:text-zinc-100">
+        Rank Over Time
+      </h1>
+      <h1 class={[common_stat_classes]}>
+        Highest:
+        <span style="color: rgba(139, 195, 74, 1);">
+          #<%= stats[:max_rank] %>
+        </span>
+      </h1>
+      <h1 class={[common_stat_classes]}>
+        Lowest:
+        <span style="color: rgba(233, 30, 99, 1);">
+          #<%= stats[:min_rank] %>
+        </span>
+      </h1>
+      <h1 class={[common_stat_classes]}>
+        Average:
+        <span style="color: rgba(230, 74, 25, 1);">
+          #<%= stats[:average_rank] %>
+        </span>
+      </h1>
+      <%!-- line break --%>
+      <div class="border-b border-gray-200 mt-8"></div>
+      <h1 class="font-zabal font-gray text-4xl my-8 mx-auto text-center text-stone-800 dark:text-zinc-100">
+        Rank History
+      </h1>
+      <p class=" text-sm text-gray-500 mb-4 dark:text-stone-400">
+        Rank over time might be a better way to assess skill because as the game gets less popular, higher ELO
+        players will be shifted down to fill the gaps (lower ELO players are more likely to abandon the game).
+      </p>
+      <p class="text-sm text-gray-500 mb-4 dark:text-stone-400">
+        This can be verified by checking that as Rank stays constant, ELO goes down (for example, a constant rank #2000 player in Season 9 might be Diamond II but in Season 11 they are Platinum III)
+      </p>
+      <canvas
+        id="rank-history"
+        phx-hook="RankHistory"
+        data-points={Jason.encode!(stats[:rank_history])}
+      >
+      </canvas>
+    <% else %>
+      <div class="flex flex-col items-center justify-center py-12">
+        <h1 class="font-zabal font-gray text-4xl mb-4 mx-auto text-center text-stone-800 dark:text-zinc-100">
+          Pending Additional Data
+        </h1>
+        <p class="text-lg text-gray-600 dark:text-stone-400 text-center max-w-2xl">
+          Rank history is only available for players who have completed at least one ranked season.
+        </p>
+      </div>
+    <% end %>
   </.async_result>
 </div>

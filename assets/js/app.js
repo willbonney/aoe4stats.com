@@ -457,7 +457,10 @@ hooks.RankHistory = {
         chart.update();
       });
 
-      console.log("event: ", event);
+      if (!event.rankHistory || event.rankHistory.length === 0) {
+        console.warn("No rank history data available");
+        return;
+      }
 
       const rankData = event.rankHistory.map(({ rank }) => rank).reverse();
       const maxRankValue = Math.max(...rankData);

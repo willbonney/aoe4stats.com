@@ -95,12 +95,15 @@ defmodule Wololo.PlayerStatsAPI do
             ),
           rating_spread: calculate_rating_spread(rating_history),
           min_rank:
-            Enum.max_by(rank_history, fn %{
-                                           rank: rank
-                                         } ->
-              rank
-            end).rank,
-          max_rank: Enum.min_by(rank_history, fn %{rank: rank} -> rank end).rank,
+            if(length(rank_history) > 0,
+              do: Enum.max_by(rank_history, fn %{rank: rank} -> rank end).rank,
+              else: nil
+            ),
+          max_rank:
+            if(length(rank_history) > 0,
+              do: Enum.min_by(rank_history, fn %{rank: rank} -> rank end).rank,
+              else: nil
+            ),
           percentage_time_in_rank:
             if(is_map(rating_history), do: get_percentage_time_in_rank(rating_history), else: nil),
           civ_stats: civ_stats
