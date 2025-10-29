@@ -10,7 +10,7 @@ kill_signal = 'SIGTERM'
 [build]
 
 [processes]
-  app = "mix phx.server"
+  app = "/app/bin/server"
   cron = "supercronic /app/crontab"
 
 [env]
