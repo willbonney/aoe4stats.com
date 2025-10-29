@@ -75,7 +75,7 @@ defmodule Wololo.LeaderboardDumpCron do
 
                     if String.starts_with?(text, "Leaderboard - RM 1v1 - Elo") do
                       case Floki.attribute(link, "href") do
-                        [href | _] -> {:ok, "https://aoe4world.com#{href}"}
+                        [href | _] -> {:ok, href}
                         _ -> nil
                       end
                     end
@@ -104,7 +104,7 @@ defmodule Wololo.LeaderboardDumpCron do
   end
 
   defp download_zip(url) do
-    Logger.info("[LeaderboardDumpCron] Downloading leaderboard zip from #{url}")
+    Logger.info("[LeaderboardDumpCron] Downloading leaderboard gzip from #{url}")
 
     case HTTPoison.get(url, [], timeout: 60_000, recv_timeout: 60_000) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
@@ -119,25 +119,17 @@ defmodule Wololo.LeaderboardDumpCron do
     end
   end
 
-  defp unzip_file(zip_data) do
-    Logger.info("[LeaderboardDumpCron] Unzipping file...")
+  defp unzip_file(gzip_data) do
+    Logger.info("[LeaderboardDumpCron] Decompressing gzip file...")
 
-    case :zip.unzip(zip_data, [:memory]) do
-      {:ok, files} ->
-        # Find the CSV file (should be the first/only file in the archive)
-        case Enum.find(files, fn {filename, _content} ->
-               String.ends_with?(to_string(filename), ".csv")
-             end) do
-          {_filename, content} ->
-            Logger.info("[LeaderboardDumpCron] Extracted CSV file (#{byte_size(content)} bytes)")
-            {:ok, content}
-
-          nil ->
-            {:error, "No CSV file found in zip"}
-        end
-
-      {:error, reason} ->
-        {:error, reason}
+    try do
+      csv_content = :zlib.gunzip(gzip_data)
+      Logger.info("[LeaderboardDumpCron] Decompressed CSV file (#{byte_size(csv_content)} bytes)")
+      {:ok, csv_content}
+    rescue
+      e ->
+        Logger.error("[LeaderboardDumpCron] Gzip decompression failed: #{inspect(e)}")
+        {:error, "Gzip decompression failed: #{inspect(e)}"}
     end
   end
 
