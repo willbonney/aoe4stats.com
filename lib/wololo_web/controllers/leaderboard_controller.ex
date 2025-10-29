@@ -53,4 +53,33 @@ defmodule WololoWeb.LeaderboardController do
         |> json(%{error: "Failed to retrieve leaderboard data: #{inspect(reason)}"})
     end
   end
+
+  def search(conn, %{"name" => name}) do
+    case LeaderboardDumpCron.get_cached_data() do
+      {:ok, data} ->
+        name_lower = String.downcase(name)
+
+        results =
+          data
+          |> Enum.filter(fn entry ->
+            String.downcase(entry.name) |> String.contains?(name_lower)
+          end)
+          |> Enum.take(20)
+
+        json(conn, %{
+          results: results,
+          count: length(results)
+        })
+
+      {:error, :not_found} ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{error: "Leaderboard data not yet available"})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{error: "Failed to retrieve leaderboard data: #{inspect(reason)}"})
+    end
+  end
 end

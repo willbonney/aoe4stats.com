@@ -108,8 +108,9 @@ ENV MIX_ENV="prod"
 # Only copy the final release from the build stage
 COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/wololo ./
 
-# Copy crontab file
+# Copy crontab file and cron job script
 COPY --chown=nobody:root crontab /app/crontab
+COPY --chown=nobody:root rel/cron_job.exs /app/rel/cron_job.exs
 
 USER nobody
 

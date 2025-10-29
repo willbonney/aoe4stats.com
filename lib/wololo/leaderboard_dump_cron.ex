@@ -5,7 +5,7 @@ defmodule Wololo.LeaderboardDumpCron do
   """
   require Logger
 
-  @leaderboard_url "https://aoe4world.com/api/v0/leaderboards/rm_solo/download"
+  @dumps_page_url "https://aoe4world.com/dumps"
   @cache_key :leaderboard_data
 
   def fetch_and_cache do
@@ -32,12 +32,16 @@ defmodule Wololo.LeaderboardDumpCron do
   end
 
   defp download_and_process do
-    with {:download, {:ok, zip_data}} <- {:download, download_zip()},
+    with {:get_url, {:ok, download_url}} <- {:get_url, get_download_url()},
+         {:download, {:ok, zip_data}} <- {:download, download_zip(download_url)},
          {:unzip, {:ok, csv_content}} <- {:unzip, unzip_file(zip_data)},
          {:parse, {:ok, parsed_data}} <- {:parse, parse_csv(csv_content)},
          {:cache, {:ok, true}} <- {:cache, cache_data(parsed_data)} do
       {:ok, parsed_data}
     else
+      {:get_url, {:error, reason}} ->
+        {:error, "Failed to get download URL: #{inspect(reason)}"}
+
       {:download, {:error, reason}} ->
         {:error, "Download failed: #{inspect(reason)}"}
 
@@ -52,10 +56,57 @@ defmodule Wololo.LeaderboardDumpCron do
     end
   end
 
-  defp download_zip do
-    Logger.info("[LeaderboardDumpCron] Downloading leaderboard zip from #{@leaderboard_url}")
+  defp get_download_url do
+    Logger.info("[LeaderboardDumpCron] Fetching download link from #{@dumps_page_url}")
 
-    case HTTPoison.get(@leaderboard_url, [], timeout: 60_000, recv_timeout: 60_000) do
+    case HTTPoison.get(@dumps_page_url, [], timeout: 30_000, recv_timeout: 30_000) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        case Floki.parse_document(body) do
+          {:ok, document} ->
+            # Find the link that starts with "Leaderboard - RM 1v1 - Elo"
+            case Floki.find(document, "a") do
+              [] ->
+                {:error, "No links found on dumps page"}
+
+              links ->
+                result =
+                  Enum.find_value(links, fn link ->
+                    text = Floki.text(link) |> String.trim()
+
+                    if String.starts_with?(text, "Leaderboard - RM 1v1 - Elo") do
+                      case Floki.attribute(link, "href") do
+                        [href | _] -> {:ok, "https://aoe4world.com#{href}"}
+                        _ -> nil
+                      end
+                    end
+                  end)
+
+                case result do
+                  {:ok, url} ->
+                    Logger.info("[LeaderboardDumpCron] Found download URL: #{url}")
+                    {:ok, url}
+
+                  nil ->
+                    {:error, "Could not find 'Leaderboard - RM 1v1 - Elo' link"}
+                end
+            end
+
+          {:error, reason} ->
+            {:error, "Failed to parse HTML: #{inspect(reason)}"}
+        end
+
+      {:ok, %HTTPoison.Response{status_code: status_code}} ->
+        {:error, "HTTP #{status_code}"}
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, reason}
+    end
+  end
+
+  defp download_zip(url) do
+    Logger.info("[LeaderboardDumpCron] Downloading leaderboard zip from #{url}")
+
+    case HTTPoison.get(url, [], timeout: 60_000, recv_timeout: 60_000) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         Logger.info("[LeaderboardDumpCron] Downloaded #{byte_size(body)} bytes")
         {:ok, body}
@@ -112,20 +163,42 @@ defmodule Wololo.LeaderboardDumpCron do
   end
 
   defp parse_csv_row(line) do
-    # Parse CSV row - adjust fields based on actual CSV structure
-    # This is a placeholder - you'll need to adjust based on the actual CSV format
+    # CSV format: rank,name,profile_id,rating,games_count,wins_count,last_game_at,rank_level,country
     case String.split(line, ",") do
-      [profile_id, name, rank, rating | _rest] ->
+      [
+        rank,
+        name,
+        profile_id,
+        rating,
+        games_count,
+        wins_count,
+        last_game_at,
+        rank_level,
+        country | _rest
+      ] ->
         %{
-          profile_id: String.trim(profile_id),
+          rank: parse_integer(rank),
           name: String.trim(name),
-          rank: String.to_integer(String.trim(rank)),
-          rating: String.to_integer(String.trim(rating))
+          profile_id: String.trim(profile_id),
+          rating: parse_integer(rating),
+          games_count: parse_integer(games_count),
+          wins_count: parse_integer(wins_count),
+          last_game_at: String.trim(last_game_at),
+          rank_level: String.trim(rank_level),
+          country: String.trim(country)
         }
 
       _ ->
         nil
     end
+  rescue
+    _ -> nil
+  end
+
+  defp parse_integer(str) do
+    str
+    |> String.trim()
+    |> String.to_integer()
   rescue
     _ -> nil
   end

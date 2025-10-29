@@ -1,4 +1,4 @@
 # Leaderboard dump cron job
 # Runs daily at 3 AM UTC
-0 3 * * * cd /app && bin/wololo eval "Wololo.LeaderboardDumpCron.fetch_and_cache()"
+0 3 * * * cd /app && bin/wololo eval "$(cat /app/rel/cron_job.exs)"
 

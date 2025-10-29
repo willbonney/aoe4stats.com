@@ -28,6 +28,8 @@ defmodule WololoWeb.Router do
     pipe_through(:api)
 
     get("/leaderboard", LeaderboardController, :index)
+    get("/leaderboard/search", LeaderboardController, :search)
+    get("/leaderboard/:profile_id", LeaderboardController, :show)
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
