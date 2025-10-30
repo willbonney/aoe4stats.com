@@ -1,5 +1,6 @@
 defmodule WololoWeb.LeaderboardController do
   use WololoWeb, :controller
+  require Logger
   alias Wololo.LeaderboardDumpCron
 
   def index(conn, _params) do
@@ -81,5 +82,14 @@ defmodule WololoWeb.LeaderboardController do
         |> put_status(:internal_server_error)
         |> json(%{error: "Failed to retrieve leaderboard data: #{inspect(reason)}"})
     end
+  end
+
+  def refresh(conn, _params) do
+    # Run refresh on THIS machine in a Task
+    Task.start(fn ->
+      LeaderboardDumpCron.fetch_and_cache()
+    end)
+
+    json(conn, %{status: "refresh started"})
   end
 end

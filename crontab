@@ -1,4 +1,4 @@
-# Leaderboard dump cron job
-# Runs daily at 3 AM UTC
-0 3 * * * cd /app && bin/wololo eval "$(cat /app/rel/cron_job.exs)"
+# Leaderboard dump cron job  
+# Runs daily at 3 AM UTC - calls endpoint 3 times to hit all app machines
+0 3 * * * for i in 1 2 3; do curl -X POST http://wololo.internal:8080/api/internal/refresh-leaderboard; sleep 2; done
 

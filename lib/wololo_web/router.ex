@@ -30,6 +30,9 @@ defmodule WololoWeb.Router do
     get("/leaderboard", LeaderboardController, :index)
     get("/leaderboard/search", LeaderboardController, :search)
     get("/leaderboard/:profile_id", LeaderboardController, :show)
+
+    # Internal endpoint for cron job to trigger cache refresh
+    post("/internal/refresh-leaderboard", LeaderboardController, :refresh)
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
