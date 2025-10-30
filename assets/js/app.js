@@ -67,6 +67,33 @@ const MUI_COLORS = [
   "rgba(33, 33, 33, 1)", // #212121 - Black
 ];
 
+// Shared country utilities
+const COUNTRY_UTILS = {
+  regionNames: new Intl.DisplayNames(["en"], { type: "region" }),
+
+  getFlag: (countryCode) => {
+    if (countryCode === "unknown") return "🏳️";
+    const codePoints = countryCode
+      .toUpperCase()
+      .split("")
+      .map((char) => 127397 + char.charCodeAt());
+    return String.fromCodePoint(...codePoints);
+  },
+
+  getName: (countryCode) => {
+    if (countryCode === "unknown") return "Unknown";
+    try {
+      return COUNTRY_UTILS.regionNames.of(countryCode.toUpperCase());
+    } catch {
+      return countryCode.toUpperCase();
+    }
+  },
+
+  getDisplayName: (countryCode) => {
+    return `${COUNTRY_UTILS.getFlag(countryCode)} ${COUNTRY_UTILS.getName(countryCode)}`;
+  },
+};
+
 const TW_STONE_800 = "rgb(41, 37, 36)";
 const TW_ZINC_100 = "rgba(244, 244, 245,0.5)";
 
@@ -139,19 +166,6 @@ const setFiftyPercentLine = (chart, isDark) => {
 const hooks = {};
 hooks.OpponentsByCountry = {
   mounted() {
-    const regionNamesInEnglish = new Intl.DisplayNames(["en"], {
-      type: "region",
-    });
-
-    // Function to convert country code to flag emoji
-    const getCountryFlag = (countryCode) => {
-      const codePoints = countryCode
-        .toUpperCase()
-        .split("")
-        .map((char) => 127397 + char.charCodeAt());
-      return String.fromCodePoint(...codePoints);
-    };
-
     const ctx = this.el;
     const data = {
       type: "doughnut",
@@ -183,7 +197,7 @@ hooks.OpponentsByCountry = {
                 if (label === "Other" && chart.otherCountries) {
                   // Get the other countries data
                   const otherCountries = Object.entries(chart.otherCountries).map(
-                    ([country, percentage]) => `${getCountryFlag(country)} ${country.toUpperCase()}: ${percentage}%`
+                    ([country, percentage]) => `${COUNTRY_UTILS.getDisplayName(country)}: ${percentage}%`
                   );
 
                   // Return each country on its own line
@@ -258,7 +272,7 @@ hooks.OpponentsByCountry = {
 
       chart.data.datasets[0].data = Object.values(filteredData);
       chart.data.labels = Object.keys(filteredData).map((country) =>
-        country === "other" ? "Other" : getCountryFlag(country) + " " + regionNamesInEnglish.of(country.toUpperCase())
+        country === "other" ? "Other" : COUNTRY_UTILS.getDisplayName(country)
       );
 
       // Store other countries data for tooltip
@@ -269,6 +283,133 @@ hooks.OpponentsByCountry = {
   },
   beforeUnmount() {
     this.handleEvent("update-opponents-by-country", null);
+  },
+};
+
+hooks.LeaderboardCountries = {
+  mounted() {
+    const ctx = this.el;
+    const data = {
+      type: "doughnut",
+      data: {
+        datasets: [
+          {
+            data: [],
+            backgroundColor: MUI_COLORS.slice(0, 19),
+          },
+        ],
+        hoverOffset: 4,
+        borderJoinStyle: "bevel",
+      },
+      plugins: [AlwaysShowTooltipPlugin],
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.formattedValue}%`,
+              afterBody: function (context) {
+                if (!context || !context[0]) {
+                  return [];
+                }
+
+                const label = context[0].label;
+
+                if (label === "Other" && chart.otherCountries) {
+                  const otherCountries = Object.entries(chart.otherCountries).map(
+                    ([country, percentage]) => `${COUNTRY_UTILS.getDisplayName(country)}: ${percentage}%`
+                  );
+
+                  return ["", ...otherCountries];
+                }
+                return [];
+              },
+            },
+            backgroundColor: "rgba(0, 0, 0, 0.9)",
+            titleColor: "white",
+            bodyColor: "white",
+            borderColor: "rgba(255, 255, 255, 0.2)",
+            borderWidth: 1,
+            cornerRadius: 8,
+            displayColors: false,
+            padding: 16,
+            bodyFont: {
+              size: 14,
+            },
+            titleFont: {
+              size: 16,
+              weight: "bold",
+            },
+            filter: function (tooltipItem) {
+              const label = tooltipItem.label || "";
+              return label.toLowerCase().includes("other");
+            },
+          },
+          legend: {
+            position: "right",
+            display: true,
+            labels: {
+              font: {
+                size: 12,
+              },
+              padding: 10,
+              usePointStyle: true,
+            },
+          },
+          title: {
+            display: false,
+            text: "Conqueror Players by Country",
+          },
+          alwaysShowTooltip: {
+            valueFormatter: (value) => `${value.toFixed(1)}%`,
+            skipLabels: ["other"],
+          },
+        },
+      },
+    };
+
+    const chart = new Chart(ctx, data);
+
+    this.handleEvent("update-leaderboard-countries", (event) => {
+      const threshold = 2; // Percentage threshold for "Other" category
+      let otherPercentage = 0;
+      const otherCountries = {};
+      const filteredData = Object.entries(event.byCountry).reduce((acc, [country, percentage]) => {
+        if (percentage >= threshold) {
+          acc[country] = percentage;
+        } else {
+          otherPercentage += percentage;
+          if (!otherCountries[country]) {
+            otherCountries[country] = percentage;
+          } else {
+            otherCountries[country] += percentage;
+          }
+        }
+        return acc;
+      }, {});
+
+      if (otherPercentage > 0) {
+        filteredData.other = otherPercentage;
+      }
+
+      // Distribute colors evenly based on number of countries
+      const colorCount = Object.keys(filteredData).length;
+      chart.data.datasets[0].backgroundColor = getDistributedColors(colorCount);
+
+      chart.data.datasets[0].data = Object.values(filteredData);
+      chart.data.labels = Object.keys(filteredData).map((country) =>
+        country === "other" ? "Other" : COUNTRY_UTILS.getDisplayName(country)
+      );
+
+      // Store other countries data for tooltip
+      chart.otherCountries = otherCountries;
+
+      chart.update();
+    });
+  },
+  beforeUnmount() {
+    this.handleEvent("update-leaderboard-countries", null);
   },
 };
 

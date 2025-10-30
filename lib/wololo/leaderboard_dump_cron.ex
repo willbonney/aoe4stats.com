@@ -73,7 +73,7 @@ defmodule Wololo.LeaderboardDumpCron do
                   Enum.find_value(links, fn link ->
                     text = Floki.text(link) |> String.trim()
 
-                    if String.starts_with?(text, "Leaderboard - RM 1v1 - Elo") do
+                    if String.starts_with?(text, "Leaderboard - RM Solo - Points") do
                       case Floki.attribute(link, "href") do
                         [href | _] -> {:ok, href}
                         _ -> nil
@@ -87,7 +87,7 @@ defmodule Wololo.LeaderboardDumpCron do
                     {:ok, url}
 
                   nil ->
-                    {:error, "Could not find 'Leaderboard - RM 1v1 - Elo' link"}
+                    {:error, "Could not find 'Leaderboard - RM Solo - Points' link"}
                 end
             end
 
