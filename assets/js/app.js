@@ -195,12 +195,10 @@ hooks.OpponentsByCountry = {
                 const label = context[0].label;
 
                 if (label === "Other" && chart.otherCountries) {
-                  // Get the other countries data
-                  const otherCountries = Object.entries(chart.otherCountries).map(
-                    ([country, percentage]) => `${COUNTRY_UTILS.getDisplayName(country)}: ${percentage}%`
-                  );
+                  const otherCountries = Object.entries(chart.otherCountries)
+                    .sort(([, a], [, b]) => b - a) // Sort by percentage descending
+                    .map(([country, percentage]) => `${COUNTRY_UTILS.getDisplayName(country)}: ${percentage}%`);
 
-                  // Return each country on its own line
                   return ["", ...otherCountries];
                 }
                 return [];
@@ -317,9 +315,9 @@ hooks.LeaderboardCountries = {
                 const label = context[0].label;
 
                 if (label === "Other" && chart.otherCountries) {
-                  const otherCountries = Object.entries(chart.otherCountries).map(
-                    ([country, percentage]) => `${COUNTRY_UTILS.getDisplayName(country)}: ${percentage}%`
-                  );
+                  const otherCountries = Object.entries(chart.otherCountries)
+                    .sort(([, a], [, b]) => b - a) // Sort by percentage descending
+                    .map(([country, percentage]) => `${COUNTRY_UTILS.getDisplayName(country)}: ${percentage}%`);
 
                   return ["", ...otherCountries];
                 }
@@ -335,10 +333,10 @@ hooks.LeaderboardCountries = {
             displayColors: false,
             padding: 16,
             bodyFont: {
-              size: 14,
+              size: 10,
             },
             titleFont: {
-              size: 16,
+              size: 14,
               weight: "bold",
             },
             filter: function (tooltipItem) {
@@ -346,9 +344,14 @@ hooks.LeaderboardCountries = {
               return label.toLowerCase().includes("other");
             },
           },
+          labels: {
+            font: {
+              size: 12,
+            },
+          },
           legend: {
             position: "right",
-            display: true,
+            display: false,
             labels: {
               font: {
                 size: 12,
@@ -362,6 +365,8 @@ hooks.LeaderboardCountries = {
             text: "Conqueror Players by Country",
           },
           alwaysShowTooltip: {
+            fontSize: 12,
+            fontWeight: 400,
             valueFormatter: (value) => `${value.toFixed(1)}%`,
             skipLabels: ["other"],
           },

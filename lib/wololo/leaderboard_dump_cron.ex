@@ -156,7 +156,8 @@ defmodule Wololo.LeaderboardDumpCron do
 
   defp parse_csv_row(line) do
     # CSV format: rank,name,profile_id,rating,games_count,wins_count,last_game_at,rank_level,country
-    case String.split(line, ",") do
+    # Use proper CSV parsing to handle quoted fields (names with commas)
+    case parse_csv_line(line) do
       [
         rank,
         name,
@@ -185,6 +186,33 @@ defmodule Wololo.LeaderboardDumpCron do
     end
   rescue
     _ -> nil
+  end
+
+  # Simple CSV parser that handles quoted fields
+  defp parse_csv_line(line) do
+    line
+    |> String.graphemes()
+    |> parse_csv_fields([], [], false)
+  end
+
+  defp parse_csv_fields([], fields, current_field, _in_quotes) do
+    Enum.reverse([Enum.reverse(current_field) |> Enum.join() | fields])
+  end
+
+  defp parse_csv_fields([char | rest], fields, current_field, in_quotes) do
+    case {char, in_quotes} do
+      # Toggle quote state
+      {"\"", _} ->
+        parse_csv_fields(rest, fields, current_field, !in_quotes)
+
+      # Comma outside quotes = field separator
+      {",", false} ->
+        parse_csv_fields(rest, [Enum.reverse(current_field) |> Enum.join() | fields], [], false)
+
+      # Any other character = add to current field
+      {c, _} ->
+        parse_csv_fields(rest, fields, [c | current_field], in_quotes)
+    end
   end
 
   defp parse_integer(str) do

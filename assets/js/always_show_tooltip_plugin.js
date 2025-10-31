@@ -43,9 +43,9 @@ const AlwaysShowTooltipPlugin = {
     const color = pluginOptions?.color ?? "black"; // default to black
 
     ctx.save();
-    ctx.font = "16px Zabal";
+    ctx.font = `${pluginOptions?.fontSize ?? 16}px Zabal`;
     ctx.textAlign = "center";
-    ctx.fontWeight = 900;
+    ctx.fontWeight = `${pluginOptions?.fontWeight ?? 900}`;
 
     chart.data.datasets.forEach((dataset, datasetIndex) => {
       const meta = chart.getDatasetMeta(datasetIndex);
