@@ -12,8 +12,10 @@ defmodule WololoWeb.LeaderboardLive do
      |> assign(
        loading: true,
        error: nil,
-       country_distribution: %{},
-       total_conquerors: 0,
+       active_tab: "conqueror",
+       conqueror_data: %{distribution: %{}, total: 0},
+       conqueror3_data: %{distribution: %{}, total: 0},
+       top100_data: %{distribution: %{}, total: 0},
        last_updated: nil
      )}
   end
@@ -25,12 +27,14 @@ defmodule WololoWeb.LeaderboardLive do
          socket
          |> assign(
            loading: false,
-           country_distribution: data.country_distribution,
-           total_conquerors: data.total_conquerors,
+           conqueror_data: data.conqueror_data,
+           conqueror3_data: data.conqueror3_data,
+           top100_data: data.top100_data,
            last_updated: data.last_updated
          )
          |> push_event("update-leaderboard-countries", %{
-           byCountry: data.country_distribution
+           tab: "conqueror",
+           byCountry: data.conqueror_data.distribution
          })}
 
       {:error, reason} ->
@@ -40,6 +44,24 @@ defmodule WololoWeb.LeaderboardLive do
          socket
          |> assign(loading: false, error: reason)}
     end
+  end
+
+  def handle_event("switch_tab", %{"tab" => tab}, socket) do
+    data =
+      case tab do
+        "conqueror" -> socket.assigns.conqueror_data
+        "conqueror3" -> socket.assigns.conqueror3_data
+        "top100" -> socket.assigns.top100_data
+        _ -> socket.assigns.conqueror_data
+      end
+
+    {:noreply,
+     socket
+     |> assign(active_tab: tab)
+     |> push_event("update-leaderboard-countries", %{
+       tab: tab,
+       byCountry: data.distribution
+     })}
   end
 
   defp fetch_and_process_leaderboard do
@@ -55,47 +77,67 @@ defmodule WololoWeb.LeaderboardLive do
             _ -> nil
           end
 
-        # Filter for Conqueror players (rating > 1400)
-        conquerors =
-          Enum.filter(players, fn player ->
+        # Pre-filter players into tiers (single pass through the data)
+        # CSV is already sorted by rank, so we just need to filter by rating
+        {conqueror_players, conqueror3_players} =
+          Enum.reduce(players, {[], []}, fn player, {conq, conq3} ->
             case player.rating do
-              rating when is_integer(rating) -> rating > 1400
-              _ -> false
+              rating when is_integer(rating) and rating >= 2000 ->
+                # 2000+ qualifies for both tiers
+                {[player | conq], [player | conq3]}
+
+              rating when is_integer(rating) and rating > 1400 ->
+                # 1400+ qualifies only for conqueror
+                {[player | conq], conq3}
+
+              _ ->
+                {conq, conq3}
             end
           end)
 
-        # Calculate country distribution
-        country_counts =
-          Enum.reduce(conquerors, %{}, fn player, acc ->
-            country = player.country || "unknown"
-            Map.update(acc, country, 1, &(&1 + 1))
-          end)
+        # Top 100 players (already sorted by rank in CSV)
+        top100_players = Enum.take(players, 100)
 
-        total = length(conquerors)
+        # Calculate distributions from pre-filtered lists
+        conqueror_data = calculate_country_distribution(conqueror_players)
+        conqueror3_data = calculate_country_distribution(conqueror3_players)
+        top100_data = calculate_country_distribution(top100_players)
 
-        if total == 0 do
-          {:error, "No Conqueror players found in the leaderboard"}
-        else
-          # Convert to percentages
-          country_distribution =
-            Enum.map(country_counts, fn {country, count} ->
-              {country, Float.round(count / total * 100, 2)}
-            end)
-            |> Enum.into(%{})
-
-          {:ok,
-           %{
-             country_distribution: country_distribution,
-             total_conquerors: total,
-             last_updated: last_updated
-           }}
-        end
+        {:ok,
+         %{
+           conqueror_data: conqueror_data,
+           conqueror3_data: conqueror3_data,
+           top100_data: top100_data,
+           last_updated: last_updated
+         }}
 
       {:error, :not_found} ->
         {:error, "Leaderboard data not yet available. First sync in progress."}
 
       {:error, reason} ->
         {:error, "Failed to retrieve leaderboard data: #{inspect(reason)}"}
+    end
+  end
+
+  defp calculate_country_distribution(players) do
+    country_counts =
+      Enum.reduce(players, %{}, fn player, acc ->
+        country = player.country || "unknown"
+        Map.update(acc, country, 1, &(&1 + 1))
+      end)
+
+    total = length(players)
+
+    if total == 0 do
+      %{distribution: %{}, total: 0}
+    else
+      distribution =
+        Enum.map(country_counts, fn {country, count} ->
+          {country, Float.round(count / total * 100, 2)}
+        end)
+        |> Enum.into(%{})
+
+      %{distribution: distribution, total: total}
     end
   end
 
