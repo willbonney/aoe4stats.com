@@ -10,7 +10,7 @@ kill_signal = 'SIGTERM'
 [build]
 
 [deploy]
-  release_command = "/app/bin/wololo eval \"Wololo.LeaderboardDumpCron.fetch_and_cache()\""
+  release_command = "/app/bin/wololo eval \"Code.eval_file(\\\"/app/rel/cron_job.exs\\\")\""
 
 [processes]
   app = "/app/bin/server"
