@@ -237,10 +237,6 @@ defmodule Wololo.LeaderboardDumpCron do
     end
   end
 
-  @doc """
-  Retrieves the cached leaderboard data.
-  Returns {:ok, data} if available, {:error, :not_found} otherwise.
-  """
   def get_cached_data do
     case Cachex.get(:wololo_cache, @cache_key) do
       {:ok, nil} -> {:error, :not_found}
@@ -249,9 +245,6 @@ defmodule Wololo.LeaderboardDumpCron do
     end
   end
 
-  @doc """
-  Returns the last update timestamp for the leaderboard data.
-  """
   def last_updated do
     case Cachex.get(:wololo_cache, :leaderboard_last_updated) do
       {:ok, nil} -> {:error, :not_found}
