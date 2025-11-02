@@ -1,6 +1,5 @@
 defmodule WololoWeb.PlayerLive do
   use WololoWeb, :live_view
-  alias WololoWeb.SearchComponent
   alias WololoWeb.OpponentsByCountryLive
   alias WololoWeb.InsightsLive
   alias WololoWeb.RatingLive
@@ -34,7 +33,7 @@ defmodule WololoWeb.PlayerLive do
      assign(
        socket,
        @initial_assigns ++
-         [show_search: false, current_url: url(socket, ~p"/player/#{profile_id}/rating")]
+         [current_url: url(socket, ~p"/player/#{profile_id}/rating")]
      )}
   end
 
@@ -42,13 +41,12 @@ defmodule WololoWeb.PlayerLive do
     {:ok,
      assign(
        socket,
-       @initial_assigns ++ [show_search: true, current_url: url(socket, ~p"/player")]
+       @initial_assigns ++ [current_url: url(socket, ~p"/player")]
      )}
   end
 
   @impl true
   def handle_event("select-player", params, socket) do
-    socket = assign(socket, show_search: false)
     send(self(), {:load_player_data, params})
 
     {:noreply,
@@ -61,15 +59,6 @@ defmodule WololoWeb.PlayerLive do
   @impl true
   def handle_event(event, _params, socket) do
     case event do
-      "reset" ->
-        {:noreply, socket |> assign(@initial_assigns ++ [show_search: true])}
-
-      "show_search" ->
-        {:noreply, assign(socket, show_search: true)}
-
-      "close_search" ->
-        {:noreply, assign(socket, show_search: false)}
-
       "copy_success" ->
         {:noreply, put_flash(socket, :info, "Copied player link to clipboard!")}
 

@@ -39,8 +39,17 @@ defmodule WololoWeb.CustomComponents do
                 phx-click-away={@allow_outside_clicks && hide_modal(@on_cancel, @id)}
                 class="hidden relative rounded-2xl bg-white dark:bg-stone-800 p-2 shadow-lg shadow-zinc-700/10 ring-1 ring-zinc-700/10 transition min-h-[30vh] max-h-[50vh] overflow-y-scroll"
               >
+                <button
+                  phx-click={hide_modal(@on_cancel, @id)}
+                  type="button"
+                  class="absolute top-3 right-3 z-50 text-stone-600 hover:text-stone-900 dark:text-zinc-300 dark:hover:text-zinc-100 transition-colors"
+                  aria-label="Close"
+                >
+                  <.icon name="hero-x-mark" class="h-7 w-7" />
+                </button>
+                
                 <div id={"#{@id}-content"}>
-                  <%= render_slot(@inner_block) %>
+                  {render_slot(@inner_block)}
                 </div>
               </.focus_wrap>
             </div>
@@ -66,32 +75,32 @@ defmodule WololoWeb.CustomComponents do
       >
         No Results
       </li>
+      
       <%= for player <- @players do %>
-        <li
-          class="cursor-default select-none rounded-md px-4 py-2 text-xl text-stone-800 dark:text-zinc-100 bg-zinc-100 dark:bg-stone-800 hover:bg-zinc-200 hover:dark:bg-stone-700 hover:cursor-pointer flex flex-row space-x-2 items-center"
-          id={"option-#{player["profile_id"]}"}
-          role="option"
-          tabindex="-1"
-          phx-click="select-player"
-          phx-value-id={player["profile_id"]}
-          phx-value-name={player["name"]}
-          phx-value-avatar={player["avatars"]["medium"]}
-          phx-value-url={player["site_url"]}
-          phx-value-rank={player["rank"]}
-          phx-value-wr={player["win_rate"]}
-        >
-          <div>
-            <img class="mr-2" src={player["avatars"]["medium"]} />
-          </div>
-          <div class="flex flex-col">
-            <h2 class="text-xl font-bold"><%= player["name"] %></h2>
-            <div class="flex flex-row">
-              <p class="text-gray-400 mr-2">#<%= player["rank"] %></p>
-              <p class="text-gray-400 mr-2"><%= player["rating"] %></p>
-              <p class="text-gray-400 mr-2"><%= player["win_rate"] %>%</p>
+        <.link navigate={~p"/player/#{player["profile_id"]}/rating"}>
+          <li
+            class="cursor-pointer select-none rounded-md px-4 py-2 text-xl text-stone-800 dark:text-zinc-100 bg-zinc-100 dark:bg-stone-800 hover:bg-zinc-200 hover:dark:bg-stone-700 flex flex-row space-x-2 items-center"
+            id={"option-#{player["profile_id"]}"}
+            role="option"
+            tabindex="-1"
+          >
+            <div>
+              <img class="mr-2" src={player["avatars"]["medium"]} />
             </div>
-          </div>
-        </li>
+            
+            <div class="flex flex-col">
+              <h2 class="text-xl font-bold">{player["name"]}</h2>
+              
+              <div class="flex flex-row">
+                <p class="text-gray-400 mr-2">#{player["rank"]}</p>
+                
+                <p class="text-gray-400 mr-2">{player["rating"]}</p>
+                
+                <p class="text-gray-400 mr-2">{player["win_rate"]}%</p>
+              </div>
+            </div>
+          </li>
+        </.link>
       <% end %>
     </ul>
     """
@@ -102,7 +111,6 @@ defmodule WololoWeb.CustomComponents do
   def search_input(assigns) do
     ~H"""
     <div class="relative ">
-      <!-- Heroicon name: mini/magnifying-glass -->
       <input
         {@rest}
         type="text"

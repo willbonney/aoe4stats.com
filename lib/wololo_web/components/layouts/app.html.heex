@@ -1,3 +1,9 @@
+<.live_component
+  show={@show_search}
+  module={WololoWeb.SearchComponent}
+  id="global-search"
+  on_cancel={JS.push("close_search")}
+/>
 <.nav_header show_home_link?={true} />
 <main class="px-4 py-12 sm:px-6 lg:px-8">
   <div class="mx-8">

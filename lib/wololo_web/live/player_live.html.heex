@@ -2,12 +2,6 @@
 active_link_classes = "font-semibold text-stone-800 dark:text-zinc-100" %>
 
 <div class="mx-auto max-w-4xl">
-  <.live_component
-    show={@show_search}
-    module={SearchComponent}
-    id="search-results"
-    on_cancel={JS.push("close_search")}
-  />
   <div class="flex flex-col justify-start mb-8 border-b border-gray-200 pb-4">
     <div class="flex mb-8">
       <div class="flex justify-between flex-1">
@@ -44,9 +38,6 @@ active_link_classes = "font-semibold text-stone-800 dark:text-zinc-100" %>
               <h6 class="text-stone-800 dark:text-zinc-100">wr <%= @wr %> %</h6>
             <% end %>
           </div>
-        </div>
-        <div class="cursor-pointer" phx-click="reset">
-          <.icon name="hero-x-mark" class="w-8 h-8 text-stone-800 dark:text-zinc-100" />
         </div>
       </div>
     </div>

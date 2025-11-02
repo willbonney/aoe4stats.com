@@ -17,11 +17,15 @@ defmodule WololoWeb.Router do
   scope "/", WololoWeb do
     pipe_through(:browser)
 
-    get("/", PageController, :home)
-    live("/civs_by_map", CivsByMapLive)
-    live("/leaderboard", LeaderboardLive)
-    live("/player/:profile_id/:section", PlayerLive)
-    live("/player", PlayerLive)
+    live_session :default,
+      on_mount: WololoWeb.RootLayoutLive,
+      layout: {WololoWeb.Layouts, :app} do
+      live("/", HomeLive)
+      live("/civs_by_map", CivsByMapLive)
+      live("/leaderboard", LeaderboardLive)
+      live("/player/:profile_id/:section", PlayerLive)
+      live("/player", PlayerLive)
+    end
   end
 
   # API routes
