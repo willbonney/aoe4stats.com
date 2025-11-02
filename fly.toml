@@ -10,7 +10,6 @@ kill_signal = 'SIGTERM'
 [build]
 
 [deploy]
-  release_command = "/app/bin/wololo eval \"Application.ensure_all_started(:wololo); Wololo.LeaderboardDumpCron.fetch_and_cache()\""
 
 [processes]
   app = "/app/bin/server"

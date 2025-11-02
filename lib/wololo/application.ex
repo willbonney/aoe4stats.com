@@ -28,7 +28,24 @@ defmodule Wololo.Application do
       config: %{metadata: [:file, :line]}
     })
 
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+
+    # Trigger leaderboard cache refresh on startup if cache is empty
+    Task.start(fn ->
+      case Cachex.get(:wololo_cache, "leaderboard_players") do
+        {:ok, nil} ->
+          IO.puts("[Startup] Leaderboard cache is empty, triggering refresh...")
+          Wololo.LeaderboardDumpCron.fetch_and_cache()
+
+        {:ok, _data} ->
+          IO.puts("[Startup] Leaderboard cache already populated")
+
+        {:error, reason} ->
+          IO.puts("[Startup] Error checking cache: #{inspect(reason)}")
+      end
+    end)
+
+    result
   end
 
   # Tell Phoenix to update the endpoint configuration
