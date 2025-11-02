@@ -11,18 +11,28 @@ I built it to explore Elixir and Phoenix in a way that relates to my passion for
 
 The app is pulling data from another Age Of Empires IV API and tranforming it in ways to yield stastical data that is not available elsewhere. The player data relates to the 1v1 ladder performance in the game. The app is hosted on Fly.io.
 
-#### Sections:
+#### Sections
 
-- The Map Win Rate section aggregates stasistics for each map, civilization and league bracket to surface granular balance data.
-- The Rating section shows 5, 10 and 20 game moving average rating information.
-- The Game Length section shows the player's win rates in different game length brackets which is significant due to how the game is played over time (progressing from Feudal to Castle to Imperial age). Early gameplay is more micromanagement oriented and conversely late-game is more about macro.
-- The Opponents section is geographical represenation of the origin of the player's opponents.
+#### Civilizations & Maps
+- The Map Win Rate section aggregates stasistics for each map, civilization and league bracket to surface granular balance data
+
+#### Player Statistics
+- The Rating section shows 5, 10 and 20 game moving average rating information and time spent in each league
+- The Analysis section uses elegant math formulas to calculate 8 different metrics that assess skill in non-traditional ways
+- The Rank section shows the evolution of the player's season-end rank over season
+- The Game Length section shows the player's win rates in different game length brackets which is significant due to how the game is played over time (progressing from Feudal to Castle to Imperial age)- early gameplay is more micromanagement oriented and conversely late-game is more about macro
+- The Opponents section is geographical represenation of the origin of the player's opponents
 - The Insights section throws the entire payload of player data at `grok-4-fast-reasoning` with a custom prompt to extract patterns pertaning to the player's performance.
+
+#### Leaderboard Statistics
+- Shows a breakdown of countries for Conqueror (1400+ rating), Conqueror 3 (2000+ rating) and Top 100 players
+- Shows the number of Conqueror players per million for all country populations
+- Shows the average rank in each country
 
 ### Usage example
 
-[BeastyQt](https://liquipedia.net/ageofempires/Beastyqt) is a famous ex-Stacraft 2 and current Age of Empires IV professional gamer. You can search for _Beasty_ in the Player Statistic section of the app to see data relevant to him. You can also try one of the other current top ladder players:
-_Valdemar_, _Fox.Anotand_, _El.loueMT_ or _Liquid`DeMu_ for example.
+[Here is an example of a Pro Player's statistics](https://aoe4world.com/players/6924135-Hunyadi-Janos) are his player statistics. You can also try one of the other current top ladder players from the [current aoe4world leaderboard](https://aoe4world.com/leaderboard/rm_solo).
+
 
 ### Local Dev
 
