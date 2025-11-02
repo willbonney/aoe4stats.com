@@ -74,3 +74,6 @@ config :phoenix, :template_engines, heex: Phoenix.LiveView.HTMLEngine
 import_config "#{config_env()}.exs"
 
 config :wololo, api_base_url: "https://aoe4world.com/api/v0"
+
+# Configure Cldr
+config :ex_cldr, default_backend: Wololo.Cldr

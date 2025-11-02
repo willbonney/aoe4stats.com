@@ -1,18 +1,40 @@
 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
   <div class="mb-8">
-    <h1 class="text-4xl font-bold text-stone-800 dark:text-zinc-100 mb-2">
-      Conqueror Players by Country
+    <h1 class={"text-4xl font-bold mb-2 #{text_heading()}"}>
+      <%= case @active_tab do %>
+        <% "per_capita" -> %>
+          Conquerors Per Capita
+        <% "avg_rank" -> %>
+          Average Rank by Country
+        <% "conqueror3" -> %>
+          Conqueror 3+ Players by Country
+        <% "top100" -> %>
+          Top 100 Players by Country
+        <% _ -> %>
+          Conqueror Players by Country
+      <% end %>
     </h1>
-    <p class="text-lg text-gray-600 dark:text-stone-400">
-      Country distribution of all players with rating above 1400
+    <p class={"text-lg #{text_subtle()}"}>
+      <%= case @active_tab do %>
+        <% "per_capita" -> %>
+          Conqueror players (1400+) per million population
+        <% "avg_rank" -> %>
+          Countries ranked by average leaderboard position
+        <% "conqueror3" -> %>
+          Country distribution of all players with rating above 1600
+        <% "top100" -> %>
+          Country distribution of the top 100 players
+        <% _ -> %>
+          Country distribution of all players with rating above 1400
+      <% end %>
     </p>
   </div>
 
   <%= if @loading do %>
     <div class="flex flex-col items-center justify-center py-12">
-      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-stone-800 dark:border-zinc-100">
+      <div class={"animate-spin rounded-full h-16 w-16 border-b-2 #{text_heading()}"}>
       </div>
-      <p class="mt-4 text-gray-600 dark:text-stone-400">Loading leaderboard data...</p>
+      <p class={"mt-4 #{text_subtle()}"}>Loading leaderboard data...</p>
     </div>
   <% end %>
 
@@ -31,78 +53,155 @@
         "conqueror" -> @conqueror_data
         "conqueror3" -> @conqueror3_data
         "top100" -> @top100_data
+        "per_capita" -> @per_capita_data
+        "avg_rank" -> @avg_rank_data
         _ -> @conqueror_data
       end
     %>
     
-    <!-- Stats Card -->
-    <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-6 mb-8">
-      <h2 class="text-2xl font-bold text-stone-800 dark:text-zinc-100 mb-4">
+    <.card class="mb-8">
+      <h2 class={"text-2xl font-bold mb-4 #{text_heading()}"}>
         Statistics
       </h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div>
-          <p class="text-sm text-gray-600 dark:text-stone-400">Total Players</p>
-          <p class="text-3xl font-bold text-stone-800 dark:text-zinc-100">
-            <%= format_number(current_data.total) %>
-          </p>
-        </div>
-        <div>
-          <p class="text-sm text-gray-600 dark:text-stone-400">Countries Represented</p>
-          <p class="text-3xl font-bold text-stone-800 dark:text-zinc-100">
-            <%= map_size(current_data.distribution) %>
-          </p>
-        </div>
+        <%= if @active_tab == "per_capita" do %>
+          <div>
+            <p class={"text-sm #{text_subtle()}"}>Countries with Data</p>
+            <p class={"text-3xl font-bold #{text_heading()}"}>
+              <%= format_number(current_data.total) %>
+            </p>
+          </div>
+        <% end %>
+        <%= if @active_tab == "avg_rank" do %>
+          <div>
+            <p class={"text-sm #{text_subtle()}"}>Countries Ranked</p>
+            <p class={"text-3xl font-bold #{text_heading()}"}>
+              <%= format_number(current_data.total) %>
+            </p>
+          </div>
+        <% end %>
+        <%= if @active_tab not in ["per_capita", "avg_rank"] do %>
+          <div>
+            <p class={"text-sm #{text_subtle()}"}>Total Players</p>
+            <p class={"text-3xl font-bold #{text_heading()}"}>
+              <%= format_number(current_data.total) %>
+            </p>
+          </div>
+          <div>
+            <p class={"text-sm #{text_subtle()}"}>Countries Represented</p>
+            <p class={"text-3xl font-bold #{text_heading()}"}>
+              <%= map_size(current_data.distribution) %>
+            </p>
+          </div>
+        <% end %>
         <%= if @last_updated do %>
           <div>
-            <p class="text-sm text-gray-600 dark:text-stone-400">Last Updated</p>
-            <p class="text-sm text-stone-800 dark:text-zinc-100">
+            <p class={"text-sm #{text_subtle()}"}>Last Updated</p>
+            <p class={"text-sm #{text_heading()}"}>
               <%= format_timestamp(@last_updated) %>
             </p>
           </div>
         <% end %>
       </div>
-    </div>
+    </.card>
 
-    <!-- Tabs -->
-    <div class="mb-6 border-b border-gray-200 dark:border-zinc-700">
+    <div class={"mb-6 border-b #{border_divider()}"}>
       <nav class="flex space-x-8" aria-label="Tabs">
-        <button
-          phx-click="switch_tab"
-          phx-value-tab="conqueror"
-          class={"#{if @active_tab == "conqueror", do: "border-blue-500 text-blue-600 dark:text-blue-400", else: "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"}
-        >
+        <.tab_button phx_click="switch_tab" phx_value_tab="conqueror" active={@active_tab == "conqueror"}>
           Conqueror (1400+)
-        </button>
-        <button
-          phx-click="switch_tab"
-          phx-value-tab="conqueror3"
-          class={"#{if @active_tab == "conqueror3", do: "border-blue-500 text-blue-600 dark:text-blue-400", else: "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"}
-        >
-          Conqueror III (2000+)
-        </button>
-        <button
-          phx-click="switch_tab"
-          phx-value-tab="top100"
-          class={"#{if @active_tab == "top100", do: "border-blue-500 text-blue-600 dark:text-blue-400", else: "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"}
-        >
+        </.tab_button>
+        <.tab_button phx_click="switch_tab" phx_value_tab="conqueror3" active={@active_tab == "conqueror3"}>
+          Conqueror 3+ (2000+)
+        </.tab_button>
+        <.tab_button phx_click="switch_tab" phx_value_tab="top100" active={@active_tab == "top100"}>
           Top 100
-        </button>
+        </.tab_button>
+        <.tab_button phx_click="switch_tab" phx_value_tab="per_capita" active={@active_tab == "per_capita"}>
+          Per Capita
+        </.tab_button>
+        <.tab_button phx_click="switch_tab" phx_value_tab="avg_rank" active={@active_tab == "avg_rank"}>
+          Average Rank
+        </.tab_button>
       </nav>
     </div>
 
-    <!-- Chart Card -->
-    <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-6 mb-8">
-      <div class="relative" style="height: 700px;">
-        <canvas
-          id="leaderboard-countries-chart"
-          phx-hook="LeaderboardCountries"
-          phx-update="ignore"
-        >
-        </canvas>
-      </div>
-    </div>
+    <!-- Chart Card (hidden for per capita and avg rank) -->
+    <%= if @active_tab not in ["per_capita", "avg_rank"] do %>
+      <.card class="mb-8">
+        <div class="relative" style="height: 700px;">
+          <canvas
+            id="leaderboard-countries-chart"
+            phx-hook="LeaderboardCountries"
+            phx-update="ignore"
+          >
+          </canvas>
+        </div>
+      </.card>
+    <% end %>
 
+    <%= if @active_tab == "avg_rank" && length(@avg_rank_data.ranked) > 0 do %>
+      <.card class="overflow-hidden">
+        <.simple_table>
+          <.simple_table_head>
+            <.simple_table_header_cell>Rank</.simple_table_header_cell>
+            <.simple_table_header_cell>Country</.simple_table_header_cell>
+            <.simple_table_header_cell align="right">Players</.simple_table_header_cell>
+            <.simple_table_header_cell align="right">Avg Rank</.simple_table_header_cell>
+            <.simple_table_header_cell align="right">Best Rank</.simple_table_header_cell>
+          </.simple_table_head>
+          <.simple_table_body>
+            <%= for {item, index} <- Enum.with_index(@avg_rank_data.ranked, 1) do %>
+              <.simple_table_row>
+                <.simple_table_cell class="font-medium">#<%= index %></.simple_table_cell>
+                <.simple_table_cell>
+                  <div class=" flex flex-row items-center">
+                  <span class="mr-2 text-2xl"><%= WololoWeb.PlayerLive.get_country_code_emoji(item.country) %></span>
+                  <%= get_country_name(item.country) %>
+                  </div>
+                </.simple_table_cell>
+                <.simple_table_cell align="right"><%= format_number(item.player_count) %></.simple_table_cell>
+                <.simple_table_cell align="right" class="font-semibold #{text_heading()}">
+                  #<%= format_number(trunc(item.avg_rank)) %>
+                </.simple_table_cell>
+                <.simple_table_cell align="right" class={text_muted()}>
+                  #<%= format_number(item.best_rank) %>
+                </.simple_table_cell>
+              </.simple_table_row>
+            <% end %>
+          </.simple_table_body>
+        </.simple_table>
+      </.card>
+    <% end %>
+
+    <%= if @active_tab == "per_capita" && Map.has_key?(@per_capita_data, :ranked) do %>
+      <.card class="overflow-hidden">
+        <.simple_table>
+          <.simple_table_head>
+            <.simple_table_header_cell>Rank</.simple_table_header_cell>
+            <.simple_table_header_cell>Country</.simple_table_header_cell>
+            <.simple_table_header_cell align="right">Players</.simple_table_header_cell>
+            <.simple_table_header_cell align="right">Per Million</.simple_table_header_cell>
+          </.simple_table_head>
+          <.simple_table_body>
+            <%= for {item, index} <- Enum.with_index(@per_capita_data.ranked, 1) do %>
+              <.simple_table_row>
+                <.simple_table_cell class="font-medium">#<%= index %></.simple_table_cell>
+                <.simple_table_cell>
+                <div class=" flex flex-row items-center">
+                    <span class="mr-2 text-2xl"><%= WololoWeb.PlayerLive.get_country_code_emoji(item.country) %></span>
+                    <%= get_country_name(item.country) %>
+                  </div>
+                </.simple_table_cell>
+                <.simple_table_cell align="right"><%= format_number(item.count) %></.simple_table_cell>
+                <.simple_table_cell align="right" class="font-semibold #{text_heading()}">
+                  <%= item.per_capita %>
+                </.simple_table_cell>
+              </.simple_table_row>
+            <% end %>
+          </.simple_table_body>
+        </.simple_table>
+      </.card>
+    <% end %>
    
   <% end %>
 </div>

@@ -316,8 +316,8 @@ hooks.LeaderboardCountries = {
 
                 if (label === "Other" && chart.otherCountries) {
                   const otherCountries = Object.entries(chart.otherCountries)
-                    .sort(([, a], [, b]) => b - a) // Sort by percentage descending
-                    .map(([country, percentage]) => `${COUNTRY_UTILS.getDisplayName(country)}: ${percentage}%`);
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([country, value]) => `${COUNTRY_UTILS.getDisplayName(country)}: ${value}%`);
 
                   return ["", ...otherCountries];
                 }
@@ -377,25 +377,25 @@ hooks.LeaderboardCountries = {
     const chart = new Chart(ctx, data);
 
     this.handleEvent("update-leaderboard-countries", (event) => {
-      const threshold = 2; // Percentage threshold for "Other" category
-      let otherPercentage = 0;
+      const threshold = 2;
+      let otherValue = 0;
       const otherCountries = {};
-      const filteredData = Object.entries(event.byCountry).reduce((acc, [country, percentage]) => {
-        if (percentage >= threshold) {
-          acc[country] = percentage;
+      const filteredData = Object.entries(event.byCountry).reduce((acc, [country, value]) => {
+        if (value >= threshold) {
+          acc[country] = value;
         } else {
-          otherPercentage += percentage;
+          otherValue += value;
           if (!otherCountries[country]) {
-            otherCountries[country] = percentage;
+            otherCountries[country] = value;
           } else {
-            otherCountries[country] += percentage;
+            otherCountries[country] += value;
           }
         }
         return acc;
       }, {});
 
-      if (otherPercentage > 0) {
-        filteredData.other = otherPercentage;
+      if (otherValue > 0) {
+        filteredData.other = otherValue;
       }
 
       // Distribute colors evenly based on number of countries

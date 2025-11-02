@@ -59,6 +59,7 @@ defmodule Wololo.MixProject do
       {:bandit, "~> 1.7.0"},
       {:ex_cldr, "~> 2.37"},
       {:ex_cldr_numbers, "~> 2.32"},
+      {:ex_cldr_territories, "~> 2.0"},
       {:httpoison, "~> 2.2"},
       {:dotenv_parser, "~> 2.0"},
       {:cachex, "~> 3.6"}

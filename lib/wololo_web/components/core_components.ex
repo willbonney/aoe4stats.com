@@ -78,8 +78,9 @@ defmodule WololoWeb.CoreComponents do
                   <.icon name="hero-x-mark-solid" class="h-5 w-5" />
                 </button>
               </div>
+              
               <div id={"#{@id}-content"}>
-                <%= render_slot(@inner_block) %>
+                {render_slot(@inner_block)}
               </div>
             </.focus_wrap>
           </div>
@@ -123,10 +124,11 @@ defmodule WololoWeb.CoreComponents do
     >
       <p :if={@title} class="flex items-center gap-1.5 text-sm font-semibold leading-6">
         <.icon :if={@kind == :info} name="hero-information-circle-mini" class="h-4 w-4" />
-        <.icon :if={@kind == :error} name="hero-exclamation-circle-mini" class="h-4 w-4" />
-        <%= @title %>
+        <.icon :if={@kind == :error} name="hero-exclamation-circle-mini" class="h-4 w-4" /> {@title}
       </p>
-      <p class="mt-2 text-sm leading-5"><%= msg %></p>
+      
+      <p class="mt-2 text-sm leading-5">{msg}</p>
+      
       <button type="button" class="group absolute top-1 right-1 p-2" aria-label={gettext("close")}>
         <.icon name="hero-x-mark-solid" class="h-5 w-5 opacity-40 group-hover:opacity-70" />
       </button>
@@ -157,10 +159,10 @@ defmodule WololoWeb.CoreComponents do
         phx-connected={hide("#client-error")}
         hidden
       >
-        <%= gettext("Attempting to reconnect") %>
+        {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 h-3 w-3 animate-spin" />
       </.flash>
-
+      
       <.flash
         id="server-error"
         kind={:error}
@@ -169,7 +171,7 @@ defmodule WololoWeb.CoreComponents do
         phx-connected={hide("#server-error")}
         hidden
       >
-        <%= gettext("Hang in there while we get back on track") %>
+        {gettext("Hang in there while we get back on track")}
         <.icon name="hero-arrow-path" class="ml-1 h-3 w-3 animate-spin" />
       </.flash>
     </div>
@@ -204,9 +206,9 @@ defmodule WololoWeb.CoreComponents do
     ~H"""
     <.form :let={f} for={@for} as={@as} {@rest}>
       <div class="mt-10 space-y-8 bg-white">
-        <%= render_slot(@inner_block, f) %>
+        {render_slot(@inner_block, f)}
         <div :for={action <- @actions} class="mt-2 flex items-center justify-between gap-6">
-          <%= render_slot(action, f) %>
+          {render_slot(action, f)}
         </div>
       </div>
     </.form>
@@ -238,7 +240,7 @@ defmodule WololoWeb.CoreComponents do
       ]}
       {@rest}
     >
-      <%= render_slot(@inner_block) %>
+      {render_slot(@inner_block)}
     </button>
     """
   end
@@ -325,10 +327,10 @@ defmodule WololoWeb.CoreComponents do
           checked={@checked}
           class="rounded border-zinc-300 text-zinc-900 focus:ring-0"
           {@rest}
-        />
-        <%= @label %>
+        /> {@label}
       </label>
-      <.error :for={msg <- @errors}><%= msg %></.error>
+      
+      <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
   end
@@ -336,7 +338,8 @@ defmodule WololoWeb.CoreComponents do
   def input(%{type: "select"} = assigns) do
     ~H"""
     <div>
-      <.label for={@id}><%= @label %></.label>
+      <.label for={@id}>{@label}</.label>
+      
       <select
         id={@id}
         name={@name}
@@ -344,10 +347,11 @@ defmodule WololoWeb.CoreComponents do
         multiple={@multiple}
         {@rest}
       >
-        <option :if={@prompt} value=""><%= @prompt %></option>
-        <%= Phoenix.HTML.Form.options_for_select(@options, @value) %>
+        <option :if={@prompt} value="">{@prompt}</option>
+         {Phoenix.HTML.Form.options_for_select(@options, @value)}
       </select>
-      <.error :for={msg <- @errors}><%= msg %></.error>
+      
+      <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
   end
@@ -355,8 +359,8 @@ defmodule WololoWeb.CoreComponents do
   def input(%{type: "textarea"} = assigns) do
     ~H"""
     <div>
-      <.label for={@id}><%= @label %></.label>
-      <textarea
+      <.label for={@id}>{@label}</.label>
+       <textarea
         id={@id}
         name={@name}
         class={[
@@ -366,7 +370,7 @@ defmodule WololoWeb.CoreComponents do
         ]}
         {@rest}
       ><%= Phoenix.HTML.Form.normalize_value("textarea", @value) %></textarea>
-      <.error :for={msg <- @errors}><%= msg %></.error>
+      <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
   end
@@ -375,7 +379,8 @@ defmodule WololoWeb.CoreComponents do
   def input(assigns) do
     ~H"""
     <div>
-      <.label for={@id}><%= @label %></.label>
+      <.label for={@id}>{@label}</.label>
+      
       <input
         type={@type}
         name={@name}
@@ -388,7 +393,7 @@ defmodule WololoWeb.CoreComponents do
         ]}
         {@rest}
       />
-      <.error :for={msg <- @errors}><%= msg %></.error>
+      <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
   end
@@ -402,7 +407,7 @@ defmodule WololoWeb.CoreComponents do
   def label(assigns) do
     ~H"""
     <label for={@for} class="block text-sm font-semibold leading-6 text-zinc-800">
-      <%= render_slot(@inner_block) %>
+      {render_slot(@inner_block)}
     </label>
     """
   end
@@ -415,8 +420,9 @@ defmodule WololoWeb.CoreComponents do
   def error(assigns) do
     ~H"""
     <p class="mt-3 flex gap-3 text-sm leading-6 text-rose-600">
-      <.icon name="hero-exclamation-circle-mini" class="mt-0.5 h-5 w-5 flex-none" />
-      <%= render_slot(@inner_block) %>
+      <.icon name="hero-exclamation-circle-mini" class="mt-0.5 h-5 w-5 flex-none" /> {render_slot(
+        @inner_block
+      )}
     </p>
     """
   end
@@ -435,13 +441,15 @@ defmodule WololoWeb.CoreComponents do
     <header class={[@actions != [] && "flex items-center justify-between gap-6", @class]}>
       <div>
         <h1 class="text-lg font-semibold leading-8 text-zinc-800 dark:text-zinc-100">
-          <%= render_slot(@inner_block) %>
+          {render_slot(@inner_block)}
         </h1>
+        
         <p :if={@subtitle != []} class="mt-2 text-sm leading-6 text-zinc-600">
-          <%= render_slot(@subtitle) %>
+          {render_slot(@subtitle)}
         </p>
       </div>
-      <div class="flex-none"><%= render_slot(@actions) %></div>
+      
+      <div class="flex-none">{render_slot(@actions)}</div>
     </header>
     """
   end
@@ -456,15 +464,20 @@ defmodule WololoWeb.CoreComponents do
     <header class="px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between py-3 text-sm">
         <div class="flex items-center gap-4">
-            <%= if @show_home_link? do %>
-          <a href="/">
+          <%= if @show_home_link? do %>
+            <a href="/">
               <.icon name="hero-home" class="h-6 w-6 dark:text-zinc-100" />
-          </a>
-          <button class="cursor-pointer" phx-click="show_search">
-            <.icon name="hero-magnifying-glass" class="h-6 w-6 text-stone-800 dark:text-zinc-100 hover:text-gray-600 dark:hover:text-gray-400" />
-          </button>
-            <% end %>
+            </a>
+            
+            <button class="cursor-pointer" phx-click="show_search">
+              <.icon
+                name="hero-magnifying-glass"
+                class="h-6 w-6 text-stone-800 dark:text-zinc-100 hover:text-gray-600 dark:hover:text-gray-400"
+              />
+            </button>
+          <% end %>
         </div>
+        
         <div class="flex items-center">
           <DarktoggleWeb.Components.ToggleTheme.render />
         </div>
@@ -516,14 +529,16 @@ defmodule WololoWeb.CoreComponents do
               data-col-index={col_index}
             >
               <div class="group-hover/header:scale-[1.02] transition-transform duration-200">
-                <%= col[:label] %>
+                {col[:label]}
               </div>
             </th>
+            
             <th :if={@action != []} class="relative p-0 pb-4">
-              <span class="sr-only"><%= gettext("Actions") %></span>
+              <span class="sr-only">{gettext("Actions")}</span>
             </th>
           </tr>
         </thead>
+        
         <tbody
           id={@id}
           phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
@@ -543,18 +558,19 @@ defmodule WololoWeb.CoreComponents do
               <div class="block py-1 pr-2">
                 <span class={["relative", i == 0 && "font-semibold text-zinc-900"]}>
                   <div class="truncate">
-                    <%= render_slot(col, @row_item.(row)) %>
+                    {render_slot(col, @row_item.(row))}
                   </div>
                 </span>
               </div>
             </td>
+            
             <td :if={@action != []} class="relative w-14 p-0">
               <div class="relative whitespace-nowrap py-4 text-right text-sm font-medium">
                 <span
                   :for={action <- @action}
                   class="relative ml-4 font-semibold leading-6 text-zinc-900 hover:text-zinc-700"
                 >
-                  <%= render_slot(action, @row_item.(row)) %>
+                  {render_slot(action, @row_item.(row))}
                 </span>
               </div>
             </td>
@@ -584,8 +600,9 @@ defmodule WololoWeb.CoreComponents do
     <div class="mt-14">
       <dl class="-my-4 divide-y divide-zinc-100">
         <div :for={item <- @item} class="flex gap-4 py-4 text-sm leading-6 sm:gap-8">
-          <dt class="w-1/4 flex-none text-zinc-500"><%= item.title %></dt>
-          <dd class="text-zinc-700"><%= render_slot(item) %></dd>
+          <dt class="w-1/4 flex-none text-zinc-500">{item.title}</dt>
+          
+          <dd class="text-zinc-700">{render_slot(item)}</dd>
         </div>
       </dl>
     </div>
@@ -609,8 +626,7 @@ defmodule WololoWeb.CoreComponents do
         navigate={@navigate}
         class="text-sm font-semibold leading-6 text-zinc-900 hover:text-zinc-700"
       >
-        <.icon name="hero-arrow-left-solid" class="h-3 w-3" />
-        <%= render_slot(@inner_block) %>
+        <.icon name="hero-arrow-left-solid" class="h-3 w-3" /> {render_slot(@inner_block)}
       </.link>
     </div>
     """
@@ -718,5 +734,178 @@ defmodule WololoWeb.CoreComponents do
   """
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
+  end
+
+  # Helper functions for common class combinations
+  def card_class, do: "bg-white dark:bg-zinc-800 rounded-lg shadow-lg"
+  def card_class_padded, do: card_class() <> " p-6"
+
+  def text_heading, do: "text-stone-800 dark:text-zinc-100"
+  def text_body, do: "text-gray-900 dark:text-zinc-100"
+  def text_subtle, do: "text-gray-600 dark:text-stone-400"
+  def text_muted, do: "text-gray-600 dark:text-gray-400"
+
+  def border_divider, do: "border-gray-200 dark:border-zinc-700"
+
+  def table_row_hover, do: "hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors"
+
+  def table_header_bg, do: "bg-gray-50 dark:bg-zinc-900"
+
+  def tab_active, do: "border-blue-500 text-blue-600 dark:text-blue-400"
+
+  def tab_inactive,
+    do:
+      "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+
+  # Reusable components
+  @doc """
+  Renders a card container with common styling.
+  """
+  attr(:class, :string, default: "")
+  attr(:padding, :boolean, default: true)
+  slot(:inner_block, required: true)
+
+  def card(assigns) do
+    padding_class = if assigns.padding, do: " p-6", else: ""
+    assigns = assign(assigns, :card_class, card_class() <> padding_class <> " " <> assigns.class)
+
+    ~H"""
+    <div class={@card_class}>
+      {render_slot(@inner_block)}
+    </div>
+    """
+  end
+
+  @doc """
+  Renders a simple table container with common styling.
+  """
+  slot(:inner_block, required: true)
+
+  def simple_table(assigns) do
+    ~H"""
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
+        {render_slot(@inner_block)}
+      </table>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders a table header row.
+  """
+  slot(:inner_block, required: true)
+
+  def simple_table_head(assigns) do
+    ~H"""
+    <thead class={table_header_bg()}>
+      <tr>
+        {render_slot(@inner_block)}
+      </tr>
+    </thead>
+    """
+  end
+
+  @doc """
+  Renders a table header cell.
+  """
+  attr(:align, :string, default: "left", values: ["left", "right", "center"])
+  slot(:inner_block, required: true)
+
+  def simple_table_header_cell(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :align_class,
+        case assigns.align do
+          "right" -> "text-right"
+          "center" -> "text-center"
+          _ -> "text-left"
+        end
+      )
+
+    ~H"""
+    <th
+      scope="col"
+      class={"px-6 py-3 #{@align_class} text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"}
+    >
+      {render_slot(@inner_block)}
+    </th>
+    """
+  end
+
+  @doc """
+  Renders a table body with common styling.
+  """
+  slot(:inner_block, required: true)
+
+  def simple_table_body(assigns) do
+    ~H"""
+    <tbody class="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-zinc-700">
+      {render_slot(@inner_block)}
+    </tbody>
+    """
+  end
+
+  @doc """
+  Renders a table row with hover effects.
+  """
+  slot(:inner_block, required: true)
+
+  def simple_table_row(assigns) do
+    ~H"""
+    <tr class={table_row_hover()}>
+      {render_slot(@inner_block)}
+    </tr>
+    """
+  end
+
+  @doc """
+  Renders a table cell.
+  """
+  attr(:align, :string, default: "left", values: ["left", "right", "center"])
+  attr(:class, :string, default: "")
+  slot(:inner_block, required: true)
+
+  def simple_table_cell(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :align_class,
+        case assigns.align do
+          "right" -> "text-right"
+          "center" -> "text-center"
+          _ -> "text-left"
+        end
+      )
+
+    ~H"""
+    <td class={"align-middle px-6 py-4 whitespace-nowrap text-sm #{@align_class} #{text_body()} #{assigns.class}"}>
+      {render_slot(@inner_block)}
+    </td>
+    """
+  end
+
+  @doc """
+  Renders a tab button.
+  """
+  attr(:active, :boolean, default: false)
+  attr(:phx_click, :string, required: true)
+  attr(:phx_value_tab, :string, required: true)
+  slot(:inner_block, required: true)
+
+  def tab_button(assigns) do
+    assigns =
+      assign(assigns, :tab_class, if(assigns.active, do: tab_active(), else: tab_inactive()))
+
+    ~H"""
+    <button
+      phx-click={@phx_click}
+      phx-value-tab={@phx_value_tab}
+      class={"#{@tab_class} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"}
+    >
+      {render_slot(@inner_block)}
+    </button>
+    """
   end
 end

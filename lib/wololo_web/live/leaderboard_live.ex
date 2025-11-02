@@ -1,6 +1,7 @@
 defmodule WololoWeb.LeaderboardLive do
   use WololoWeb, :live_view
   require Logger
+  alias Wololo.CountryPopulations
 
   def mount(_params, _session, socket) do
     if connected?(socket) do
@@ -16,6 +17,8 @@ defmodule WololoWeb.LeaderboardLive do
        conqueror_data: %{distribution: %{}, total: 0},
        conqueror3_data: %{distribution: %{}, total: 0},
        top100_data: %{distribution: %{}, total: 0},
+       per_capita_data: %{distribution: %{}, total: 0},
+       avg_rank_data: %{ranked: [], total: 0},
        last_updated: nil
      )}
   end
@@ -30,6 +33,8 @@ defmodule WololoWeb.LeaderboardLive do
            conqueror_data: data.conqueror_data,
            conqueror3_data: data.conqueror3_data,
            top100_data: data.top100_data,
+           per_capita_data: data.per_capita_data,
+           avg_rank_data: data.avg_rank_data,
            last_updated: data.last_updated
          )
          |> push_event("update-leaderboard-countries", %{
@@ -47,21 +52,26 @@ defmodule WololoWeb.LeaderboardLive do
   end
 
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
-    data =
-      case tab do
-        "conqueror" -> socket.assigns.conqueror_data
-        "conqueror3" -> socket.assigns.conqueror3_data
-        "top100" -> socket.assigns.top100_data
-        _ -> socket.assigns.conqueror_data
-      end
+    # avg_rank and per_capita don't use the chart, so don't send event
+    if tab in ["per_capita", "avg_rank"] do
+      {:noreply, socket |> assign(active_tab: tab)}
+    else
+      data =
+        case tab do
+          "conqueror" -> socket.assigns.conqueror_data
+          "conqueror3" -> socket.assigns.conqueror3_data
+          "top100" -> socket.assigns.top100_data
+          _ -> socket.assigns.conqueror_data
+        end
 
-    {:noreply,
-     socket
-     |> assign(active_tab: tab)
-     |> push_event("update-leaderboard-countries", %{
-       tab: tab,
-       byCountry: data.distribution
-     })}
+      {:noreply,
+       socket
+       |> assign(active_tab: tab)
+       |> push_event("update-leaderboard-countries", %{
+         tab: tab,
+         byCountry: data.distribution
+       })}
+    end
   end
 
   defp fetch_and_process_leaderboard do
@@ -102,12 +112,16 @@ defmodule WololoWeb.LeaderboardLive do
         conqueror_data = calculate_country_distribution(conqueror_players)
         conqueror3_data = calculate_country_distribution(conqueror3_players)
         top100_data = calculate_country_distribution(top100_players)
+        per_capita_data = calculate_per_capita_distribution(conqueror_players)
+        avg_rank_data = calculate_avg_rank_by_country(players)
 
         {:ok,
          %{
            conqueror_data: conqueror_data,
            conqueror3_data: conqueror3_data,
            top100_data: top100_data,
+           per_capita_data: per_capita_data,
+           avg_rank_data: avg_rank_data,
            last_updated: last_updated
          }}
 
@@ -141,6 +155,64 @@ defmodule WololoWeb.LeaderboardLive do
     end
   end
 
+  defp calculate_per_capita_distribution(players) do
+    country_counts =
+      Enum.reduce(players, %{}, fn player, acc ->
+        country = player.country || "unknown"
+        Map.update(acc, country, 1, &(&1 + 1))
+      end)
+
+    # This is conquerors per million people
+    per_capita_list =
+      country_counts
+      |> Enum.filter(fn {country, _count} ->
+        country != "unknown" && CountryPopulations.has_data?(country)
+      end)
+      |> Enum.map(fn {country, count} ->
+        population = CountryPopulations.get_population(country)
+        per_capita = count / population
+
+        %{
+          country: country,
+          per_capita: Float.round(per_capita, 2),
+          count: count
+        }
+      end)
+      |> Enum.sort_by(& &1.per_capita, :desc)
+
+    # Also keep map format for chart
+    per_capita_map =
+      per_capita_list
+      |> Enum.map(fn item -> {item.country, item.per_capita} end)
+      |> Enum.into(%{})
+
+    total = length(per_capita_list)
+
+    %{distribution: per_capita_map, ranked: per_capita_list, total: total}
+  end
+
+  defp calculate_avg_rank_by_country(players) do
+    # Group players by country and calculate average rank
+    country_ranks =
+      players
+      |> Enum.filter(fn player -> player.country && player.country != "unknown" end)
+      |> Enum.group_by(fn player -> player.country end)
+      |> Enum.map(fn {country, country_players} ->
+        ranks = Enum.map(country_players, fn p -> p.rank end)
+        avg_rank = Enum.sum(ranks) / length(ranks)
+
+        %{
+          country: country,
+          avg_rank: Float.round(avg_rank, 1),
+          player_count: length(country_players),
+          best_rank: Enum.min(ranks)
+        }
+      end)
+      |> Enum.sort_by(& &1.avg_rank)
+
+    %{ranked: country_ranks, total: length(country_ranks)}
+  end
+
   defp format_timestamp(%DateTime{} = dt) do
     Calendar.strftime(dt, "%B %d, %Y at %I:%M %p UTC")
   end
@@ -165,4 +237,17 @@ defmodule WololoWeb.LeaderboardLive do
   end
 
   defp format_number(number), do: to_string(number)
+
+  defp get_country_name("unknown"), do: "Unknown"
+
+  defp get_country_name(country_code) when is_binary(country_code) do
+    country_code = String.upcase(country_code)
+
+    case Cldr.Territory.from_territory_code(country_code, Wololo.Cldr) do
+      {:ok, name} -> name
+      _ -> country_code
+    end
+  end
+
+  defp get_country_name(_), do: "Unknown"
 end
