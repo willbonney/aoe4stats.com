@@ -39,7 +39,11 @@ defmodule WololoWeb.CivsByMapLive do
     %{key: :order_of_the_dragon, label: "OOTD", image: "order_of_the_dragon"},
     %{key: :zhu_xis_legacy, label: "ZXL", image: "zhu_xis_legacy"},
     %{key: :knights_templar, label: "KTP", image: "knights_templar"},
-    %{key: :house_of_lancaster, label: "HOL", image: "house_of_lancaster"}
+    %{key: :house_of_lancaster, label: "HOL", image: "house_of_lancaster"},
+    %{key: :tughlaq_dynasty, label: "Tughlaq", image: "tughlaq_dynasty"},
+    %{key: :sengoku_daimyo, label: "Sengoku", image: "sengoku_daimyo"},
+    %{key: :macedonian_dynasty, label: "Macedonian", image: "macedonian_dynasty"},
+    %{key: :golden_horde, label: "Golden Horde", image: "golden_horde"}
   ]
 
   @impl Phoenix.LiveView
@@ -93,7 +97,7 @@ defmodule WololoWeb.CivsByMapLive do
       <%= if @image do %>
         <img src={"/images/#{@image}.png"} alt={@label} class="w-10 h-6 mb-1" />
       <% end %>
-      <span class="dark:text-stone-400"><%= @label %></span>
+       <span class="dark:text-stone-400">{@label}</span>
     </div>
     """
   end

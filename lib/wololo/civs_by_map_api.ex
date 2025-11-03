@@ -21,7 +21,11 @@ defmodule Wololo.CivsByMapAPI do
     "order_of_the_dragon",
     "zhu_xis_legacy",
     "knights_templar",
-    "house_of_lancaster"
+    "house_of_lancaster",
+    "tughlaq_dynasty",
+    "sengoku_daimyo",
+    "macedonian_dynasty",
+    "golden_horde"
   ]
 
   def fetch_civs_by_map(league \\ nil) do

@@ -32,4 +32,14 @@ download_flag "chinese" "https://static.aoe4world.com/assets/flags/chinese-2d4ed
 download_flag "knights_templar" "https://static.aoe4world.com/assets/flags/knights_templar-0dc0979a16240ed364b6859ec9aef4cd53f059144ee45b6fd3ea7bfaea209b16.png"
 download_flag "house_of_lancaster" "https://static.aoe4world.com/assets/flags/house_of_lancaster-4b590484b88bb49e122c8e7933913f35774fd4d2c5e1505fdc93b628da8b6174.png"
 
+# Special handling for webp files - download as webp
+echo "Downloading tughlaq_dynasty flag..."
+curl -s -o "aoe4_flags/tughlaq_dynasty.webp" "https://www.ageofempires.com/wp-content/themes/ageOfEmpires/dist/images/civs/flags/age4-civ-flag-tug-64.webp"
+echo "Downloading sengoku_daimyo flag..."
+curl -s -o "aoe4_flags/sengoku_daimyo.webp" "https://www.ageofempires.com/wp-content/themes/ageOfEmpires/dist/images/civs/flags/age4-civ-flag-sen-64.webp"
+echo "Downloading macedonian_dynasty flag..."
+curl -s -o "aoe4_flags/macedonian_dynasty.webp" "https://www.ageofempires.com/wp-content/themes/ageOfEmpires/dist/images/civs/flags/age4-civ-flag-mac-64.webp"
+echo "Downloading golden_horde flag..."
+curl -s -o "aoe4_flags/golden_horde.webp" "https://www.ageofempires.com/wp-content/themes/ageOfEmpires/dist/images/civs/flags/age4-civ-flag-goh-64.webp"
+
 echo "All flags have been downloaded to the 'aoe4_flags' directory."
