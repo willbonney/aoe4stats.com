@@ -43,7 +43,7 @@ defmodule WololoWeb.CivsByMapLive do
     %{key: :tughlaq_dynasty, label: "Tughlaq", image: "tughlaq_dynasty"},
     %{key: :sengoku_daimyo, label: "Sengoku", image: "sengoku_daimyo"},
     %{key: :macedonian_dynasty, label: "Macedonian", image: "macedonian_dynasty"},
-    %{key: :golden_horde, label: "Golden Horde", image: "golden_horde"}
+    %{key: :golden_horde, label: "GOH", image: "golden_horde"}
   ]
 
   @impl Phoenix.LiveView

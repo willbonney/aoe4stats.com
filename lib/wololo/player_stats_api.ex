@@ -40,7 +40,7 @@ defmodule Wololo.PlayerStatsAPI do
     with {:ok, data} <- Jason.decode(body) do
       rating_history = get_in(data, ["modes", "rm_solo", "rating_history"])
       previous_seasons = get_in(data, ["modes", "rm_solo", "previous_seasons"])
-      current_rank = get_in(data, ["modes", "rm_solo", "rank"])
+      _current_rank = get_in(data, ["modes", "rm_solo", "rank"])
       current_season = get_in(data, ["modes", "rm_solo", "season"])
       civ_stats = get_in(data, ["modes", "rm_solo", "civilizations"])
 
@@ -70,13 +70,6 @@ defmodule Wololo.PlayerStatsAPI do
               end
             )
             |> Enum.reverse()
-            |> then(fn seasons ->
-              if current_rank != nil do
-                [%{rank: current_rank, season: current_season} | seasons]
-              else
-                seasons
-              end
-            end)
 
           {history, seasons_count}
         else
