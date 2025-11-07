@@ -3,6 +3,9 @@ defmodule WololoWeb.LeaderboardLive do
   require Logger
   alias Wololo.CountryPopulations
 
+  @min_players_for_average_rank_stats 10
+  @min_players_for_per_capita_stats 5
+
   def mount(_params, _session, socket) do
     if connected?(socket) do
       send(self(), :load_leaderboard)
@@ -19,6 +22,7 @@ defmodule WololoWeb.LeaderboardLive do
        top100_data: %{distribution: %{}, total: 0},
        per_capita_data: %{distribution: %{}, total: 0},
        avg_rank_data: %{ranked: [], total: 0},
+       prowess_data: %{ranked: [], total: 0},
        last_updated: nil
      )}
   end
@@ -35,6 +39,7 @@ defmodule WololoWeb.LeaderboardLive do
            top100_data: data.top100_data,
            per_capita_data: data.per_capita_data,
            avg_rank_data: data.avg_rank_data,
+           prowess_data: data.prowess_data,
            last_updated: data.last_updated
          )
          |> push_event("update-leaderboard-countries", %{
@@ -52,8 +57,8 @@ defmodule WololoWeb.LeaderboardLive do
   end
 
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
-    # avg_rank and per_capita don't use the chart, so don't send event
-    if tab in ["per_capita", "avg_rank"] do
+    # avg_rank, per_capita, and prowess don't use the chart, so don't send event
+    if tab in ["per_capita", "avg_rank", "prowess"] do
       {:noreply, socket |> assign(active_tab: tab)}
     else
       data =
@@ -114,6 +119,7 @@ defmodule WololoWeb.LeaderboardLive do
         top100_data = calculate_country_distribution(top100_players)
         per_capita_data = calculate_per_capita_distribution(conqueror_players)
         avg_rank_data = calculate_avg_rank_by_country(players)
+        prowess_data = calculate_rank_weighted_per_capita(players)
 
         {:ok,
          %{
@@ -122,6 +128,7 @@ defmodule WololoWeb.LeaderboardLive do
            top100_data: top100_data,
            per_capita_data: per_capita_data,
            avg_rank_data: avg_rank_data,
+           prowess_data: prowess_data,
            last_updated: last_updated
          }}
 
@@ -165,8 +172,9 @@ defmodule WololoWeb.LeaderboardLive do
     # This is conquerors per million people
     per_capita_list =
       country_counts
-      |> Enum.filter(fn {country, _count} ->
-        country != "unknown" && CountryPopulations.has_data?(country)
+      |> Enum.filter(fn {country, count} ->
+        country != "unknown" && CountryPopulations.has_data?(country) &&
+          count >= @min_players_for_per_capita_stats
       end)
       |> Enum.map(fn {country, count} ->
         population = CountryPopulations.get_population(country)
@@ -192,11 +200,13 @@ defmodule WololoWeb.LeaderboardLive do
   end
 
   defp calculate_avg_rank_by_country(players) do
-    # Group players by country and calculate average rank
     country_ranks =
       players
       |> Enum.filter(fn player -> player.country && player.country != "unknown" end)
       |> Enum.group_by(fn player -> player.country end)
+      |> Enum.filter(fn {_country, country_players} ->
+        length(country_players) >= @min_players_for_average_rank_stats
+      end)
       |> Enum.map(fn {country, country_players} ->
         ranks = Enum.map(country_players, fn p -> p.rank end)
         avg_rank = Enum.sum(ranks) / length(ranks)
@@ -211,6 +221,40 @@ defmodule WololoWeb.LeaderboardLive do
       |> Enum.sort_by(& &1.avg_rank)
 
     %{ranked: country_ranks, total: length(country_ranks)}
+  end
+
+  defp calculate_rank_weighted_per_capita(players) do
+    country_data =
+      players
+      |> Enum.filter(fn player -> player.country && player.country != "unknown" end)
+      |> Enum.group_by(fn player -> player.country end)
+      |> Enum.filter(fn {country, country_players} ->
+        length(country_players) >= @min_players_for_per_capita_stats &&
+          CountryPopulations.has_data?(country)
+      end)
+      |> Enum.map(fn {country, country_players} ->
+        # Calculate rank-weighted score: sum of (1 / rank) for all players
+        rank_weight_sum =
+          country_players
+          |> Enum.map(fn p -> 1.0 / p.rank end)
+          |> Enum.sum()
+
+        population = CountryPopulations.get_population(country)
+        prowess_score = rank_weight_sum / population
+
+        ranks = Enum.map(country_players, fn p -> p.rank end)
+
+        %{
+          country: country,
+          prowess_score: Float.round(prowess_score, 4),
+          player_count: length(country_players),
+          best_rank: Enum.min(ranks),
+          avg_rank: Float.round(Enum.sum(ranks) / length(ranks), 1)
+        }
+      end)
+      |> Enum.sort_by(& &1.prowess_score, :desc)
+
+    %{ranked: country_data, total: length(country_data)}
   end
 
   defp format_timestamp(%DateTime{} = dt) do

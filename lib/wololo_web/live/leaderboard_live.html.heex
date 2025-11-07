@@ -6,6 +6,8 @@
           Conquerors Per Capita
         <% "avg_rank" -> %>
           Average Rank by Country
+        <% "prowess" -> %>
+          National Prowess Index
         <% "conqueror3" -> %>
           Conqueror 3+ Players by Country
         <% "top100" -> %>
@@ -20,6 +22,8 @@
           Conqueror players (1400+) per million population
         <% "avg_rank" -> %>
           Countries ranked by average leaderboard position
+        <% "prowess" -> %>
+          Rank-weighted per capita score combining player quality and quantity
         <% "conqueror3" -> %>
           Country distribution of all players with rating above 1600
         <% "top100" -> %>
@@ -55,6 +59,7 @@
         "top100" -> @top100_data
         "per_capita" -> @per_capita_data
         "avg_rank" -> @avg_rank_data
+        "prowess" -> @prowess_data
         _ -> @conqueror_data
       end
     %>
@@ -80,7 +85,15 @@
             </p>
           </div>
         <% end %>
-        <%= if @active_tab not in ["per_capita", "avg_rank"] do %>
+        <%= if @active_tab == "prowess" do %>
+          <div>
+            <p class={"text-sm #{text_subtle()}"}>Countries Ranked</p>
+            <p class={"text-3xl font-bold #{text_heading()}"}>
+              <%= format_number(current_data.total) %>
+            </p>
+          </div>
+        <% end %>
+        <%= if @active_tab not in ["per_capita", "avg_rank", "prowess"] do %>
           <div>
             <p class={"text-sm #{text_subtle()}"}>Total Players</p>
             <p class={"text-3xl font-bold #{text_heading()}"}>
@@ -122,11 +135,14 @@
         <.tab_button phx_click="switch_tab" phx_value_tab="avg_rank" active={@active_tab == "avg_rank"}>
           Average Rank
         </.tab_button>
+        <.tab_button phx_click="switch_tab" phx_value_tab="prowess" active={@active_tab == "prowess"}>
+          National Prowess
+        </.tab_button>
       </nav>
     </div>
 
-    <!-- Chart Card (hidden for per capita and avg rank) -->
-    <%= if @active_tab not in ["per_capita", "avg_rank"] do %>
+    <!-- Chart Card (hidden for per capita, avg rank, and prowess) -->
+    <%= if @active_tab not in ["per_capita", "avg_rank", "prowess"] do %>
       <.card class="mb-8">
         <div class="relative" style="height: 700px;">
           <canvas
@@ -195,6 +211,65 @@
                 <.simple_table_cell align="right"><%= format_number(item.count) %></.simple_table_cell>
                 <.simple_table_cell align="right" class="font-semibold #{text_heading()}">
                   <%= item.per_capita %>
+                </.simple_table_cell>
+              </.simple_table_row>
+            <% end %>
+          </.simple_table_body>
+        </.simple_table>
+      </.card>
+    <% end %>
+
+    <%= if @active_tab == "prowess" && length(@prowess_data.ranked) > 0 do %>
+      <.card class="overflow-hidden">
+        <.simple_table>
+          <.simple_table_head>
+            <.simple_table_header_cell>Rank</.simple_table_header_cell>
+            <.simple_table_header_cell>Country</.simple_table_header_cell>
+            <.simple_table_header_cell align="right">Players</.simple_table_header_cell>
+            <.simple_table_header_cell align="right">
+              <div class="flex items-center justify-end gap-1">
+                Prowess Score
+                <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative" title="Calculation">
+                  <span class="invisible group-hover:visible absolute right-6 top-0 w-96 bg-gray-900 text-white text-sm rounded p-4 z-10 whitespace-pre-line leading-relaxed font-mono">Score = Σ(1/rank) / population
+
+For each player:
+  Rank #1    → 1.000
+  Rank #10   → 0.100
+  Rank #100  → 0.010
+  Rank #1000 → 0.001
+
+Sum all contributions, divide by
+population (in millions)
+
+∴ Rewards both quality (better
+ranks contribute more) and
+quantity (more players help)</span>
+                  <.icon name="hero-information-circle" class="h-4 w-4" />
+                </span>
+              </div>
+            </.simple_table_header_cell>
+            <.simple_table_header_cell align="right">Avg Rank</.simple_table_header_cell>
+            <.simple_table_header_cell align="right">Best Rank</.simple_table_header_cell>
+          </.simple_table_head>
+          <.simple_table_body>
+            <%= for {item, index} <- Enum.with_index(@prowess_data.ranked, 1) do %>
+              <.simple_table_row>
+                <.simple_table_cell class="font-medium">#<%= index %></.simple_table_cell>
+                <.simple_table_cell>
+                  <div class="flex flex-row items-center">
+                    <span class="mr-2 text-2xl"><%= WololoWeb.PlayerLive.get_country_code_emoji(item.country) %></span>
+                    <%= get_country_name(item.country) %>
+                  </div>
+                </.simple_table_cell>
+                <.simple_table_cell align="right"><%= format_number(item.player_count) %></.simple_table_cell>
+                <.simple_table_cell align="right" class="font-semibold #{text_heading()}">
+                  <%= item.prowess_score %>
+                </.simple_table_cell>
+                <.simple_table_cell align="right" class={text_muted()}>
+                  #<%= format_number(trunc(item.avg_rank)) %>
+                </.simple_table_cell>
+                <.simple_table_cell align="right" class={text_muted()}>
+                  #<%= format_number(item.best_rank) %>
                 </.simple_table_cell>
               </.simple_table_row>
             <% end %>
