@@ -8,6 +8,7 @@ defmodule WololoWeb.OpponentsByCountryLive do
   end
 
   def update(assigns, socket) do
+    Sentry.Context.set_user_context(%{id: assigns[:profile_id]})
     assign(socket, loading: true)
 
     case PlayerGamesAPI.get_players_games_statistics(assigns[:profile_id]) do

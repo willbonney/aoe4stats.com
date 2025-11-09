@@ -148,6 +148,8 @@ defmodule WololoWeb.InsightsLive do
   end
 
   defp fetch_insights(profile_id, player_name) do
+    Sentry.Context.set_user_context(%{id: profile_id})
+
     case PlayerGamesAPI.get_players_games_statistics(profile_id, false) do
       {:ok, data} ->
         case call(nil, %{player_name: player_name, prompt: data}) do

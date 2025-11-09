@@ -55,6 +55,8 @@ defmodule WololoWeb.RankLive do
   end
 
   def fetch_rank(profile_id) do
+    Sentry.Context.set_user_context(%{id: profile_id})
+
     with {:stats, {:ok, player_stats}} <-
            {:stats, PlayerStatsAPI.fetch_player_data(profile_id, true)} do
       %{

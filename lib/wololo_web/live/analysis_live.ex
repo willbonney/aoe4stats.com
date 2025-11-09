@@ -405,6 +405,7 @@ defmodule WololoWeb.AnalysisLive do
   defp calculate_underdog_success(_), do: @default_score_insufficient_data
 
   def fetch_analysis(profile_id) do
+    Sentry.Context.set_user_context(%{id: profile_id})
     Logger.info("Fetching analysis for profile_id: #{profile_id}")
 
     with {:ok, player_data} <- PlayerStatsAPI.fetch_player_data(profile_id, false),
