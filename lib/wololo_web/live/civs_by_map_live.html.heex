@@ -2,7 +2,7 @@
 
 <%= if @loading do %>
   <div class="flex justify-center items-center">
-    <.spinner size="lg" class="text-brand-500" />
+    <.spinner size="lg" class="text-primary-500" />
   </div>
 <% else %>
   <div class="mb-4 space-y-4">
@@ -19,11 +19,11 @@
     <div class="flex gap-4 flex-wrap items-center">
       <button
         phx-click="toggle-civ-filter"
-        class={"px-4 py-2 rounded transition-colors font-medium flex items-center gap-2 " <>
+        class={"px-4 py-2 rounded transition-all font-medium flex items-center gap-2 " <>
           if MapSet.size(@selected_civs) < length(@civs) - 1 do
-            "bg-orange-500 hover:bg-orange-600 text-white"
+            "bg-accent-500 hover:shadow-[0_0_20px_rgba(217,119,6,0.6)] text-white"
           else
-            "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+            "bg-primary-500 hover:shadow-[0_0_20px_rgba(230,74,25,0.6)] text-white"
           end
         }
       >
@@ -33,11 +33,11 @@
 
       <button
         phx-click="toggle-map-filter"
-        class={"px-4 py-2 rounded transition-colors font-medium flex items-center gap-2 " <>
+        class={"px-4 py-2 rounded transition-all font-medium flex items-center gap-2 " <>
           if MapSet.size(@selected_maps) < length(@maps) do
-            "bg-orange-500 hover:bg-orange-600 text-white"
+            "bg-accent-500 hover:shadow-[0_0_20px_rgba(217,119,6,0.6)] text-white"
           else
-            "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+            "bg-primary-500 hover:shadow-[0_0_20px_rgba(230,74,25,0.6)] text-white"
           end
         }
       >
@@ -84,7 +84,7 @@
                 phx-click="toggle-civ"
                 phx-value-civ={civ.key}
                 checked={MapSet.member?(@selected_civs, civ.key)}
-                class="w-4 h-4"
+                class="w-4 h-4 text-primary-500 focus:ring-primary-500"
               />
               <%= if civ.image do %>
                 <img src={"/images/#{civ.image}.png"} alt={civ.label} class="w-8 h-5" />
@@ -125,7 +125,7 @@
                 phx-click="toggle-map"
                 phx-value-map={map.name}
                 checked={MapSet.member?(@selected_maps, map.name)}
-                class="w-4 h-4"
+                class="w-4 h-4 text-primary-500 focus:ring-primary-500"
               />
               <span class="text-sm text-stone-800 dark:text-zinc-100"><%= map.name %></span>
             </label>
