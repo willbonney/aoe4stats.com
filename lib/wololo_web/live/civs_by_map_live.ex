@@ -48,6 +48,9 @@ defmodule WololoWeb.CivsByMapLive do
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
+    # Initialize all civs as selected (except the first one which is "Map")
+    selected_civs = @civs |> Enum.drop(1) |> Enum.map(& &1.key) |> MapSet.new()
+
     socket =
       assign(socket,
         maps: [],
@@ -55,7 +58,11 @@ defmodule WololoWeb.CivsByMapLive do
         league_options: @league_options,
         selected_league: nil,
         loading: true,
-        error: nil
+        error: nil,
+        selected_civs: selected_civs,
+        selected_maps: MapSet.new(),
+        show_civ_filter: false,
+        show_map_filter: false
       )
 
     if connected?(socket) do
@@ -76,6 +83,81 @@ defmodule WololoWeb.CivsByMapLive do
   end
 
   @impl Phoenix.LiveView
+  def handle_event("toggle-civ", %{"civ" => civ_key}, socket) do
+    civ_atom = String.to_existing_atom(civ_key)
+    selected_civs = socket.assigns.selected_civs
+
+    new_selected_civs =
+      if MapSet.member?(selected_civs, civ_atom) do
+        MapSet.delete(selected_civs, civ_atom)
+      else
+        MapSet.put(selected_civs, civ_atom)
+      end
+
+    {:noreply, assign(socket, selected_civs: new_selected_civs)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("toggle-map", %{"map" => map_name}, socket) do
+    selected_maps = socket.assigns.selected_maps
+
+    new_selected_maps =
+      if MapSet.member?(selected_maps, map_name) do
+        MapSet.delete(selected_maps, map_name)
+      else
+        MapSet.put(selected_maps, map_name)
+      end
+
+    {:noreply, assign(socket, selected_maps: new_selected_maps)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("toggle-civ-filter", _params, socket) do
+    {:noreply, assign(socket, show_civ_filter: !socket.assigns.show_civ_filter)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("toggle-map-filter", _params, socket) do
+    {:noreply, assign(socket, show_map_filter: !socket.assigns.show_map_filter)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("select-all-civs", _params, socket) do
+    all_civs = @civs |> Enum.drop(1) |> Enum.map(& &1.key) |> MapSet.new()
+    {:noreply, assign(socket, selected_civs: all_civs)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("deselect-all-civs", _params, socket) do
+    {:noreply, assign(socket, selected_civs: MapSet.new())}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("select-all-maps", _params, socket) do
+    all_maps = socket.assigns.maps |> Enum.map(& &1.name) |> MapSet.new()
+    {:noreply, assign(socket, selected_maps: all_maps)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("deselect-all-maps", _params, socket) do
+    {:noreply, assign(socket, selected_maps: MapSet.new())}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("reset-all-filters", _params, socket) do
+    all_civs = @civs |> Enum.drop(1) |> Enum.map(& &1.key) |> MapSet.new()
+    all_maps = socket.assigns.maps |> Enum.map(& &1.name) |> MapSet.new()
+
+    {:noreply,
+     assign(socket,
+       selected_civs: all_civs,
+       selected_maps: all_maps,
+       show_civ_filter: false,
+       show_map_filter: false
+     )}
+  end
+
+  @impl Phoenix.LiveView
   def handle_info(:fetch_initial_data, socket) do
     {:noreply, fetch_civs_data(socket)}
   end
@@ -84,11 +166,33 @@ defmodule WololoWeb.CivsByMapLive do
     case CivsByMapAPI.fetch_civs_by_map(league) do
       {:ok, raw_data} ->
         transformed_data = CivsByMapAPI.transform_data(raw_data)
-        assign(socket, maps: transformed_data, loading: false, error: nil)
+        # Initialize all maps as selected when data is fetched
+        all_maps = transformed_data |> Enum.map(& &1.name) |> MapSet.new()
+
+        assign(socket,
+          maps: transformed_data,
+          selected_maps: all_maps,
+          loading: false,
+          error: nil
+        )
 
       {:error, reason} ->
         assign(socket, maps: [], loading: false, error: "Failed to fetch Civs By Map: #{reason}")
     end
+  end
+
+  def filtered_maps(maps, selected_maps) do
+    if MapSet.size(selected_maps) == 0 do
+      maps
+    else
+      Enum.filter(maps, fn map -> MapSet.member?(selected_maps, map.name) end)
+    end
+  end
+
+  def filtered_civs(civs, selected_civs) do
+    # Always include the first element (Map column)
+    [Enum.at(civs, 0)] ++
+      Enum.filter(Enum.drop(civs, 1), fn civ -> MapSet.member?(selected_civs, civ.key) end)
   end
 
   def civ_header(assigns) do
