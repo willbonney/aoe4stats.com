@@ -46,7 +46,6 @@ defmodule WololoWeb.CivsByMapLive do
     %{key: :golden_horde, label: "GOH", image: "golden_horde"}
   ]
 
-  @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     # Initialize all civs as selected (except the first one which is "Map")
     selected_civs = @civs |> Enum.drop(1) |> Enum.map(& &1.key) |> MapSet.new()
@@ -62,7 +61,8 @@ defmodule WololoWeb.CivsByMapLive do
         selected_civs: selected_civs,
         selected_maps: MapSet.new(),
         show_civ_filter: false,
-        show_map_filter: false
+        show_map_filter: false,
+        data_fetched: false
       )
 
     if connected?(socket) do
@@ -72,17 +72,16 @@ defmodule WololoWeb.CivsByMapLive do
     {:ok, socket}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("select-league", %{"league" => league}, socket) do
     socket =
       socket
       |> assign(loading: true, selected_league: league, error: nil)
       |> fetch_civs_data(league)
+      |> save_filters_to_client()
 
     {:noreply, socket}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("toggle-civ", %{"civ" => civ_key}, socket) do
     civ_atom = String.to_existing_atom(civ_key)
     selected_civs = socket.assigns.selected_civs
@@ -94,10 +93,14 @@ defmodule WololoWeb.CivsByMapLive do
         MapSet.put(selected_civs, civ_atom)
       end
 
-    {:noreply, assign(socket, selected_civs: new_selected_civs)}
+    socket =
+      socket
+      |> assign(selected_civs: new_selected_civs)
+      |> save_filters_to_client()
+
+    {:noreply, socket}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("toggle-map", %{"map" => map_name}, socket) do
     selected_maps = socket.assigns.selected_maps
 
@@ -108,76 +111,145 @@ defmodule WololoWeb.CivsByMapLive do
         MapSet.put(selected_maps, map_name)
       end
 
-    {:noreply, assign(socket, selected_maps: new_selected_maps)}
+    socket =
+      socket
+      |> assign(selected_maps: new_selected_maps)
+      |> save_filters_to_client()
+
+    {:noreply, socket}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("toggle-civ-filter", _params, socket) do
     {:noreply, assign(socket, show_civ_filter: !socket.assigns.show_civ_filter)}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("toggle-map-filter", _params, socket) do
     {:noreply, assign(socket, show_map_filter: !socket.assigns.show_map_filter)}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("select-all-civs", _params, socket) do
     all_civs = @civs |> Enum.drop(1) |> Enum.map(& &1.key) |> MapSet.new()
-    {:noreply, assign(socket, selected_civs: all_civs)}
+
+    socket =
+      socket
+      |> assign(selected_civs: all_civs)
+      |> save_filters_to_client()
+
+    {:noreply, socket}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("deselect-all-civs", _params, socket) do
-    {:noreply, assign(socket, selected_civs: MapSet.new())}
+    socket =
+      socket
+      |> assign(selected_civs: MapSet.new())
+      |> save_filters_to_client()
+
+    {:noreply, socket}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("select-all-maps", _params, socket) do
     all_maps = socket.assigns.maps |> Enum.map(& &1.name) |> MapSet.new()
-    {:noreply, assign(socket, selected_maps: all_maps)}
+
+    socket =
+      socket
+      |> assign(selected_maps: all_maps)
+      |> save_filters_to_client()
+
+    {:noreply, socket}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("deselect-all-maps", _params, socket) do
-    {:noreply, assign(socket, selected_maps: MapSet.new())}
+    socket =
+      socket
+      |> assign(selected_maps: MapSet.new())
+      |> save_filters_to_client()
+
+    {:noreply, socket}
   end
 
-  @impl Phoenix.LiveView
   def handle_event("reset-all-filters", _params, socket) do
     all_civs = @civs |> Enum.drop(1) |> Enum.map(& &1.key) |> MapSet.new()
-    all_maps = socket.assigns.maps |> Enum.map(& &1.name) |> MapSet.new()
 
-    {:noreply,
-     assign(socket,
-       selected_civs: all_civs,
-       selected_maps: all_maps,
-       show_civ_filter: false,
-       show_map_filter: false
-     )}
+    socket =
+      socket
+      |> assign(
+        loading: true,
+        selected_civs: all_civs,
+        selected_league: nil,
+        show_civ_filter: false,
+        show_map_filter: false
+      )
+      |> fetch_civs_data(nil)
+      |> save_filters_to_client()
+
+    {:noreply, socket}
+  end
+
+  def handle_event("load-filters", params, socket) do
+    selected_civs =
+      params
+      |> Map.get("selectedCivs", [])
+      |> Enum.map(&String.to_existing_atom/1)
+      |> MapSet.new()
+
+    selected_maps = params |> Map.get("selectedMaps", []) |> MapSet.new()
+    selected_league = Map.get(params, "selectedLeague")
+
+    socket =
+      socket
+      |> maybe_assign_if_not_empty(:selected_civs, selected_civs)
+      |> maybe_assign_if_not_empty(:selected_maps, selected_maps)
+      |> maybe_assign_league(selected_league)
+
+    {:noreply, socket}
   end
 
   @impl Phoenix.LiveView
   def handle_info(:fetch_initial_data, socket) do
-    {:noreply, fetch_civs_data(socket)}
+    # Skip if data has already been fetched (e.g., from loaded filters with league)
+    if socket.assigns.data_fetched do
+      {:noreply, socket}
+    else
+      {:noreply, fetch_civs_data(socket)}
+    end
   end
 
   defp fetch_civs_data(socket, league \\ nil) do
     case CivsByMapAPI.fetch_civs_by_map(league) do
       {:ok, raw_data} ->
         transformed_data = CivsByMapAPI.transform_data(raw_data)
-        # Initialize all maps as selected when data is fetched
         all_maps = transformed_data |> Enum.map(& &1.name) |> MapSet.new()
+
+        # Preserve user's selected maps if they exist, filtering out any that are no longer available
+        # Only reset to all maps if current selection is empty (initial load)
+        current_selected = socket.assigns.selected_maps
+
+        new_selected_maps =
+          if MapSet.size(current_selected) > 0 do
+            MapSet.intersection(current_selected, all_maps)
+            |> then(fn intersection ->
+              # If intersection is empty (all previously selected maps are gone), select all new maps
+              if MapSet.size(intersection) == 0, do: all_maps, else: intersection
+            end)
+          else
+            all_maps
+          end
 
         assign(socket,
           maps: transformed_data,
-          selected_maps: all_maps,
+          selected_maps: new_selected_maps,
           loading: false,
-          error: nil
+          error: nil,
+          data_fetched: true
         )
 
       {:error, reason} ->
-        assign(socket, maps: [], loading: false, error: "Failed to fetch Civs By Map: #{reason}")
+        assign(socket,
+          maps: [],
+          loading: false,
+          error: "Failed to fetch Civs By Map: #{reason}",
+          data_fetched: true
+        )
     end
   end
 
@@ -216,6 +288,35 @@ defmodule WololoWeb.CivsByMapLive do
   end
 
   defp format_number(number), do: number
+
+  defp save_filters_to_client(socket) do
+    filters = %{
+      selectedCivs:
+        socket.assigns.selected_civs |> MapSet.to_list() |> Enum.map(&Atom.to_string/1),
+      selectedMaps: socket.assigns.selected_maps |> MapSet.to_list(),
+      selectedLeague: socket.assigns.selected_league
+    }
+
+    Phoenix.LiveView.push_event(socket, "save-filters", filters)
+  end
+
+  defp maybe_assign_if_not_empty(socket, key, value) do
+    if MapSet.size(value) > 0 do
+      assign(socket, key, value)
+    else
+      socket
+    end
+  end
+
+  defp maybe_assign_league(socket, nil), do: socket
+
+  defp maybe_assign_league(socket, league) when is_binary(league) and byte_size(league) > 0 do
+    socket
+    |> assign(selected_league: league)
+    |> fetch_civs_data(league)
+  end
+
+  defp maybe_assign_league(socket, _), do: socket
 
   def color_class(percentage, type) when is_binary(percentage) do
     case Float.parse(percentage) do

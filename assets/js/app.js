@@ -32,6 +32,7 @@ import {
   WrsByGameLength,
   PercentageTimeInRank,
   Analysis,
+  FilterPersistence,
 } from "./hooks/index.js";
 
 Chart.register(annotationPlugin);
@@ -44,6 +45,7 @@ const hooks = {
   WrsByGameLength,
   PercentageTimeInRank,
   Analysis,
+  FilterPersistence,
   DarkThemeToggle: toggleThemeHook,
 };
 

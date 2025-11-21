@@ -1,24 +1,31 @@
+<div id="filter-persistence" phx-hook="FilterPersistence" class="hidden"></div>
+
 <.header>Civs by Map</.header>
 
-<%= if @loading do %>
-  <div class="flex justify-center items-center">
-    <.spinner size="lg" class="text-primary-500" />
-  </div>
-<% else %>
-  <div class="mb-4 space-y-4">
-    <.form for={%{}} phx-change="select-league">
-      <.input
-        type="select"
-        options={@league_options}
-        name="league"
-        prompt="Select a League"
-        value={@selected_league}
-      />
-    </.form>
+<div class="mb-4 space-y-4">
+  <.form for={%{}} phx-change="select-league">
+    <.input
+      type="select"
+      options={@league_options}
+      name="league"
+      prompt="Select a League"
+      value={@selected_league}
+      disabled={@loading}
+    />
+  </.form>
 
+  <%= if @loading do %>
+    <div class="flex justify-center items-center py-4">
+      <.spinner size="lg" class="text-primary-500" />
+      <span class="ml-3 text-stone-600 dark:text-zinc-400">Loading data...</span>
+    </div>
+  <% end %>
+
+  <%= if not @loading do %>
     <div class="flex gap-4 flex-wrap items-center">
       <button
         phx-click="toggle-civ-filter"
+        disabled={@loading}
         class={"px-4 py-2 rounded transition-all font-medium flex items-center gap-2 " <>
           if MapSet.size(@selected_civs) < length(@civs) - 1 do
             "bg-accent-500 hover:shadow-[0_0_20px_rgba(217,119,6,0.6)] text-white"
@@ -33,6 +40,7 @@
 
       <button
         phx-click="toggle-map-filter"
+        disabled={@loading}
         class={"px-4 py-2 rounded transition-all font-medium flex items-center gap-2 " <>
           if MapSet.size(@selected_maps) < length(@maps) do
             "bg-accent-500 hover:shadow-[0_0_20px_rgba(217,119,6,0.6)] text-white"
@@ -45,17 +53,19 @@
         Maps (<%= MapSet.size(@selected_maps) %>/<%= length(@maps) %>)
       </button>
 
-      <%= if MapSet.size(@selected_civs) < length(@civs) - 1 or MapSet.size(@selected_maps) < length(@maps) do %>
+      <%= if MapSet.size(@selected_civs) < length(@civs) - 1 or MapSet.size(@selected_maps) < length(@maps) or @selected_league do %>
         <button
           phx-click="reset-all-filters"
-          class="px-4 py-2 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded transition-colors font-medium"
+          disabled={@loading}
+          class="px-4 py-2 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Reset All Filters
         </button>
       <% end %>
     </div>
+  <% end %>
 
-    <%= if @show_civ_filter do %>
+  <%= if @show_civ_filter and not @loading do %>
       <div class="border border-stone-300 dark:border-zinc-700 rounded-lg p-4 bg-stone-50 dark:bg-zinc-900">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-lg font-semibold text-stone-800 dark:text-zinc-100">
@@ -64,13 +74,15 @@
           <div class="flex gap-2">
             <button
               phx-click="select-all-civs"
-              class="text-sm px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+              disabled={@loading}
+              class="text-sm px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Select All
             </button>
             <button
               phx-click="deselect-all-civs"
-              class="text-sm px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+              disabled={@loading}
+              class="text-sm px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Clear All
             </button>
@@ -78,13 +90,14 @@
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           <%= for civ <- Enum.drop(@civs, 1) do %>
-            <label class="flex items-center gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-zinc-800 p-2 rounded">
+            <label class={"flex items-center gap-2 p-2 rounded " <> if @loading, do: "cursor-not-allowed opacity-50", else: "cursor-pointer hover:bg-stone-100 dark:hover:bg-zinc-800"}>
               <input
                 type="checkbox"
                 phx-click="toggle-civ"
                 phx-value-civ={civ.key}
                 checked={MapSet.member?(@selected_civs, civ.key)}
-                class="w-4 h-4 text-primary-500 focus:ring-primary-500"
+                disabled={@loading}
+                class="w-4 h-4 text-primary-500 focus:ring-primary-500 disabled:cursor-not-allowed"
               />
               <%= if civ.image do %>
                 <img src={"/images/#{civ.image}.png"} alt={civ.label} class="w-8 h-5" />
@@ -96,7 +109,7 @@
       </div>
     <% end %>
 
-    <%= if @show_map_filter do %>
+  <%= if @show_map_filter and not @loading do %>
       <div class="border border-stone-300 dark:border-zinc-700 rounded-lg p-4 bg-stone-50 dark:bg-zinc-900">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-lg font-semibold text-stone-800 dark:text-zinc-100">
@@ -105,13 +118,15 @@
           <div class="flex gap-2">
             <button
               phx-click="select-all-maps"
-              class="text-sm px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+              disabled={@loading}
+              class="text-sm px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Select All
             </button>
             <button
               phx-click="deselect-all-maps"
-              class="text-sm px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+              disabled={@loading}
+              class="text-sm px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Clear All
             </button>
@@ -119,13 +134,14 @@
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           <%= for map <- @maps do %>
-            <label class="flex items-center gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-zinc-800 p-2 rounded">
+            <label class={"flex items-center gap-2 p-2 rounded " <> if @loading, do: "cursor-not-allowed opacity-50", else: "cursor-pointer hover:bg-stone-100 dark:hover:bg-zinc-800"}>
               <input
                 type="checkbox"
                 phx-click="toggle-map"
                 phx-value-map={map.name}
                 checked={MapSet.member?(@selected_maps, map.name)}
-                class="w-4 h-4 text-primary-500 focus:ring-primary-500"
+                disabled={@loading}
+                class="w-4 h-4 text-primary-500 focus:ring-primary-500 disabled:cursor-not-allowed"
               />
               <span class="text-sm text-stone-800 dark:text-zinc-100"><%= map.name %></span>
             </label>
@@ -133,11 +149,12 @@
         </div>
       </div>
     <% end %>
-  </div>
+</div>
 
-  <%= if @error do %>
-    <.error><%= @error %></.error>
-  <% else %>
+<%= if @error do %>
+  <.error><%= @error %></.error>
+<% else %>
+  <%= if not @loading do %>
     <% 
       filtered_civs_list = filtered_civs(@civs, @selected_civs)
       filtered_maps_list = filtered_maps(@maps, @selected_maps)
