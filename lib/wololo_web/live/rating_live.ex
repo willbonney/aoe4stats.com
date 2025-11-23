@@ -59,7 +59,7 @@ defmodule WololoWeb.RatingLive do
   end
 
   def fetch_stats(profile_id) do
-    Sentry.Context.set_user_context(%{id: profile_id})
+    WololoWeb.SentryContext.set_player_context(profile_id)
 
     with {:games, {:ok, opponents_data}} <-
            {:games, PlayerGamesAPI.get_players_games_statistics(profile_id)},

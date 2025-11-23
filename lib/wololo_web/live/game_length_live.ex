@@ -11,7 +11,7 @@ defmodule WololoWeb.GameLengthLive do
   @impl true
   def update(assigns, socket) do
     profile_id = assigns[:profile_id]
-    Sentry.Context.set_user_context(%{id: profile_id})
+    WololoWeb.SentryContext.set_player_context(profile_id)
     assign(socket, loading: true)
 
     case PlayerGamesAPI.get_player_wr_by_game_length(profile_id) do

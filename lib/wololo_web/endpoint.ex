@@ -13,8 +13,8 @@ defmodule WololoWeb.Endpoint do
   ]
 
   socket("/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [session: @session_options]],
-    longpoll: [connect_info: [session: @session_options]]
+    websocket: [connect_info: [:peer_data, :uri, :x_headers, session: @session_options]],
+    longpoll: [connect_info: [:peer_data, :uri, :x_headers, session: @session_options]]
   )
 
   # Serve at "/" the static files from "priv/static" directory.
@@ -50,9 +50,10 @@ defmodule WololoWeb.Endpoint do
     json_decoder: Phoenix.json_library()
   )
 
+  plug(Sentry.PlugContext)
+
   plug(Plug.MethodOverride)
   plug(Plug.Head)
   plug(Plug.Session, @session_options)
   plug(WololoWeb.Router)
-  plug(Sentry.PlugContext)
 end
