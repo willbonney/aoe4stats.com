@@ -77,6 +77,18 @@ COPY config/runtime.exs config/
 COPY rel rel
 RUN mix release
 
+# Verify that the server script was created from overlays
+RUN ls -la /app/_build/${MIX_ENV}/rel/wololo/bin/ && \
+    test -f /app/_build/${MIX_ENV}/rel/wololo/bin/server || \
+    (echo "ERROR: /app/bin/server not found in release! Creating it manually..." && \
+     mkdir -p /app/_build/${MIX_ENV}/rel/wololo/bin && \
+     echo '#!/bin/sh' > /app/_build/${MIX_ENV}/rel/wololo/bin/server && \
+     echo 'set -eu' >> /app/_build/${MIX_ENV}/rel/wololo/bin/server && \
+     echo '' >> /app/_build/${MIX_ENV}/rel/wololo/bin/server && \
+     echo 'cd -P -- "$(dirname -- "$0")"' >> /app/_build/${MIX_ENV}/rel/wololo/bin/server && \
+     echo 'PHX_SERVER=true exec ./wololo start' >> /app/_build/${MIX_ENV}/rel/wololo/bin/server && \
+     chmod +x /app/_build/${MIX_ENV}/rel/wololo/bin/server)
+
 # start a new build stage so that the final image will only contain
 # the compiled release and other runtime necessities
 FROM ${RUNNER_IMAGE}
