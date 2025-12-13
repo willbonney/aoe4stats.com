@@ -111,6 +111,8 @@ COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/wololo ./
 # Copy crontab file and cron job script
 COPY --chown=nobody:root crontab /app/crontab
 COPY --chown=nobody:root rel/cron_job.exs /app/rel/cron_job.exs
+COPY --chown=nobody:root rel/cron-runner.sh /app/bin/cron-runner
+RUN chmod +x /app/bin/cron-runner
 
 USER nobody
 

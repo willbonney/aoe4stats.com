@@ -13,7 +13,13 @@ kill_signal = 'SIGTERM'
 
 [processes]
   app = "/app/bin/server"
-  cron = "supercronic /app/crontab"
+  # Cron process runs once and exits, allowing the machine to auto-stop
+  # To schedule: After deploying, create a scheduled machine with:
+  #   fly scale count cron=0  # Remove existing cron machines
+  #   fly machine run . --schedule daily --name wololo-cron --region dfw
+  # Note: Schedule options are hourly/daily/weekly/monthly (no exact times)
+  # For precise timing (e.g., 3 AM UTC), use Fly.io API or external scheduler
+  cron = "/app/bin/cron-runner"
 
 [env]
   PHX_HOST = 'aoe4stats.com'
@@ -36,3 +42,10 @@ kill_signal = 'SIGTERM'
   memory = '2gb'
   cpu_kind = 'shared'
   cpus = 1
+  processes = ['app']
+
+[[vm]]
+  memory = '2gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  processes = ['cron']
