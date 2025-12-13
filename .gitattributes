@@ -1,0 +1,40 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Shell scripts must always use LF line endings
+*.sh text eol=lf
+rel/overlays/bin/* text eol=lf
+bin/* text eol=lf
+
+# Dockerfile and related files
+Dockerfile* text eol=lf
+*.dockerfile text eol=lf
+.dockerignore text eol=lf
+
+# Configuration files
+*.exs text eol=lf
+*.ex text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+
+# Source files
+*.js text eol=lf
+*.ts text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.heex text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webmanifest binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
