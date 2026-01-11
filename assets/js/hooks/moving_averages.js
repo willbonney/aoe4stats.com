@@ -41,24 +41,24 @@ export default {
 
       chart.data.datasets.push(
         {
-          data: sortByDate(sorted).map(({ moving_average_5g }) => moving_average_5g),
-          label: "5 Game",
-          borderColor: MUI_COLORS[14],
-          backgroundColor: MUI_COLORS[14],
-          spanGaps: true,
-        },
-        {
           data: sortByDate(sorted).map(({ moving_average_10g }) => moving_average_10g),
           label: "10 Game",
-          borderColor: MUI_COLORS[15],
-          backgroundColor: MUI_COLORS[15],
+          borderColor: MUI_COLORS[14],
+          backgroundColor: MUI_COLORS[14],
           spanGaps: true,
         },
         {
           data: sortByDate(sorted).map(({ moving_average_20g }) => moving_average_20g),
           label: "20 Game",
-          borderColor: MUI_COLORS[14],
-          backgroundColor: MUI_COLORS[14],
+          borderColor: MUI_COLORS[15],
+          backgroundColor: MUI_COLORS[15],
+          spanGaps: true,
+        },
+        {
+          data: sortByDate(sorted).map(({ moving_average_30g }) => moving_average_30g),
+          label: "30 Game",
+          borderColor: MUI_COLORS[16],
+          backgroundColor: MUI_COLORS[16],
           spanGaps: true,
         }
       );
@@ -78,4 +78,3 @@ export default {
     this.handleEvent("update-player", null);
   },
 };
-

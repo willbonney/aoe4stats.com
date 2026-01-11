@@ -158,9 +158,9 @@ defmodule Wololo.PlayerGamesAPI do
             %{
               player_rating: player_rating,
               updated_at: updated_at,
-              moving_average_5g: 0,
               moving_average_10g: 0,
-              moving_average_20g: 0
+              moving_average_20g: 0,
+              moving_average_30g: 0
             }
           ],
           fn ratings ->
@@ -172,9 +172,9 @@ defmodule Wololo.PlayerGamesAPI do
                   %{
                     player_rating: player_rating,
                     updated_at: updated_at,
-                    moving_average_5g: get_moving_average(ratings, 5),
                     moving_average_10g: get_moving_average(ratings, 10),
-                    moving_average_20g: get_moving_average(ratings, 20)
+                    moving_average_20g: get_moving_average(ratings, 20),
+                    moving_average_30g: get_moving_average(ratings, 30)
                   }
                 ]
             end

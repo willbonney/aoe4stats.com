@@ -66,13 +66,13 @@
       data-points={Jason.encode!(stats[:moving_averages])}
     >
     </canvas>
-    
+
     <div class="border-b border-gray-200 mt-8"></div>
-    
+
     <h1 class="font-zabal font-gray text-4xl my-8 mx-auto text-center text-stone-800 dark:text-zinc-100">
-      Percent of Games Spent in Each Bracket
+    Percent of Games Spent in Each Bracket
     </h1>
-    
+
     <%= if is_nil(stats[:percentage_time_in_rank]) || map_size(stats[:percentage_time_in_rank]) == 0 do %>
       <div class="text-center py-8">
         <span class="text-sm text-stone-500 dark:text-zinc-400 italic">(insufficient data)</span>

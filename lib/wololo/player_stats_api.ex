@@ -9,19 +9,19 @@ defmodule Wololo.PlayerStatsAPI do
     _1400_to_1499: "Conqueror I",
     _1350_to_1399: "Diamond III",
     _1300_to_1349: "Diamond II",
-    _1250_to_1299: "Diamond I",
-    _1200_to_1249: "Platinum III",
-    _1150_to_1199: "Platinum II",
-    _1100_to_1149: "Platinum I",
-    _1050_to_1099: "Gold III",
-    _1000_to_1049: "Gold II",
-    _950_to_999: "Gold I",
-    _900_to_949: "Silver III",
-    _850_to_899: "Silver II",
-    _800_to_849: "Silver I",
-    _750_to_799: "Bronze III",
-    _700_to_749: "Bronze II",
-    _lt_700: "Bronze I"
+    _1200_to_1299: "Diamond I",
+    _1150_to_1199: "Platinum III",
+    _1100_to_1149: "Platinum II",
+    _1050_to_1099: "Platinum I",
+    _1000_to_1049: "Gold III",
+    _950_to_999: "Gold II",
+    _900_to_949: "Gold I",
+    _850_to_899: "Silver III",
+    _800_to_849: "Silver II",
+    _750_to_799: "Silver I",
+    _700_to_749: "Bronze III",
+    _650_to_699: "Bronze II",
+    _lt_650: "Bronze I"
   }
 
   def fetch_player_data(profile_id, with_stats \\ false) do
@@ -193,8 +193,7 @@ defmodule Wololo.PlayerStatsAPI do
       rating >= 1400 -> :_1400_to_1499
       rating >= 1350 -> :_1350_to_1399
       rating >= 1300 -> :_1300_to_1349
-      rating >= 1250 -> :_1250_to_1299
-      rating >= 1200 -> :_1200_to_1249
+      rating >= 1200 -> :_1200_to_1299
       rating >= 1150 -> :_1150_to_1199
       rating >= 1100 -> :_1100_to_1149
       rating >= 1050 -> :_1050_to_1099
@@ -205,7 +204,8 @@ defmodule Wololo.PlayerStatsAPI do
       rating >= 800 -> :_800_to_849
       rating >= 750 -> :_750_to_799
       rating >= 700 -> :_700_to_749
-      true -> :_lt_700
+      rating >= 650 -> :_650_to_699
+      true -> :_lt_650
     end
   end
 
@@ -217,8 +217,7 @@ defmodule Wololo.PlayerStatsAPI do
       :_1400_to_1499 -> 1450
       :_1350_to_1399 -> 1375
       :_1300_to_1349 -> 1325
-      :_1250_to_1299 -> 1275
-      :_1200_to_1249 -> 1225
+      :_1200_to_1299 -> 1250
       :_1150_to_1199 -> 1175
       :_1100_to_1149 -> 1125
       :_1050_to_1099 -> 1075
@@ -229,7 +228,8 @@ defmodule Wololo.PlayerStatsAPI do
       :_800_to_849 -> 825
       :_750_to_799 -> 775
       :_700_to_749 -> 725
-      :_lt_700 -> 650
+      :_650_to_699 -> 675
+      :_lt_650 -> 625
     end
   end
 end
