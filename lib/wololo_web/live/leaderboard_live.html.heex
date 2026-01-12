@@ -63,7 +63,7 @@
         _ -> @conqueror_data
       end
     %>
-    
+
     <.card class="mb-8">
       <h2 class={"text-2xl font-bold mb-4 #{text_heading()}"}>
         Statistics
@@ -230,13 +230,13 @@
               <div class="flex items-center justify-end gap-1">
                 Prowess Score
                 <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative" title="Calculation">
-                  <span class="invisible group-hover:visible absolute right-6 top-0 w-96 bg-gray-900 text-white text-sm rounded p-4 z-10 whitespace-pre-line leading-relaxed font-mono">Score = Σ(1/rank) / population
+                  <span class="invisible group-hover:visible absolute right-6 top-0 w-96 bg-gray-900 text-white text-sm rounded p-4 z-10 whitespace-pre-line leading-relaxed font-mono">Score = Σ(1/log(rank+1)) / population
 
-For each player:
+For each player (logarithmic weighting):
   Rank #1    → 1.000
-  Rank #10   → 0.100
-  Rank #100  → 0.010
-  Rank #1000 → 0.001
+  Rank #10   → 0.480
+  Rank #100  → 0.330
+  Rank #1000 → 0.250
 
 Sum all contributions, divide by
 population (in millions)
@@ -277,7 +277,6 @@ quantity (more players help)</span>
         </.simple_table>
       </.card>
     <% end %>
-   
+
   <% end %>
 </div>
-

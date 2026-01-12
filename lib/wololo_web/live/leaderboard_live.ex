@@ -233,10 +233,11 @@ defmodule WololoWeb.LeaderboardLive do
           CountryPopulations.has_data?(country)
       end)
       |> Enum.map(fn {country, country_players} ->
-        # Calculate rank-weighted score: sum of (1 / rank) for all players
+        # Calculate rank-weighted score: sum of log-based weights for all players
+        # Using 1 / log(rank + 1) gives smoother dropoff: #1 = 1.0, #10 ≈ 0.48, #100 ≈ 0.33
         rank_weight_sum =
           country_players
-          |> Enum.map(fn p -> 1.0 / p.rank end)
+          |> Enum.map(fn p -> 1.0 / :math.log(p.rank + 1) end)
           |> Enum.sum()
 
         population = CountryPopulations.get_population(country)
