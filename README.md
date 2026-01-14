@@ -3,6 +3,11 @@
 <h1>AOE4STATS.COM</h1>
 </div>
 
+
+### Architecture
+<img src="mermaid.svg" alt="aoe4stats"
+	title="aoe4stats.com Architecture"/>
+
 ### Motivation
 
 I built this to explore Elixir and Phoenix in a way that relates to my passion for RTS games.
