@@ -1,5 +1,5 @@
 <div align="center">
-<img src="priv/static/favicon/favicon-32x32.png" style="width: 100px; height: 100px" alt="aoe4stats.com logo" />
+<img src="priv/static/favicon/android-chrome-192x192.png" style="width: 100px; height: 100px" alt="aoe4stats.com logo" />
 <h1>AOE4STATS.COM</h1>
 </div>
 
