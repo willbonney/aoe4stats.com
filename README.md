@@ -3,13 +3,18 @@
 <h1>AOE4STATS.COM</h1>
 </div>
 
+
+### Architecture
+<img src="mermaid.svg" alt="aoe4stats"
+	title="aoe4stats.com Architecture"/>
+
 ### Motivation
 
-I built it to explore Elixir and Phoenix in a way that relates to my passion for RTS games.
+I built this to explore Elixir and Phoenix in a way that relates to my passion for RTS games.
 
 ### Under the hood
 
-The app is pulling data from another Age Of Empires IV API and tranforming it in ways to yield stastical data that is not available elsewhere. The player data relates to the 1v1 ladder performance in the game. The app is hosted on Fly.io.
+The app is pulling data from another Age Of Empires IV API and tranforming it in ways to yield stastical data that is not available elsewhere. The player data relates to the 1v1 ladder performance in the game, the top players on the leaderboard and more generally the relationship betweens maps and civilizations. The app is hosted on Fly.io.
 
 #### Sections
 
