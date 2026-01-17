@@ -5,7 +5,7 @@
 
 
 ### Architecture
-<img src="mermaid.svg" alt="aoe4stats" style="width: 720px; height: 1280px"
+<img src="architecture.png" alt="aoe4stats"
 	title="aoe4stats.com Architecture"/>
 
 ### Motivation
