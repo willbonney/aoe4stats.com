@@ -5,9 +5,10 @@
 
 
 ### Architecture
-
+<p align="center" width="100%">
 <img src="architecture.png" alt="aoe4stats" style="display: block; margin: 0 auto;"
 	title="aoe4stats.com Architecture"/>
+</p>
 
 ### Motivation
 
