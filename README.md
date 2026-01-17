@@ -1,11 +1,11 @@
 <div align="center">
-<img src="priv/static/favicon/android-chrome-192x192.png" alt="aoe4stats.com logo" />
+<img src="priv/static/favicon/android-chrome-192x192.png" style="width: 100px; height: 100px" alt="aoe4stats.com logo" />
 <h1>AOE4STATS.COM</h1>
 </div>
 
 
 ### Architecture
-<img src="mermaid.svg" alt="aoe4stats"
+<img src="architecture.png" alt="aoe4stats"
 	title="aoe4stats.com Architecture"/>
 
 ### Motivation
