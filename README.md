@@ -1,7 +1,7 @@
-<div align="center">
+<p align="center" width="100%">
 <img src="priv/static/favicon/android-chrome-192x192.png" style="width: 100px; height: 100px" alt="aoe4stats.com logo" />
 <h1>AOE4STATS.COM</h1>
-</div>
+</p>
 
 <p align="center" width="100%">
 <img src="architecture.png" alt="aoe4stats" style="display: block; margin: 0 auto;"
