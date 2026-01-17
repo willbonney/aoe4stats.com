@@ -5,9 +5,10 @@
 
 
 ### Architecture
+<div align="center'>
 <img src="architecture.png" alt="aoe4stats" style="display: block; margin: 0 auto;"
 	title="aoe4stats.com Architecture"/>
-
+</div>
 ### Motivation
 
 I built this to explore Elixir and Phoenix in a way that relates to my passion for RTS games.
