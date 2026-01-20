@@ -37,9 +37,9 @@ The app is pulling data from another Age Of Empires IV API and tranforming it in
 
 Browse the different sections of the app to see various statistics and charts. Here are some individual player statisctics to look at:
 
-https://www.aoe4stats.com/player/1676400/rating
-https://www.aoe4stats.com/player/60328/rating
-https://www.aoe4stats.com/player/6943917/rating
+https://www.aoe4stats.com/player/1676400/rating  
+https://www.aoe4stats.com/player/60328/rating  
+https://www.aoe4stats.com/player/6943917/rating  
 
 ### Local Development
 
