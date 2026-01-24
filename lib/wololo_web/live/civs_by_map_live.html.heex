@@ -215,6 +215,7 @@
               |> Enum.map(&get_in(map, [:civs, &1.key, :win_rate]))
               |> Enum.reject(&is_nil/1)
               |> Enum.map(&Float.parse/1)
+              |> Enum.reject(&(&1 == :error))
               |> Enum.map(fn {val, _} -> val end)
 
             average = if Enum.empty?(win_rates) do
