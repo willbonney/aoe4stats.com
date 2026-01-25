@@ -1,5 +1,7 @@
 # AoE 4 Stats
 
+_**LLM usage:** 30% (Sonnet 4.5)_
+
 AoE 4 Stats derives new statistics from the [AoE 4 World](https://aoe4world.com) API to show more in-depth insights related to the [Age of Empires 4](https://www.ageofempires.com/games/age-of-empires-iv/) Real Time Strategy game.
 
 <p align="center" width="100%">
