@@ -467,14 +467,19 @@ defmodule WololoWeb.AnalysisLive do
     games_json
     |> Jason.decode!()
     |> Map.get("games", [])
-    |> Enum.map(fn game ->
-      {player, opponent} = PlayerGamesAPI.extract_player_opponent(game, profile_id)
+    |> Enum.flat_map(fn game ->
+      case PlayerGamesAPI.extract_player_opponent(game, profile_id) do
+        {:ok, player, opponent} ->
+          [%{
+            "player_rating" => player["player"]["rating"],
+            "opponent_rating" => opponent["player"]["rating"],
+            "result" => if(player["player"]["result"] == "win", do: "win", else: "loss")
+          }]
 
-      %{
-        "player_rating" => player["player"]["rating"],
-        "opponent_rating" => opponent["player"]["rating"],
-        "result" => if(player["player"]["result"] == "win", do: "win", else: "loss")
-      }
+        {:error, _reason} ->
+          # Skip games with invalid structure
+          []
+      end
     end)
   end
 end

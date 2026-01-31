@@ -1,7 +1,7 @@
 <div id="analysis">
   <% common_stat_classes =
     "font-zabal font-black text-4xl mx-auto text-center text-stone-800 dark:text-zinc-100" %>
-  
+
   <% metrics = [
     %{name: "Peak Proximity", key: :peak_proximity, icon: "hero-arrows-pointing-in", color: "#2196F3", description: "How consistently you perform near your peak rating. Higher scores mean you usually play at your best.", calculation: "Let R = {all ratings}\nR_peak = max(R)\n\nD_avg = μ(R_peak - Rᵢ)\n  (avg distance from peak)\n\nScore = 100 - D_avg / 3\n\nExamples:\n  30 pts from peak → 90 score\n  60 pts from peak → 80 score\n  150 pts from peak → 50 score\n\n∴ Every 3 rating points away = -1 score"},
     %{name: "Recovery", key: :recovery, icon: "hero-arrow-trending-up", color: "#4CAF50", description: "How quickly you bounce back from losing streaks. Higher scores mean faster recovery.", calculation: "Let S = {losing streaks}\nFor each streak sᵢ where sᵢ < 0:\n  Record |sᵢ| when streak breaks\n\nμ_loss = μ(|S|)\n\nScore = max(0, 100 - μ_loss × 10)\n\n∴ Shorter losing streaks → Higher score"},
@@ -12,19 +12,37 @@
     %{name: "Versatility", key: :versatility, icon: "hero-cube", color: "#FF69B4", description: "Success across multiple civilizations. Higher scores mean you excel with more civs.", calculation: "Let C = {civs with ≥ 5% of total games}\nC_good = {c ∈ C | WR_c ≥ 50%}\nn = |C_good|\n\nIf n ≤ 1: Score = 0\nElse:\n  μ_wr = μ(WR for c ∈ C_good)\n  D = 100 × (1 - 1/n) × 1.15\n  M = (μ_wr / 50)^1.8\n  Score = min(100, D × M)\n\n∴ More civs + Higher WR → Higher score"},
     %{name: "Underdog Power", key: :underdog_success, icon: "hero-trophy", color: "#E91E63", description: "Win rate when facing significantly higher-rated opponents. Higher scores show you rise to challenges.", calculation: "Let D = {rating differences}\nDᵢ = Opponent_Rating - Player_Rating\n\nμ_d = μ(D)\nσ_d = σ(D)\n\nThreshold = μ_d + 0.75σ_d\n\nU = {games where Dᵢ ≥ Threshold}\nW_u = wins in U\n\nScore = (W_u / |U|) × 100\n\n∴ Win rate vs higher-rated players"}
   ] %>
-  
+
   <.async_result :let={analysis} assign={@analysis}>
     <:loading>
       <div class="flex justify-center items-center">
         <.spinner size="lg" class="text-primary-500" />
       </div>
     </:loading>
-    <:failed :let={_reason}>Failed to load analysis</:failed>
+    <:failed :let={reason}>
+      <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-amber-800 dark:text-amber-200">
+              Unable to load analysis
+            </h3>
+            <div class="mt-2 text-sm text-amber-700 dark:text-amber-300">
+              <%= reason %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </:failed>
 
     <h1 class={common_stat_classes <> " text-4xl my-8"}>
       Analysis
     </h1>
-    
+
     <!-- Metric Descriptions -->
     <div class="max-w-6xl mx-auto mb-8 grid grid-cols-1 md:grid-cols-2 gap-4" id="metric-descriptions">
       <%= for metric <- metrics do %>
