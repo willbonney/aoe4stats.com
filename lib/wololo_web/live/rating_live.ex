@@ -2,6 +2,7 @@ defmodule WololoWeb.RatingLive do
   alias Wololo.PlayerGamesAPI
   use WololoWeb, :live_component
   import WololoWeb.Components.Spinner
+  import WololoWeb.ErrorHelpers
   alias Wololo.PlayerStatsAPI
   import Wololo.Utils, only: [rating_to_color_map: 1]
   alias Phoenix.LiveView.AsyncResult

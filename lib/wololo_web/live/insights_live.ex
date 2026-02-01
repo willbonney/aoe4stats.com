@@ -3,6 +3,7 @@ defmodule WololoWeb.InsightsLive do
   require Logger
   alias Wololo.PlayerGamesAPI
   import WololoWeb.Components.Spinner
+  import WololoWeb.ErrorHelpers
 
   defp default_prompt(player_name) do
     """
@@ -162,6 +163,10 @@ defmodule WololoWeb.InsightsLive do
                 Logger.error("Invalid response format from Grok API")
                 {:error, "Invalid response format from Grok"}
             end
+
+          {:error, message} = error ->
+            Logger.error("Unexpected Grok response: #{inspect(error)}")
+            {:error, message}
 
           error ->
             Logger.error("Unexpected Grok response: #{inspect(error)}")

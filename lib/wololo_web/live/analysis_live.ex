@@ -1,6 +1,7 @@
 defmodule WololoWeb.AnalysisLive do
   use WololoWeb, :live_component
   import WololoWeb.Components.Spinner
+  import WololoWeb.ErrorHelpers
   alias Wololo.PlayerStatsAPI
   alias Wololo.PlayerGamesAPI
   alias Wololo.Utils
