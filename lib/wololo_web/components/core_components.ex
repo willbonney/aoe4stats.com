@@ -78,7 +78,7 @@ defmodule WololoWeb.CoreComponents do
                   <.icon name="hero-x-mark-solid" class="h-5 w-5" />
                 </button>
               </div>
-              
+
               <div id={"#{@id}-content"}>
                 {render_slot(@inner_block)}
               </div>
@@ -126,9 +126,9 @@ defmodule WololoWeb.CoreComponents do
         <.icon :if={@kind == :info} name="hero-information-circle-mini" class="h-4 w-4" />
         <.icon :if={@kind == :error} name="hero-exclamation-circle-mini" class="h-4 w-4" /> {@title}
       </p>
-      
+
       <p class="mt-2 text-sm leading-5">{msg}</p>
-      
+
       <button type="button" class="group absolute top-1 right-1 p-2" aria-label={gettext("close")}>
         <.icon name="hero-x-mark-solid" class="h-5 w-5 opacity-40 group-hover:opacity-70" />
       </button>
@@ -162,7 +162,7 @@ defmodule WololoWeb.CoreComponents do
         {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 h-3 w-3 animate-spin" />
       </.flash>
-      
+
       <.flash
         id="server-error"
         kind={:error}
@@ -329,7 +329,7 @@ defmodule WololoWeb.CoreComponents do
           {@rest}
         /> {@label}
       </label>
-      
+
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -339,7 +339,7 @@ defmodule WololoWeb.CoreComponents do
     ~H"""
     <div>
       <.label for={@id}>{@label}</.label>
-      
+
       <select
         id={@id}
         name={@name}
@@ -350,7 +350,7 @@ defmodule WololoWeb.CoreComponents do
         <option :if={@prompt} value="">{@prompt}</option>
          {Phoenix.HTML.Form.options_for_select(@options, @value)}
       </select>
-      
+
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -380,7 +380,7 @@ defmodule WololoWeb.CoreComponents do
     ~H"""
     <div>
       <.label for={@id}>{@label}</.label>
-      
+
       <input
         type={@type}
         name={@name}
@@ -443,12 +443,12 @@ defmodule WololoWeb.CoreComponents do
         <h1 class="text-lg font-semibold leading-8 text-zinc-800 dark:text-zinc-100">
           {render_slot(@inner_block)}
         </h1>
-        
+
         <p :if={@subtitle != []} class="mt-2 text-sm leading-6 text-zinc-600">
           {render_slot(@subtitle)}
         </p>
       </div>
-      
+
       <div class="flex-none">{render_slot(@actions)}</div>
     </header>
     """
@@ -468,7 +468,7 @@ defmodule WololoWeb.CoreComponents do
             <a href="/">
               <.icon name="hero-home" class="h-6 w-6 dark:text-zinc-100" />
             </a>
-            
+
             <button class="cursor-pointer" phx-click="show_search">
               <.icon
                 name="hero-magnifying-glass"
@@ -477,8 +477,18 @@ defmodule WololoWeb.CoreComponents do
             </button>
           <% end %>
         </div>
-        
-        <div class="flex items-center">
+
+        <div class="flex items-center gap-4">
+          <a
+            href="https://ko-fi.com/znmto"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Support me on Ko-fi"
+            class="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <img src="https://storage.ko-fi.com/cdn/logomarkLogo.png" alt="Ko-fi" class="h-6 w-6" />
+            <span class="text-base font-medium text-stone-800 dark:text-zinc-100">Buy me a coffee</span>
+          </a>
           <DarktoggleWeb.Components.ToggleTheme.render />
         </div>
       </div>
@@ -532,13 +542,13 @@ defmodule WololoWeb.CoreComponents do
                 {col[:label]}
               </div>
             </th>
-            
+
             <th :if={@action != []} class="relative p-0 pb-4">
               <span class="sr-only">{gettext("Actions")}</span>
             </th>
           </tr>
         </thead>
-        
+
         <tbody
           id={@id}
           phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
@@ -563,7 +573,7 @@ defmodule WololoWeb.CoreComponents do
                 </span>
               </div>
             </td>
-            
+
             <td :if={@action != []} class="relative w-14 p-0">
               <div class="relative whitespace-nowrap py-4 text-right text-sm font-medium">
                 <span
@@ -601,7 +611,7 @@ defmodule WololoWeb.CoreComponents do
       <dl class="-my-4 divide-y divide-zinc-100">
         <div :for={item <- @item} class="flex gap-4 py-4 text-sm leading-6 sm:gap-8">
           <dt class="w-1/4 flex-none text-zinc-500">{item.title}</dt>
-          
+
           <dd class="text-zinc-700">{render_slot(item)}</dd>
         </div>
       </dl>
