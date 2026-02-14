@@ -43,7 +43,7 @@ const AlwaysShowTooltipPlugin = {
     const color = pluginOptions?.color ?? "black"; // default to black
 
     ctx.save();
-    ctx.font = `${pluginOptions?.fontSize ?? 16}px Zabal`;
+    ctx.font = `${pluginOptions?.fontSize ?? 24}px Zabal`;
     ctx.textAlign = "center";
     ctx.fontWeight = `${pluginOptions?.fontWeight ?? 900}`;
 

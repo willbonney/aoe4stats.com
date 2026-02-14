@@ -1,3 +1,48 @@
+// League background colors (from utils.ex full_rating_to_color_map, semi-transparent)
+export const LEAGUE_COLORS = {
+  Bronze: "rgba(184, 115, 51, 0.35)", // #B87333
+  Silver: "rgba(192, 192, 192, 0.35)", // #C0C0C0
+  Gold: "rgba(255, 193, 37, 0.35)", // #FFC125
+  Platinum: "rgba(230, 230, 230, 0.4)", // #E6E6E6
+  Diamond: "rgba(135, 206, 250, 0.35)", // #87CEFA
+  Conqueror: "rgba(255, 165, 0, 0.35)", // #FFA500
+};
+
+// League rating ranges [min, max] (matches utils.ex league_ranges)
+export const LEAGUE_RATING_RANGES = {
+  Bronze: { min: 0, max: 750, color: LEAGUE_COLORS.Bronze },
+  Silver: { min: 750, max: 900, color: LEAGUE_COLORS.Silver },
+  Gold: { min: 900, max: 1050, color: LEAGUE_COLORS.Gold },
+  Platinum: { min: 1050, max: 1200, color: LEAGUE_COLORS.Platinum },
+  Diamond: { min: 1200, max: 1400, color: LEAGUE_COLORS.Diamond },
+  Conqueror: { min: 1400, max: 1600, color: LEAGUE_COLORS.Conqueror },
+};
+
+// Generate box annotations for league backgrounds on Y-axis (for rating charts)
+// Only shows bands that overlap with the visible data range [dataMin, dataMax]
+export function generateLeagueYAxisAnnotations(showLeagueBands = true, dataMin = 0, dataMax = 1600) {
+  if (!showLeagueBands) return {};
+
+  const annotations = {};
+
+  Object.entries(LEAGUE_RATING_RANGES).forEach(([league, { min, max, color }]) => {
+    // Only include bands that overlap with the data range
+    if (max >= dataMin && min <= dataMax) {
+      annotations[`league_${league.toLowerCase()}`] = {
+        type: "box",
+        yMin: min,
+        yMax: max,
+        backgroundColor: color,
+        borderWidth: 0,
+        drawTime: "beforeDatasetsDraw",
+        z: -1,
+      };
+    }
+  });
+
+  return annotations;
+}
+
 export const MUI_COLORS = [
   // RED
   "rgba(233, 30, 99, 1)", // #E91E63
@@ -128,4 +173,49 @@ export const setFiftyPercentLine = (chart, isDark) => {
     },
   };
   chart.update();
+};
+
+// Enhanced tooltip configuration with larger fonts and UI elements
+export const getLargeTooltipConfig = (customConfig = {}) => {
+  return {
+    enabled: true,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    titleColor: "#ffffff",
+    bodyColor: "#ffffff",
+    borderColor: "#ffffff",
+    borderWidth: 2,
+    cornerRadius: 8,
+    padding: 16,
+    titleFont: {
+      size: 18,
+      weight: "bold",
+      family: "Zabal",
+    },
+    bodyFont: {
+      size: 16,
+      weight: "normal",
+      family: "Zabal",
+    },
+    footerFont: {
+      size: 14,
+      weight: "normal",
+      family: "Zabal",
+    },
+    displayColors: true,
+    boxWidth: 20,
+    boxHeight: 20,
+    usePointStyle: true,
+    ...customConfig,
+  };
+};
+
+// Enhanced always-show tooltip configuration with larger fonts
+export const getLargeAlwaysShowTooltipConfig = (customConfig = {}) => {
+  return {
+    fontSize: 24,
+    fontWeight: 900,
+    color: customConfig.color || "black",
+    valueFormatter: customConfig.valueFormatter || ((value) => String(value)),
+    ...customConfig,
+  };
 };

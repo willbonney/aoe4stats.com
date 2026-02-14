@@ -12,7 +12,8 @@ defmodule WololoWeb.RatingLive do
     {:ok,
      socket
      |> assign(:stats, %AsyncResult{})
-     |> assign(:error, nil)}
+     |> assign(:error, nil)
+     |> assign(:show_league_bands, false)}
   end
 
   @impl true
@@ -55,6 +56,18 @@ defmodule WololoWeb.RatingLive do
       socket
       |> assign(:stats, AsyncResult.failed(%AsyncResult{}, reason))
       |> assign(:error, reason)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("toggle-league-bands", _params, socket) do
+    new_value = !socket.assigns.show_league_bands
+
+    socket =
+      socket
+      |> assign(:show_league_bands, new_value)
+      |> push_event("toggle-league-bands", %{show: new_value})
 
     {:noreply, socket}
   end

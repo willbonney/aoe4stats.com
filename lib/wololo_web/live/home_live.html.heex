@@ -16,7 +16,7 @@
     </p>
     <div class="flex justify-center">
       <div class="w-full max-w-3xl">
-        <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3 justify-items-center">
+        <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4 justify-items-center">
           <a
             href={~p"/civs_by_map"}
             class="group relative rounded-2xl px-6 py-4 text-sm font-semibold leading-6 text-zinc-900 sm:py-6 w-full max-w-xs "
@@ -26,6 +26,17 @@
             <span class="relative flex items-center gap-4 sm:flex-col dark:text-zinc-100 ">
               <.icon name="hero-map" class="w-24 h-24 dark:text-zinc-100 dark:fill-slate-100" />
               Civilization WRs by Map
+            </span>
+          </a>
+          <a
+            href={~p"/civs_by_league"}
+            class="group relative rounded-2xl px-6 py-4 text-sm font-semibold leading-6 text-zinc-900 sm:py-6 w-full max-w-xs "
+          >
+            <span class="absolute border-2 border-zinc-200 dark:border-stone-800 inset-0 rounded-2xl bg-zinc-50 transition group-hover:bg-zinc-100 dark:group-hover:bg-stone-800 sm:group-hover:scale-105 dark:bg-stone-800">
+            </span>
+            <span class="relative flex items-center gap-4 sm:flex-col dark:text-zinc-100 ">
+              <.icon name="hero-trophy" class="w-24 h-24 dark:text-zinc-100 dark:fill-slate-100" />
+              Civilization WRs by League
             </span>
           </a>
           <button

@@ -1,0 +1,112 @@
+<.header>Civilization WRs by League</.header>
+
+<div class="mb-4 space-y-4">
+  <%= if @loading do %>
+    <div class="flex justify-center items-center py-4">
+      <.spinner size="lg" class="text-primary-500" />
+      <span class="ml-3 text-stone-600 dark:text-zinc-400">Loading data...</span>
+    </div>
+  <% end %>
+
+  <%= if not @loading do %>
+    <div class="flex gap-4 flex-wrap items-center">
+      <button
+        phx-click="toggle-civ-filter"
+        disabled={@loading}
+        class={"px-4 py-2 rounded transition-all font-medium flex items-center gap-2 " <>
+          if MapSet.size(@selected_civs) < length(@civs) do
+            "bg-accent-500 hover:shadow-[0_0_20px_rgba(217,119,6,0.6)] text-white"
+          else
+            "bg-primary-500 hover:shadow-[0_0_20px_rgba(230,74,25,0.6)] text-white"
+          end
+        }
+      >
+        <.icon name="hero-funnel" class="h-5 w-5" />
+        Civilizations (<%= MapSet.size(@selected_civs) %>/<%= length(@civs) %>)
+      </button>
+
+      <%= if MapSet.size(@selected_civs) < length(@civs) do %>
+        <button
+          phx-click="reset-all-filters"
+          disabled={@loading}
+          class="px-4 py-2 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Reset All Filters
+        </button>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%= if @show_civ_filter and not @loading do %>
+    <div class="border border-stone-300 dark:border-zinc-700 rounded-lg p-4 bg-stone-50 dark:bg-zinc-900">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-semibold text-stone-800 dark:text-zinc-100">
+          Select Civilizations (<%= MapSet.size(@selected_civs) %>/<%= length(@civs) %>)
+        </h3>
+        <div class="flex gap-2">
+          <button
+            phx-click="select-all-civs"
+            disabled={@loading}
+            class="text-sm px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Select All
+          </button>
+          <button
+            phx-click="deselect-all-civs"
+            disabled={@loading}
+            class="text-sm px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Clear All
+          </button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <%= for civ <- @civs do %>
+          <label class={"flex items-center gap-2 p-2 rounded " <> if @loading, do: "cursor-not-allowed opacity-50", else: "cursor-pointer hover:bg-stone-100 dark:hover:bg-zinc-800"}>
+            <input
+              type="checkbox"
+              phx-click="toggle-civ"
+              phx-value-civ={civ.key}
+              checked={MapSet.member?(@selected_civs, civ.key)}
+              disabled={@loading}
+              class="w-4 h-4 text-primary-500 focus:ring-primary-500 disabled:cursor-not-allowed"
+            />
+            <%= if civ.image do %>
+              <img src={"/images/#{civ.image}.png"} alt={civ.label} class="w-8 h-5" />
+            <% end %>
+            <span class="text-sm text-stone-800 dark:text-zinc-100"><%= civ.label %></span>
+            <span class="w-3 h-3 rounded-full inline-block flex-shrink-0" style={"background-color: #{civ.color}"}></span>
+          </label>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<%= if @error do %>
+  <.error><%= @error %></.error>
+<% else %>
+  <%= if not @loading do %>
+    <%= if MapSet.size(@selected_civs) == 0 do %>
+      <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
+        <.icon name="hero-exclamation-triangle" class="h-12 w-12 mx-auto mb-4 text-yellow-600 dark:text-yellow-400" />
+        <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+          No Data to Display
+        </h3>
+        <p class="text-yellow-700 dark:text-yellow-300 mb-4">
+          Please select at least one civilization to view data.
+        </p>
+        <button
+          phx-click="reset-all-filters"
+          class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 text-white rounded transition-colors font-medium"
+        >
+          Reset Filters
+        </button>
+      </div>
+    <% else %>
+      <div class="w-full" style="min-height: 500px;">
+        <canvas id="civs-by-league-chart" phx-hook="CivsByLeague" phx-update="ignore"></canvas>
+      </div>
+    <% end %>
+  <% end %>
+<% end %>

@@ -20,6 +20,7 @@ defmodule WololoWeb.CivsByMapLive do
     {"≥ Conq 4", "≥conqueror_4"}
   ]
 
+
   @civs [
     %{key: :name, label: "Map", image: nil},
     %{key: :abbasid_dynasty, label: "Abbasid", image: "abbasid_dynasty"},
@@ -307,7 +308,6 @@ defmodule WololoWeb.CivsByMapLive do
       socket
     end
   end
-
   defp maybe_assign_league(socket, nil), do: socket
 
   defp maybe_assign_league(socket, league) when is_binary(league) and byte_size(league) > 0 do
@@ -317,6 +317,8 @@ defmodule WololoWeb.CivsByMapLive do
   end
 
   defp maybe_assign_league(socket, _), do: socket
+
+
 
   def color_class(percentage, type) when is_binary(percentage) do
     case Float.parse(percentage) do

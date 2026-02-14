@@ -18,34 +18,36 @@
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
 import "phoenix_html";
 // Establish Phoenix Socket and LiveView configuration.
-import { Socket } from "phoenix";
-import { LiveSocket } from "phoenix_live_view";
-import * as topbar from "../vendor/topbar.cjs";
-import toggleThemeHook from "../vendor/toggle_theme";
 import { Chart } from "chart.js/auto";
 import annotationPlugin from "chartjs-plugin-annotation";
+import { Socket } from "phoenix";
+import { LiveSocket } from "phoenix_live_view";
+import toggleThemeHook from "../vendor/toggle_theme";
+import * as topbar from "../vendor/topbar.cjs";
 import {
-  OpponentsByCountry,
+  Analysis,
+  CivsByLeague,
+  FilterPersistence,
   LeaderboardCountries,
   MovingAverages,
+  OpponentsByCountry,
+  PercentageTimeInRank,
   RankHistory,
   WrsByGameLength,
-  PercentageTimeInRank,
-  Analysis,
-  FilterPersistence,
 } from "./hooks/index.js";
 
 Chart.register(annotationPlugin);
 
 const hooks = {
-  OpponentsByCountry,
+  Analysis,
+  CivsByLeague,
+  FilterPersistence,
   LeaderboardCountries,
   MovingAverages,
+  OpponentsByCountry,
+  PercentageTimeInRank,
   RankHistory,
   WrsByGameLength,
-  PercentageTimeInRank,
-  Analysis,
-  FilterPersistence,
   DarkThemeToggle: toggleThemeHook,
 };
 

@@ -22,6 +22,7 @@ defmodule WololoWeb.Router do
       layout: {WololoWeb.Layouts, :app} do
       live("/", HomeLive)
       live("/civs_by_map", CivsByMapLive)
+      live("/civs_by_league", CivsByLeagueLive)
       live("/leaderboard", LeaderboardLive)
       live("/player/:profile_id/:section", PlayerLive)
       live("/player", PlayerLive)

@@ -1,5 +1,5 @@
 import { Chart } from "chart.js/auto";
-import { MUI_COLORS, TW_STONE_800, TW_ZINC_100 } from "./shared.js";
+import { MUI_COLORS, TW_STONE_800, TW_ZINC_100, getLargeTooltipConfig } from "./shared.js";
 
 export default {
   mounted() {
@@ -58,6 +58,7 @@ export default {
             display: false,
           },
           tooltip: {
+            ...getLargeTooltipConfig(),
             callbacks: {
               label: (context) => `${context.raw.toFixed(1)}%`,
             },
@@ -86,7 +87,7 @@ export default {
           ...chart.options.scales.r.pointLabels,
           color: color,
           font: {
-            size: 18,
+            size: 22,
           },
         },
         ticks: {
@@ -171,4 +172,3 @@ export default {
     this.handleEvent("update-analysis", null);
   },
 };
-
