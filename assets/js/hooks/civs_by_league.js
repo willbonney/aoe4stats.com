@@ -1,12 +1,22 @@
 import { Chart } from "chart.js/auto";
-import { LEAGUE_COLORS, TW_STONE_800, TW_ZINC_100 } from "./shared.js";
+import { TW_STONE_800, TW_ZINC_100 } from "./shared.js";
 
 // Generate box annotations for league backgrounds
-function generateLeagueBoxAnnotations(labels) {
+function generateLeagueBoxAnnotations(labels, isDark = false) {
   const annotations = {};
 
+  // League colors with transparency for light mode, opaque for dark mode
+  const leagueColors = {
+    Bronze: isDark ? "rgba(184, 115, 51, 0.8)" : "rgba(184, 115, 51, 0.35)",
+    Silver: isDark ? "rgba(192, 192, 192, 0.8)" : "rgba(192, 192, 192, 0.35)",
+    Gold: isDark ? "rgba(255, 193, 37, 0.8)" : "rgba(255, 193, 37, 0.35)",
+    Platinum: isDark ? "rgba(230, 230, 230, 0.8)" : "rgba(230, 230, 230, 0.4)",
+    Diamond: isDark ? "rgba(135, 206, 250, 0.8)" : "rgba(135, 206, 250, 0.35)",
+    Conqueror: isDark ? "rgba(255, 165, 0, 0.8)" : "rgba(255, 165, 0, 0.35)",
+  };
+
   labels.forEach((label, index) => {
-    const color = LEAGUE_COLORS[label];
+    const color = leagueColors[label];
     if (color) {
       annotations[`league_${label.toLowerCase()}`] = {
         type: "box",
@@ -30,7 +40,7 @@ function generate50PercentLine(isDark) {
       type: "line",
       yMin: 50,
       yMax: 50,
-      borderColor: isDark ? TW_ZINC_100 : TW_STONE_800,
+      borderColor: TW_STONE_800,
       borderWidth: 2,
       borderDash: [10, 5],
       drawTime: "beforeDatasetsDraw",
@@ -185,7 +195,7 @@ export default {
       }));
 
       // Build all annotations together
-      const leagueAnnotations = generateLeagueBoxAnnotations(event.labels);
+      const leagueAnnotations = generateLeagueBoxAnnotations(event.labels, isDark);
       const lineAnnotation = generate50PercentLine(isDark);
 
       chart.options.plugins.annotation.annotations = {
@@ -217,7 +227,7 @@ export default {
       const { isDark } = e.detail;
 
       // Update 50% line color for new theme
-      const leagueAnnotations = generateLeagueBoxAnnotations(currentLabels);
+      const leagueAnnotations = generateLeagueBoxAnnotations(currentLabels, isDark);
       const lineAnnotation = generate50PercentLine(isDark);
 
       chart.options.plugins.annotation.annotations = {
