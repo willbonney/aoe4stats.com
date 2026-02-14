@@ -1,10 +1,10 @@
 import { Chart } from "chart.js/auto";
-import { MUI_COLORS, TW_STONE_800, TW_ZINC_100, generateLeagueYAxisAnnotations } from "./shared.js";
+import { MUI_COLORS, TW_STONE_800, TW_ZINC_100, generateDetailedRankYAxisAnnotations } from "./shared.js";
 
 export default {
   mounted() {
     const ctx = this.el;
-    let showLeagueBands = false;
+    let showRankBands = false;
 
     const chart = new Chart(ctx, {
       type: "line",
@@ -67,8 +67,8 @@ export default {
       chart.options.scales.y.min = Math.floor(dataMin - padding);
       chart.options.scales.y.max = Math.ceil(dataMax + padding);
 
-      chart.options.plugins.annotation.annotations = generateLeagueYAxisAnnotations(
-        showLeagueBands,
+      chart.options.plugins.annotation.annotations = generateDetailedRankYAxisAnnotations(
+        showRankBands,
         chart.options.scales.y.min,
         chart.options.scales.y.max
       );
@@ -118,7 +118,7 @@ export default {
     });
 
     this.handleEvent("toggle-league-bands", (event) => {
-      showLeagueBands = event.show;
+      showRankBands = event.show;
       updateAnnotations();
       chart.update();
     });

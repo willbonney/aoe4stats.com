@@ -219,3 +219,50 @@ export const getLargeAlwaysShowTooltipConfig = (customConfig = {}) => {
     ...customConfig,
   };
 };
+
+// Detailed rank segments with colors matching the pie chart
+const DETAILED_RANK_SEGMENTS = {
+  "Conqueror III": { min: 1600, max: 2000, color: "rgba(242, 153, 26, 0.35)" }, // #F2991A
+  "Conqueror II": { min: 1500, max: 1600, color: "rgba(255, 165, 0, 0.35)" }, // #FFA500
+  "Conqueror I": { min: 1400, max: 1500, color: "rgba(255, 184, 77, 0.35)" }, // #FFB84D
+  "Diamond III": { min: 1350, max: 1400, color: "rgba(123, 184, 255, 0.35)" }, // #7BB8FF
+  "Diamond II": { min: 1300, max: 1350, color: "rgba(135, 206, 250, 0.35)" }, // #87CEFA
+  "Diamond I": { min: 1200, max: 1300, color: "rgba(159, 212, 232, 0.35)" }, // #9FD4E8
+  "Platinum III": { min: 1150, max: 1200, color: "rgba(212, 220, 230, 0.35)" }, // #D4DCE6
+  "Platinum II": { min: 1100, max: 1150, color: "rgba(230, 230, 230, 0.4)" }, // #E6E6E6
+  "Platinum I": { min: 1050, max: 1100, color: "rgba(240, 244, 248, 0.4)" }, // #F0F4F8
+  "Gold III": { min: 1000, max: 1050, color: "rgba(230, 184, 0, 0.35)" }, // #E6B800
+  "Gold II": { min: 950, max: 1000, color: "rgba(255, 193, 37, 0.35)" }, // #FFC125
+  "Gold I": { min: 900, max: 950, color: "rgba(255, 215, 0, 0.35)" }, // #FFD700
+  "Silver III": { min: 850, max: 900, color: "rgba(184, 184, 184, 0.35)" }, // #B8B8B8
+  "Silver II": { min: 800, max: 850, color: "rgba(192, 192, 192, 0.35)" }, // #C0C0C0
+  "Silver I": { min: 750, max: 800, color: "rgba(208, 208, 208, 0.35)" }, // #D0D0D0
+  "Bronze III": { min: 700, max: 750, color: "rgba(166, 92, 34, 0.35)" }, // #A65C22
+  "Bronze II": { min: 650, max: 700, color: "rgba(184, 115, 51, 0.35)" }, // #B87333
+  "Bronze I": { min: 0, max: 650, color: "rgba(193, 138, 74, 0.35)" }, // #C18A4A
+};
+
+// Generate detailed rank annotations for Y-axis (for rating charts like moving averages)
+export function generateDetailedRankYAxisAnnotations(showRankBands = true, dataMin = 0, dataMax = 2000) {
+  if (!showRankBands) return {};
+
+  const annotations = {};
+
+  Object.entries(DETAILED_RANK_SEGMENTS).forEach(([rank, { min, max, color }]) => {
+    // Only include bands that overlap with the data range
+    if (max >= dataMin && min <= dataMax) {
+      const segmentKey = rank.toLowerCase().replace(/\s+/g, "_");
+      annotations[`rank_${segmentKey}`] = {
+        type: "box",
+        yMin: min,
+        yMax: max,
+        backgroundColor: color,
+        borderWidth: 0,
+        drawTime: "beforeDatasetsDraw",
+        z: -1,
+      };
+    }
+  });
+
+  return annotations;
+}
