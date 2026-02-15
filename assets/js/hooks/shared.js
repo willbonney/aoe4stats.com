@@ -209,17 +209,6 @@ export const getLargeTooltipConfig = (customConfig = {}) => {
   };
 };
 
-// Enhanced always-show tooltip configuration with larger fonts
-export const getLargeAlwaysShowTooltipConfig = (customConfig = {}) => {
-  return {
-    fontSize: 24,
-    fontWeight: 900,
-    color: customConfig.color || "black",
-    valueFormatter: customConfig.valueFormatter || ((value) => String(value)),
-    ...customConfig,
-  };
-};
-
 // Detailed rank segments with colors matching the pie chart
 const DETAILED_RANK_SEGMENTS = {
   "Conqueror III": { min: 1600, max: 2000, color: "rgba(242, 153, 26, 0.35)" }, // #F2991A

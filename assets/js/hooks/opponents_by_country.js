@@ -1,6 +1,6 @@
 import { Chart } from "chart.js/auto";
 import AlwaysShowTooltipPlugin from "../always_show_tooltip_plugin.js";
-import { MUI_COLORS, COUNTRY_UTILS, getDistributedColors } from "./shared.js";
+import { COUNTRY_UTILS, getDistributedColors, MUI_COLORS } from "./shared.js";
 
 export default {
   mounted() {
@@ -61,6 +61,11 @@ export default {
               return label.toLowerCase().includes("other");
             },
           },
+          labels: {
+            font: {
+              size: 12,
+            },
+          },
           legend: {
             position: "top",
             display: false,
@@ -70,6 +75,8 @@ export default {
             text: "Opponents by Country",
           },
           alwaysShowTooltip: {
+            fontSize: 14,
+            fontWeight: 400,
             valueFormatter: (value) => `${value.toFixed(0)}%`,
             skipLabels: ["other"],
           },
@@ -116,4 +123,3 @@ export default {
     this.handleEvent("update-opponents-by-country", null);
   },
 };
-

@@ -1,6 +1,6 @@
 import { Chart } from "chart.js/auto";
 import AlwaysShowTooltipPlugin from "../always_show_tooltip_plugin.js";
-import { MUI_COLORS, COUNTRY_UTILS, getDistributedColors } from "./shared.js";
+import { COUNTRY_UTILS, getDistributedColors, MUI_COLORS } from "./shared.js";
 
 export default {
   mounted() {
@@ -51,10 +51,10 @@ export default {
             displayColors: false,
             padding: 16,
             bodyFont: {
-              size: 10,
+              size: 14,
             },
             titleFont: {
-              size: 14,
+              size: 16,
               weight: "bold",
             },
             filter: function (tooltipItem) {
@@ -83,7 +83,7 @@ export default {
             text: "Conqueror Players by Country",
           },
           alwaysShowTooltip: {
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: 400,
             valueFormatter: (value) => `${value.toFixed(1)}%`,
             skipLabels: ["other"],
@@ -133,4 +133,3 @@ export default {
     this.handleEvent("update-leaderboard-countries", null);
   },
 };
-

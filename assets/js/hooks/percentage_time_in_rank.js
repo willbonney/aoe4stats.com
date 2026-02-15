@@ -60,6 +60,8 @@ export default {
           },
           alwaysShowTooltip: {
             color: "white",
+            fontSize: 14,
+            fontWeight: 400,
             valueFormatter: (value) => `${value.toFixed(0)}%`,
             skipLabels: ["other"],
           },
@@ -113,4 +115,3 @@ export default {
     this.handleEvent("update-percentage-time-in-rank", null);
   },
 };
-
