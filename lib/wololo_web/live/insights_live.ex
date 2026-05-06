@@ -76,7 +76,7 @@ defmodule WololoWeb.InsightsLive do
 
   defp make_grok_request(player_name, prompt) do
     request_body = %{
-      "model" => "grok-4-fast-reasoning",
+      "model" => "grok-4.3",
       "messages" => [
         %{"role" => "system", "content" => default_prompt(player_name)},
         %{"role" => "user", "content" => prompt || ""}
