@@ -30,7 +30,7 @@ defmodule WololoWeb.CivsByLeagueLive do
     %{key: "sengoku_daimyo", label: "Sengoku", image: "sengoku_daimyo", color: "#D84315"},
     %{key: "macedonian_dynasty", label: "Macedonian", image: "macedonian_dynasty", color: "#AD1457"},
     %{key: "golden_horde", label: "GOH", image: "golden_horde", color: "#FF1744"},
-    %{key: "jins_dynasty", label: "JIN", image: "jins_dynasty", color: "#E8E43B"}
+    %{key: "jin_dynasty", label: "JIN", image: "jin_dynasty", color: "#E8E43B"}
   ]
 
   def mount(_params, _session, socket) do
