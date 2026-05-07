@@ -25,7 +25,8 @@ defmodule Wololo.CivsByMapAPI do
     "tughlaq_dynasty",
     "sengoku_daimyo",
     "macedonian_dynasty",
-    "golden_horde"
+    "golden_horde",
+    "jin_dynasty"
   ]
 
   def fetch_civs_by_map(league \\ nil) do

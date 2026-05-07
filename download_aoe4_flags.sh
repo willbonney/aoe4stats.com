@@ -41,5 +41,6 @@ echo "Downloading macedonian_dynasty flag..."
 curl -s -o "aoe4_flags/macedonian_dynasty.webp" "https://www.ageofempires.com/wp-content/themes/ageOfEmpires/dist/images/civs/flags/age4-civ-flag-mac-64.webp"
 echo "Downloading golden_horde flag..."
 curl -s -o "aoe4_flags/golden_horde.webp" "https://www.ageofempires.com/wp-content/themes/ageOfEmpires/dist/images/civs/flags/age4-civ-flag-goh-64.webp"
+curl -s -o "aoe4_flags/jin_dynasty.webp" "https://cdn.ageofempires.com/aoe/wp-content/uploads/2026/03/flag_jin-1080x608.webp"
 
 echo "All flags have been downloaded to the 'aoe4_flags' directory."

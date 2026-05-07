@@ -44,7 +44,8 @@ defmodule WololoWeb.CivsByMapLive do
     %{key: :tughlaq_dynasty, label: "Tughlaq", image: "tughlaq_dynasty"},
     %{key: :sengoku_daimyo, label: "Sengoku", image: "sengoku_daimyo"},
     %{key: :macedonian_dynasty, label: "Macedonian", image: "macedonian_dynasty"},
-    %{key: :golden_horde, label: "GOH", image: "golden_horde"}
+    %{key: :golden_horde, label: "GOH", image: "golden_horde"},
+    %{key: :jin_dynasty, label: "JIN", image: "jin_dynasty"}
   ]
 
   def mount(_params, _session, socket) do
