@@ -29,7 +29,7 @@ defmodule Wololo.CivsByLeagueAPI do
         result = do_fetch_all_leagues()
 
         if match?({:ok, _}, result) do
-          Cachex.put(:wololo_cache, cache_key, result, ttl: :timer.hours(6))
+          Cachex.put(:wololo_cache, cache_key, result, ttl: :timer.hours(24))
         end
 
         result
@@ -50,7 +50,7 @@ defmodule Wololo.CivsByLeagueAPI do
         end)
       end)
 
-    results = Task.await_many(tasks, 30_000)
+    results = Task.await_many(tasks, 60_000)
 
     Enum.reduce_while(results, {:ok, %{}}, fn
       {league, {:ok, data}}, {:ok, acc} ->
@@ -74,7 +74,7 @@ defmodule Wololo.CivsByLeagueAPI do
         result = make_api_request(league)
 
         if match?({:ok, _}, result) do
-          Cachex.put(:wololo_cache, cache_key, result, ttl: :timer.hours(6))
+          Cachex.put(:wololo_cache, cache_key, result, ttl: :timer.hours(24))
         end
 
         result

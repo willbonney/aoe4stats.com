@@ -20,6 +20,17 @@ defmodule Wololo.LeaderboardDumpCron do
           "[LeaderboardDumpCron] Successfully cached #{length(data)} leaderboard entries in #{duration}ms"
         )
 
+        # Also refresh civs_by_league data in the background
+        Task.start(fn ->
+          Logger.info("[LeaderboardDumpCron] Refreshing civs_by_league cache...")
+          case refresh_civs_by_league_cache() do
+            {:ok, _data} ->
+              Logger.info("[LeaderboardDumpCron] Successfully refreshed civs_by_league cache")
+            {:error, reason} ->
+              Logger.error("[LeaderboardDumpCron] Failed to refresh civs_by_league: #{inspect(reason)}")
+          end
+        end)
+
         :ok
 
       {:error, reason} ->
@@ -251,5 +262,16 @@ defmodule Wololo.LeaderboardDumpCron do
       {:ok, timestamp} -> {:ok, timestamp}
       error -> error
     end
+  end
+
+  defp refresh_civs_by_league_cache do
+    # Clear the cache to force a fresh fetch
+    Cachex.del(:wololo_cache, "civs_by_league_all")
+    Enum.each(["bronze", "silver", "gold", "platinum", "diamond", "conqueror"], fn league ->
+      Cachex.del(:wololo_cache, "civs_by_league_#{league}")
+    end)
+
+    # Now fetch fresh data (which will be cached)
+    Wololo.CivsByLeagueAPI.fetch_all_leagues()
   end
 end
