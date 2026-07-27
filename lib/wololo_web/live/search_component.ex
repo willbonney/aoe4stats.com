@@ -10,13 +10,22 @@ defmodule WololoWeb.SearchComponent do
 
   @impl true
   def handle_event("do-search", %{"value" => value}, socket) do
-    {_, data} = fetch_player(value)
+    case fetch_player(value) do
+      {:ok, data} ->
+        {
+          :noreply,
+          socket
+          |> assign(search: value, players: data["players"], has_searched: true)
+        }
 
-    {
-      :noreply,
-      socket
-      |> assign(search: value, players: data["players"], has_searched: true)
-    }
+      {:error, reason} ->
+        {
+          :noreply,
+          socket
+          |> assign(search: value, players: [], has_searched: true)
+          |> put_flash(:error, "Search failed: #{reason}")
+        }
+    end
   end
 
   @impl true

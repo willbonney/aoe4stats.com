@@ -42,7 +42,7 @@
         phx-click="toggle-map-filter"
         disabled={@loading}
         class={"px-4 py-2 rounded transition-all font-medium flex items-center gap-2 " <>
-          if MapSet.size(@selected_maps) < length(@maps) do
+          if is_nil(@selected_maps) or MapSet.size(@selected_maps) < length(@maps) do
             "bg-accent-500 hover:shadow-[0_0_20px_rgba(217,119,6,0.6)] text-white"
           else
             "bg-primary-500 hover:shadow-[0_0_20px_rgba(230,74,25,0.6)] text-white"
@@ -50,10 +50,10 @@
         }
       >
         <.icon name="hero-funnel" class="h-5 w-5" />
-        Maps (<%= MapSet.size(@selected_maps) %>/<%= length(@maps) %>)
+        Maps (<%= if @selected_maps, do: MapSet.size(@selected_maps), else: 0 %>/<%= length(@maps) %>)
       </button>
 
-      <%= if MapSet.size(@selected_civs) < length(@civs) - 1 or MapSet.size(@selected_maps) < length(@maps) or @selected_league do %>
+      <%= if MapSet.size(@selected_civs) < length(@civs) - 1 or is_nil(@selected_maps) or MapSet.size(@selected_maps) < length(@maps) or @selected_league do %>
         <button
           phx-click="reset-all-filters"
           disabled={@loading}
@@ -113,7 +113,7 @@
       <div class="border border-stone-300 dark:border-zinc-700 rounded-lg p-4 bg-stone-50 dark:bg-zinc-900">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-lg font-semibold text-stone-800 dark:text-zinc-100">
-            Select Maps (<%= MapSet.size(@selected_maps) %>/<%= length(@maps) %>)
+            Select Maps (<%= if @selected_maps, do: MapSet.size(@selected_maps), else: 0 %>/<%= length(@maps) %>)
           </h3>
           <div class="flex gap-2">
             <button
@@ -139,7 +139,7 @@
                 type="checkbox"
                 phx-click="toggle-map"
                 phx-value-map={map.name}
-                checked={MapSet.member?(@selected_maps, map.name)}
+                checked={@selected_maps != nil and MapSet.member?(@selected_maps, map.name)}
                 disabled={@loading}
                 class="w-4 h-4 text-primary-500 focus:ring-primary-500 disabled:cursor-not-allowed"
               />
@@ -160,7 +160,7 @@
       filtered_maps_list = filtered_maps(@maps, @selected_maps)
     %>
 
-    <%= if MapSet.size(@selected_civs) == 0 or MapSet.size(@selected_maps) == 0 do %>
+    <%= if MapSet.size(@selected_civs) == 0 or is_nil(@selected_maps) or MapSet.size(@selected_maps) == 0 do %>
       <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
         <.icon name="hero-exclamation-triangle" class="h-12 w-12 mx-auto mb-4 text-yellow-600 dark:text-yellow-400" />
         <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
@@ -168,11 +168,11 @@
         </h3>
         <p class="text-yellow-700 dark:text-yellow-300 mb-4">
           <%= cond do %>
-            <% MapSet.size(@selected_civs) == 0 and MapSet.size(@selected_maps) == 0 -> %>
+            <% MapSet.size(@selected_civs) == 0 and (is_nil(@selected_maps) or MapSet.size(@selected_maps) == 0) -> %>
               Please select at least one civilization and one map to view data.
             <% MapSet.size(@selected_civs) == 0 -> %>
               Please select at least one civilization to view data.
-            <% MapSet.size(@selected_maps) == 0 -> %>
+            <% is_nil(@selected_maps) or MapSet.size(@selected_maps) == 0 -> %>
               Please select at least one map to view data.
           <% end %>
         </p>

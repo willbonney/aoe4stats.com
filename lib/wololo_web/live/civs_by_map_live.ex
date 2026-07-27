@@ -20,7 +20,6 @@ defmodule WololoWeb.CivsByMapLive do
     {"≥ Conq 4", "≥conqueror_4"}
   ]
 
-
   @civs [
     %{key: :name, label: "Map", image: nil},
     %{key: :abbasid_dynasty, label: "Abbasid", image: "abbasid_dynasty"},
@@ -48,9 +47,12 @@ defmodule WololoWeb.CivsByMapLive do
     %{key: :jin_dynasty, label: "JIN", image: "jin_dynasty"}
   ]
 
+  # Known civ atoms (excluding the "Map" column header)
+  @civ_keys @civs |> Enum.drop(1) |> Enum.map(& &1.key)
+
   def mount(_params, _session, socket) do
     # Initialize all civs as selected (except the first one which is "Map")
-    selected_civs = @civs |> Enum.drop(1) |> Enum.map(& &1.key) |> MapSet.new()
+    selected_civs = MapSet.new(@civ_keys)
 
     socket =
       assign(socket,
@@ -61,20 +63,28 @@ defmodule WololoWeb.CivsByMapLive do
         loading: true,
         error: nil,
         selected_civs: selected_civs,
-        selected_maps: MapSet.new(),
+        # nil means "not yet chosen" — fetch will default to all maps.
+        # An empty MapSet means the user explicitly cleared all maps.
+        selected_maps: nil,
         show_civ_filter: false,
         show_map_filter: false,
-        data_fetched: false
+        data_fetched: false,
+        # League the current `maps` payload was fetched for (may differ during restore)
+        loaded_league: nil,
+        filters_loaded: false
       )
 
     if connected?(socket) do
-      send(self(), :fetch_initial_data)
+      # Fallback if the client hook never sends load-filters (no JS / blocked)
+      Process.send_after(self(), :filters_load_timeout, 1_000)
     end
 
     {:ok, socket}
   end
 
   def handle_event("select-league", %{"league" => league}, socket) do
+    league = normalize_league(league)
+
     socket =
       socket
       |> assign(loading: true, selected_league: league, error: nil)
@@ -85,26 +95,31 @@ defmodule WololoWeb.CivsByMapLive do
   end
 
   def handle_event("toggle-civ", %{"civ" => civ_key}, socket) do
-    civ_atom = String.to_existing_atom(civ_key)
-    selected_civs = socket.assigns.selected_civs
-
-    new_selected_civs =
-      if MapSet.member?(selected_civs, civ_atom) do
-        MapSet.delete(selected_civs, civ_atom)
-      else
-        MapSet.put(selected_civs, civ_atom)
-      end
+    civ_atom = parse_civ_key(civ_key)
 
     socket =
-      socket
-      |> assign(selected_civs: new_selected_civs)
-      |> save_filters_to_client()
+      if civ_atom do
+        selected_civs = socket.assigns.selected_civs
+
+        new_selected_civs =
+          if MapSet.member?(selected_civs, civ_atom) do
+            MapSet.delete(selected_civs, civ_atom)
+          else
+            MapSet.put(selected_civs, civ_atom)
+          end
+
+        socket
+        |> assign(selected_civs: new_selected_civs)
+        |> save_filters_to_client()
+      else
+        socket
+      end
 
     {:noreply, socket}
   end
 
   def handle_event("toggle-map", %{"map" => map_name}, socket) do
-    selected_maps = socket.assigns.selected_maps
+    selected_maps = selected_maps_or_empty(socket)
 
     new_selected_maps =
       if MapSet.member?(selected_maps, map_name) do
@@ -130,11 +145,9 @@ defmodule WololoWeb.CivsByMapLive do
   end
 
   def handle_event("select-all-civs", _params, socket) do
-    all_civs = @civs |> Enum.drop(1) |> Enum.map(& &1.key) |> MapSet.new()
-
     socket =
       socket
-      |> assign(selected_civs: all_civs)
+      |> assign(selected_civs: MapSet.new(@civ_keys))
       |> save_filters_to_client()
 
     {:noreply, socket}
@@ -170,13 +183,13 @@ defmodule WololoWeb.CivsByMapLive do
   end
 
   def handle_event("reset-all-filters", _params, socket) do
-    all_civs = @civs |> Enum.drop(1) |> Enum.map(& &1.key) |> MapSet.new()
-
     socket =
       socket
       |> assign(
         loading: true,
-        selected_civs: all_civs,
+        selected_civs: MapSet.new(@civ_keys),
+        # nil → fetch_civs_data will select all current maps
+        selected_maps: nil,
         selected_league: nil,
         show_civ_filter: false,
         show_map_filter: false
@@ -187,54 +200,164 @@ defmodule WololoWeb.CivsByMapLive do
     {:noreply, socket}
   end
 
-  def handle_event("load-filters", params, socket) do
-    selected_civs =
-      params
-      |> Map.get("selectedCivs", [])
-      |> Enum.map(&String.to_existing_atom/1)
-      |> MapSet.new()
-
-    selected_maps = params |> Map.get("selectedMaps", []) |> MapSet.new()
-    selected_league = Map.get(params, "selectedLeague")
-
+  def handle_event("load-filters", params, socket) when is_map(params) do
     socket =
       socket
-      |> maybe_assign_if_not_empty(:selected_civs, selected_civs)
-      |> maybe_assign_if_not_empty(:selected_maps, selected_maps)
-      |> maybe_assign_league(selected_league)
+      |> apply_loaded_filters(params)
+      |> assign(filters_loaded: true)
+
+    # Always fetch with the (possibly restored) league so reconnects remount cleanly.
+    # Cachex makes repeated fetches cheap.
+    league = socket.assigns.selected_league
+
+    socket =
+      if socket.assigns.data_fetched and socket.assigns.loaded_league == league and
+           maps_already_loaded?(socket) do
+        # Surviving process reconnect with same league data: just re-apply map selection.
+        reconcile_selected_maps(socket)
+      else
+        socket
+        |> assign(loading: true, error: nil)
+        |> fetch_civs_data(league)
+      end
+
+    # Re-persist reconciled filters (drops unknown civs / rotated-out maps)
+    socket =
+      if map_size(params) > 0 do
+        save_filters_to_client(socket)
+      else
+        socket
+      end
+
+    {:noreply, socket}
+  end
+
+  def handle_event("load-filters", _params, socket) do
+    # Malformed payload — treat as empty prefs and continue loading
+    socket =
+      socket
+      |> assign(filters_loaded: true, loading: true)
+      |> fetch_civs_data(socket.assigns.selected_league)
 
     {:noreply, socket}
   end
 
   @impl Phoenix.LiveView
-  def handle_info(:fetch_initial_data, socket) do
-    # Skip if data has already been fetched (e.g., from loaded filters with league)
-    if socket.assigns.data_fetched do
+  def handle_info(:filters_load_timeout, socket) do
+    if socket.assigns.filters_loaded do
       {:noreply, socket}
     else
-      {:noreply, fetch_civs_data(socket)}
+      Logger.info("civs_by_map: filters load timeout, fetching defaults")
+
+      socket =
+        socket
+        |> assign(filters_loaded: true, loading: true)
+        |> fetch_civs_data(socket.assigns.selected_league)
+
+      {:noreply, socket}
     end
   end
 
-  defp fetch_civs_data(socket, league \\ nil) do
+  defp apply_loaded_filters(socket, params) do
+    socket =
+      if Map.has_key?(params, "selectedCivs") do
+        assign(socket, selected_civs: parse_selected_civs(params["selectedCivs"]))
+      else
+        socket
+      end
+
+    socket =
+      if Map.has_key?(params, "selectedMaps") do
+        assign(socket, selected_maps: parse_selected_maps(params["selectedMaps"]))
+      else
+        socket
+      end
+
+    if Map.has_key?(params, "selectedLeague") do
+      assign(socket, selected_league: normalize_league(params["selectedLeague"]))
+    else
+      socket
+    end
+  end
+
+  defp parse_selected_civs(keys) when is_list(keys) do
+    keys
+    |> Enum.filter(&is_binary/1)
+    |> Enum.flat_map(fn key ->
+      case parse_civ_key(key) do
+        nil -> []
+        atom -> [atom]
+      end
+    end)
+    |> MapSet.new()
+  end
+
+  defp parse_selected_civs(_), do: MapSet.new(@civ_keys)
+
+  defp parse_selected_maps(maps) when is_list(maps) do
+    maps
+    |> Enum.filter(&is_binary/1)
+    |> MapSet.new()
+  end
+
+  defp parse_selected_maps(_), do: nil
+
+  defp parse_civ_key(key) when is_binary(key) do
+    Enum.find_value(@civ_keys, fn atom ->
+      if Atom.to_string(atom) == key, do: atom
+    end)
+  end
+
+  defp parse_civ_key(_), do: nil
+
+  defp normalize_league(nil), do: nil
+  defp normalize_league(""), do: nil
+  defp normalize_league(league) when is_binary(league), do: league
+  defp normalize_league(_), do: nil
+
+  defp selected_maps_or_empty(socket) do
+    case socket.assigns.selected_maps do
+      %MapSet{} = maps -> maps
+      _ -> MapSet.new()
+    end
+  end
+
+  defp maps_already_loaded?(socket) do
+    is_list(socket.assigns.maps) and socket.assigns.maps != []
+  end
+
+  defp reconcile_selected_maps(socket) do
+    case socket.assigns.selected_maps do
+      nil ->
+        all_maps = socket.assigns.maps |> Enum.map(& &1.name) |> MapSet.new()
+        assign(socket, selected_maps: all_maps)
+
+      %MapSet{} = selected ->
+        all_maps = socket.assigns.maps |> Enum.map(& &1.name) |> MapSet.new()
+        assign(socket, selected_maps: reconcile_map_selection(selected, all_maps))
+
+      _ ->
+        socket
+    end
+  end
+
+  defp fetch_civs_data(socket, league) do
     case CivsByMapAPI.fetch_civs_by_map(league) do
       {:ok, raw_data} ->
         transformed_data = CivsByMapAPI.transform_data(raw_data)
         all_maps = transformed_data |> Enum.map(& &1.name) |> MapSet.new()
 
-        # Preserve user's selected maps if they exist, filtering out any that are no longer available
-        # Only reset to all maps if current selection is empty (initial load)
-        current_selected = socket.assigns.selected_maps
-
         new_selected_maps =
-          if MapSet.size(current_selected) > 0 do
-            MapSet.intersection(current_selected, all_maps)
-            |> then(fn intersection ->
-              # If intersection is empty (all previously selected maps are gone), select all new maps
-              if MapSet.size(intersection) == 0, do: all_maps, else: intersection
-            end)
-          else
-            all_maps
+          case socket.assigns.selected_maps do
+            # First load / reset: select every map from the API
+            nil ->
+              all_maps
+
+            %MapSet{} = current_selected ->
+              reconcile_map_selection(current_selected, all_maps)
+
+            _ ->
+              all_maps
           end
 
         assign(socket,
@@ -242,24 +365,49 @@ defmodule WololoWeb.CivsByMapLive do
           selected_maps: new_selected_maps,
           loading: false,
           error: nil,
-          data_fetched: true
+          data_fetched: true,
+          loaded_league: league
         )
 
       {:error, reason} ->
         assign(socket,
           maps: [],
+          selected_maps: selected_maps_or_empty(socket),
           loading: false,
           error: "Failed to fetch Civs By Map: #{reason}",
-          data_fetched: true
+          data_fetched: true,
+          loaded_league: league
         )
     end
   end
 
-  def filtered_maps(maps, selected_maps) do
-    if MapSet.size(selected_maps) == 0 do
-      maps
+  # Preserve the user's selection across season map pool changes.
+  # Empty selection is intentional (user cleared all). Only fall back to all
+  # maps when every previously selected map has disappeared from the pool.
+  defp reconcile_map_selection(current_selected, all_maps) do
+    if MapSet.size(current_selected) == 0 do
+      current_selected
     else
-      Enum.filter(maps, fn map -> MapSet.member?(selected_maps, map.name) end)
+      intersection = MapSet.intersection(current_selected, all_maps)
+
+      if MapSet.size(intersection) == 0 do
+        all_maps
+      else
+        intersection
+      end
+    end
+  end
+
+  def filtered_maps(maps, selected_maps) do
+    cond do
+      is_nil(selected_maps) ->
+        maps
+
+      MapSet.size(selected_maps) == 0 ->
+        maps
+
+      true ->
+        Enum.filter(maps, fn map -> MapSet.member?(selected_maps, map.name) end)
     end
   end
 
@@ -295,31 +443,16 @@ defmodule WololoWeb.CivsByMapLive do
     filters = %{
       selectedCivs:
         socket.assigns.selected_civs |> MapSet.to_list() |> Enum.map(&Atom.to_string/1),
-      selectedMaps: socket.assigns.selected_maps |> MapSet.to_list(),
+      selectedMaps: selected_maps_list(socket.assigns.selected_maps),
       selectedLeague: socket.assigns.selected_league
     }
 
     Phoenix.LiveView.push_event(socket, "save-filters", filters)
   end
 
-  defp maybe_assign_if_not_empty(socket, key, value) do
-    if MapSet.size(value) > 0 do
-      assign(socket, key, value)
-    else
-      socket
-    end
-  end
-  defp maybe_assign_league(socket, nil), do: socket
-
-  defp maybe_assign_league(socket, league) when is_binary(league) and byte_size(league) > 0 do
-    socket
-    |> assign(selected_league: league)
-    |> fetch_civs_data(league)
-  end
-
-  defp maybe_assign_league(socket, _), do: socket
-
-
+  defp selected_maps_list(nil), do: []
+  defp selected_maps_list(%MapSet{} = maps), do: MapSet.to_list(maps)
+  defp selected_maps_list(_), do: []
 
   def color_class(percentage, type) when is_binary(percentage) do
     case Float.parse(percentage) do
