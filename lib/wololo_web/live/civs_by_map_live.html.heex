@@ -157,7 +157,10 @@
   <%= if not @loading do %>
     <%
       filtered_civs_list = filtered_civs(@civs, @selected_civs)
-      filtered_maps_list = filtered_maps(@maps, @selected_maps)
+      filtered_maps_list =
+        @maps
+        |> filtered_maps(@selected_maps)
+        |> sorted_maps(@sort_by, @sort_dir, @selected_civs)
     %>
 
     <%= if MapSet.size(@selected_civs) == 0 or is_nil(@selected_maps) or MapSet.size(@selected_maps) == 0 do %>
@@ -195,7 +198,16 @@
         <:col
           :let={map}
           :for={civ <- Enum.drop(filtered_civs_list, 1)}
-          label={civ_header(%{image: civ.image, label: civ.label})}
+          label={
+            civ_header(%{
+              image: civ.image,
+              label: civ.label,
+              column: civ.key,
+              sortable: true,
+              sort_by: @sort_by,
+              sort_dir: @sort_dir
+            })
+          }
         >
           <div class={"#{color_class(get_in(map, [:civs, civ.key, :win_rate]), :bg)} p-2 w-full h-full hover:scale-[1.15] hover:brightness-95 transition-all duration-200 ease-in-out rounded-sm"}>
             <div class="flex flex-col items-center">
@@ -208,23 +220,22 @@
             </div>
           </div>
         </:col>
-        <:col :let={map} label={civ_header(%{image: nil, label: "Average"})}>
+        <:col
+          :let={map}
+          label={
+            civ_header(%{
+              image: nil,
+              label: "Average",
+              column: :average,
+              sortable: true,
+              sort_by: @sort_by,
+              sort_dir: @sort_dir
+            })
+          }
+        >
           <%
-            win_rates =
-              Enum.drop(filtered_civs_list, 1)
-              |> Enum.map(&get_in(map, [:civs, &1.key, :win_rate]))
-              |> Enum.reject(&is_nil/1)
-              |> Enum.map(&Float.parse/1)
-              |> Enum.reject(&(&1 == :error))
-              |> Enum.map(fn {val, _} -> val end)
-
-            average = if Enum.empty?(win_rates) do
-              nil
-            else
-              avg = Enum.sum(win_rates) / length(win_rates)
-              Float.round(avg, 2)
-            end
-
+            civ_keys = Enum.drop(filtered_civs_list, 1) |> Enum.map(& &1.key)
+            average = map_average_win_rate(map, civ_keys)
             average_win_rate = if average, do: "#{average}%", else: "N/A"
 
             total_games =

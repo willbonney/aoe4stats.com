@@ -71,7 +71,9 @@ defmodule WololoWeb.CivsByMapLive do
         data_fetched: false,
         # League the current `maps` payload was fetched for (may differ during restore)
         loaded_league: nil,
-        filters_loaded: false
+        filters_loaded: false,
+        sort_by: nil,
+        sort_dir: :desc
       )
 
     if connected?(socket) do
@@ -192,10 +194,30 @@ defmodule WololoWeb.CivsByMapLive do
         selected_maps: nil,
         selected_league: nil,
         show_civ_filter: false,
-        show_map_filter: false
+        show_map_filter: false,
+        sort_by: nil,
+        sort_dir: :desc
       )
       |> fetch_civs_data(nil)
       |> save_filters_to_client()
+
+    {:noreply, socket}
+  end
+
+  def handle_event("sort-column", %{"column" => column}, socket) do
+    sort_key = parse_sort_column(column)
+
+    socket =
+      cond do
+        is_nil(sort_key) ->
+          socket
+
+        socket.assigns.sort_by == sort_key ->
+          assign(socket, sort_dir: toggle_sort_dir(socket.assigns.sort_dir))
+
+        true ->
+          assign(socket, sort_by: sort_key, sort_dir: :desc)
+      end
 
     {:noreply, socket}
   end
@@ -411,6 +433,64 @@ defmodule WololoWeb.CivsByMapLive do
     end
   end
 
+  def sorted_maps(maps, nil, _dir, _selected_civs), do: maps
+
+  def sorted_maps(maps, :average, dir, selected_civs) do
+    civ_keys = average_civ_keys(selected_civs)
+
+    Enum.sort_by(maps, fn map ->
+      val = map_average_win_rate(map, civ_keys)
+      {is_nil(val), sort_numeric(val, dir)}
+    end)
+  end
+
+  def sorted_maps(maps, civ_key, dir, _selected_civs) do
+    Enum.sort_by(maps, fn map ->
+      val = parse_win_rate(get_in(map, [:civs, civ_key, :win_rate]))
+      {is_nil(val), sort_numeric(val, dir)}
+    end)
+  end
+
+  def map_average_win_rate(map, civ_keys) do
+    win_rates =
+      civ_keys
+      |> Enum.map(&parse_win_rate(get_in(map, [:civs, &1, :win_rate])))
+      |> Enum.reject(&is_nil/1)
+
+    if win_rates == [] do
+      nil
+    else
+      Float.round(Enum.sum(win_rates) / length(win_rates), 2)
+    end
+  end
+
+  def parse_win_rate(nil), do: nil
+  def parse_win_rate("N/A"), do: nil
+  def parse_win_rate(rate) when is_number(rate), do: rate / 1
+
+  def parse_win_rate(rate) when is_binary(rate) do
+    case Float.parse(rate) do
+      {value, _} -> value
+      :error -> nil
+    end
+  end
+
+  def parse_win_rate(_), do: nil
+
+  defp sort_numeric(nil, _), do: 0
+  defp sort_numeric(val, :asc), do: val
+  defp sort_numeric(val, :desc), do: -val
+
+  defp average_civ_keys(%MapSet{} = selected_civs), do: MapSet.to_list(selected_civs)
+  defp average_civ_keys(civ_keys) when is_list(civ_keys), do: civ_keys
+  defp average_civ_keys(_), do: []
+
+  defp parse_sort_column("average"), do: :average
+  defp parse_sort_column(key), do: parse_civ_key(key)
+
+  defp toggle_sort_dir(:desc), do: :asc
+  defp toggle_sort_dir(:asc), do: :desc
+
   def filtered_civs(civs, selected_civs) do
     # Always include the first element (Map column)
     [Enum.at(civs, 0)] ++
@@ -418,12 +498,45 @@ defmodule WololoWeb.CivsByMapLive do
   end
 
   def civ_header(assigns) do
+    assigns =
+      assigns
+      |> Map.put_new(:sortable, false)
+      |> Map.put_new(:column, nil)
+      |> Map.put_new(:sort_by, nil)
+      |> Map.put_new(:sort_dir, :desc)
+      |> then(fn assigns ->
+        Map.put(
+          assigns,
+          :sorted,
+          assigns[:sortable] && not is_nil(assigns[:column]) && assigns[:sort_by] == assigns[:column]
+        )
+      end)
+
     ~H"""
-    <div class="flex items-center flex-col text-center">
+    <div
+      class={[
+        "flex items-center flex-col text-center",
+        @sortable && "cursor-pointer select-none hover:opacity-80"
+      ]}
+      phx-click={@sortable && "sort-column"}
+      phx-value-column={@column}
+      title={@sortable && "Sort by #{@label} win rate"}
+    >
       <%= if @image do %>
         <img src={"/images/#{@image}.png"} alt={@label} class="w-10 h-6 mb-1" />
       <% end %>
-       <span class="dark:text-stone-400">{@label}</span>
+      <span class={[
+        "inline-flex items-center justify-center gap-0.5 dark:text-stone-400",
+        @sorted && "font-semibold text-stone-800 dark:text-zinc-100"
+      ]}>
+        {@label}
+        <%= if @sorted do %>
+          <.icon
+            name={if @sort_dir == :asc, do: "hero-chevron-up-mini", else: "hero-chevron-down-mini"}
+            class="h-3.5 w-3.5"
+          />
+        <% end %>
+      </span>
     </div>
     """
   end
