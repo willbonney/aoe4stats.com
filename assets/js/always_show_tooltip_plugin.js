@@ -38,9 +38,12 @@ const AlwaysShowTooltipPlugin = {
   },
 
   afterDatasetsDraw(chart, _, pluginOptions) {
+    if (pluginOptions?.disabled) return;
+
     const { ctx } = chart;
     const chartType = chart.config.type;
     const color = pluginOptions?.color ?? "black"; // default to black
+    const minSliceRatio = pluginOptions?.minSliceRatio ?? 0;
 
     ctx.save();
     ctx.font = `${pluginOptions?.fontSize ?? 24}px Zabal`;
@@ -56,10 +59,17 @@ const AlwaysShowTooltipPlugin = {
         if (!value) return;
 
         if (chartType === "bar") {
-          const x = element.x;
-          const y = (element.base + element.y) / 2;
+          const horizontal = chart.options.indexAxis === "y";
           ctx.fillStyle = color;
-          ctx.fillText(formattedValue, x, y);
+          if (horizontal) {
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            ctx.fillText(formattedValue, element.x + 6, element.y);
+          } else {
+            const x = element.x;
+            const y = (element.base + element.y) / 2;
+            ctx.fillText(formattedValue, x, y);
+          }
         }
 
         if (chartType === "line") {
@@ -69,6 +79,11 @@ const AlwaysShowTooltipPlugin = {
         }
 
         if (chartType === "pie" || chartType === "doughnut") {
+          if (minSliceRatio > 0) {
+            const total = dataset.data.reduce((sum, n) => sum + (Number(n) || 0), 0);
+            if (total > 0 && value / total < minSliceRatio) return;
+          }
+
           const { x, y } = element.getCenterPoint();
 
           // Get the background color for this segment

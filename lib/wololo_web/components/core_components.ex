@@ -820,6 +820,7 @@ defmodule WololoWeb.CoreComponents do
   Renders a table header cell.
   """
   attr(:align, :string, default: "left", values: ["left", "right", "center"])
+  attr(:class, :string, default: "")
   slot(:inner_block, required: true)
 
   def simple_table_header_cell(assigns) do
@@ -837,7 +838,7 @@ defmodule WololoWeb.CoreComponents do
     ~H"""
     <th
       scope="col"
-      class={"px-6 py-3 #{@align_class} text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"}
+      class={"px-3 sm:px-6 py-3 #{@align_class} text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider #{assigns.class}"}
     >
       {render_slot(@inner_block)}
     </th>
@@ -890,7 +891,7 @@ defmodule WololoWeb.CoreComponents do
       )
 
     ~H"""
-    <td class={"align-middle px-6 py-4 whitespace-nowrap text-sm #{@align_class} #{text_body()} #{assigns.class}"}>
+    <td class={"align-middle px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm #{@align_class} #{text_body()} #{assigns.class}"}>
       {render_slot(@inner_block)}
     </td>
     """
@@ -912,7 +913,7 @@ defmodule WololoWeb.CoreComponents do
     <button
       phx-click={@phx_click}
       phx-value-tab={@phx_value_tab}
-      class={"#{@tab_class} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"}
+      class={"#{@tab_class} w-full lg:w-auto text-center lg:text-left whitespace-nowrap py-2.5 lg:py-4 px-1 border-b-2 font-medium text-xs lg:text-sm shrink-0"}
     >
       {render_slot(@inner_block)}
     </button>

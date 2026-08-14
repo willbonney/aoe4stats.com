@@ -1,6 +1,6 @@
-<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-  <div class="mb-8">
-    <h1 class={"text-4xl font-bold mb-2 #{text_heading()}"}>
+<div class="mx-auto max-w-7xl px-0 sm:px-6 lg:px-8 py-2 sm:py-8">
+  <div class="mb-6 sm:mb-8">
+    <h1 class={"text-2xl sm:text-4xl font-bold mb-2 #{text_heading()}"}>
       <%= case @active_tab do %>
         <% "per_capita" -> %>
           Conquerors Per Capita
@@ -16,7 +16,7 @@
           Conqueror Players by Country
       <% end %>
     </h1>
-    <p class={"text-lg #{text_subtle()}"}>
+    <p class={"text-sm sm:text-lg #{text_subtle()}"}>
       <%= case @active_tab do %>
         <% "per_capita" -> %>
           Conqueror players (1400+) per million population
@@ -43,7 +43,7 @@
   <% end %>
 
   <%= if @error do %>
-    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 sm:p-6">
       <h2 class="text-xl font-semibold text-red-800 dark:text-red-200 mb-2">
         Error Loading Data
       </h2>
@@ -64,15 +64,15 @@
       end
     %>
 
-    <.card class="mb-8">
-      <h2 class={"text-2xl font-bold mb-4 #{text_heading()}"}>
+    <.card padding={false} class="mb-6 sm:mb-8 p-4 sm:p-6">
+      <h2 class={"text-xl sm:text-2xl font-bold mb-4 #{text_heading()}"}>
         Statistics
       </h2>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
         <%= if @active_tab == "per_capita" do %>
           <div>
             <p class={"text-sm #{text_subtle()}"}>Countries with Data</p>
-            <p class={"text-3xl font-bold #{text_heading()}"}>
+            <p class={"text-2xl sm:text-3xl font-bold #{text_heading()}"}>
               <%= format_number(current_data.total) %>
             </p>
           </div>
@@ -80,7 +80,7 @@
         <%= if @active_tab == "avg_rank" do %>
           <div>
             <p class={"text-sm #{text_subtle()}"}>Countries Ranked</p>
-            <p class={"text-3xl font-bold #{text_heading()}"}>
+            <p class={"text-2xl sm:text-3xl font-bold #{text_heading()}"}>
               <%= format_number(current_data.total) %>
             </p>
           </div>
@@ -88,7 +88,7 @@
         <%= if @active_tab == "prowess" do %>
           <div>
             <p class={"text-sm #{text_subtle()}"}>Countries Ranked</p>
-            <p class={"text-3xl font-bold #{text_heading()}"}>
+            <p class={"text-2xl sm:text-3xl font-bold #{text_heading()}"}>
               <%= format_number(current_data.total) %>
             </p>
           </div>
@@ -96,19 +96,19 @@
         <%= if @active_tab not in ["per_capita", "avg_rank", "prowess"] do %>
           <div>
             <p class={"text-sm #{text_subtle()}"}>Total Players</p>
-            <p class={"text-3xl font-bold #{text_heading()}"}>
+            <p class={"text-2xl sm:text-3xl font-bold #{text_heading()}"}>
               <%= format_number(current_data.total) %>
             </p>
           </div>
           <div>
             <p class={"text-sm #{text_subtle()}"}>Countries Represented</p>
-            <p class={"text-3xl font-bold #{text_heading()}"}>
+            <p class={"text-2xl sm:text-3xl font-bold #{text_heading()}"}>
               <%= map_size(current_data.distribution) %>
             </p>
           </div>
         <% end %>
         <%= if @last_updated do %>
-          <div>
+          <div class="col-span-2 sm:col-span-1">
             <p class={"text-sm #{text_subtle()}"}>Last Updated</p>
             <p class={"text-sm #{text_heading()}"}>
               <%= format_timestamp(@last_updated) %>
@@ -119,12 +119,14 @@
     </.card>
 
     <div class={"mb-6 border-b #{border_divider()}"}>
-      <nav class="flex space-x-8" aria-label="Tabs">
+      <nav class="grid grid-cols-3 gap-x-2 lg:flex lg:gap-x-8" aria-label="Tabs">
         <.tab_button phx_click="switch_tab" phx_value_tab="conqueror" active={@active_tab == "conqueror"}>
-          Conqueror (1400+)
+          <span class="lg:hidden">1400+</span>
+          <span class="hidden lg:inline">Conqueror (1400+)</span>
         </.tab_button>
         <.tab_button phx_click="switch_tab" phx_value_tab="conqueror3" active={@active_tab == "conqueror3"}>
-          Conqueror 3+ (2000+)
+          <span class="lg:hidden">2000+</span>
+          <span class="hidden lg:inline">Conqueror 3+ (2000+)</span>
         </.tab_button>
         <.tab_button phx_click="switch_tab" phx_value_tab="top100" active={@active_tab == "top100"}>
           Top 100
@@ -133,18 +135,20 @@
           Per Capita
         </.tab_button>
         <.tab_button phx_click="switch_tab" phx_value_tab="avg_rank" active={@active_tab == "avg_rank"}>
-          Average Rank
+          <span class="lg:hidden">Avg Rank</span>
+          <span class="hidden lg:inline">Average Rank</span>
         </.tab_button>
         <.tab_button phx_click="switch_tab" phx_value_tab="prowess" active={@active_tab == "prowess"}>
-          National Prowess
+          <span class="lg:hidden">Prowess</span>
+          <span class="hidden lg:inline">National Prowess</span>
         </.tab_button>
       </nav>
     </div>
 
     <!-- Chart Card (hidden for per capita, avg rank, and prowess) -->
     <%= if @active_tab not in ["per_capita", "avg_rank", "prowess"] do %>
-      <.card class="mb-8">
-        <div class="relative" style="height: 700px;">
+      <.card padding={false} class="mb-6 sm:mb-8 p-3 sm:p-6">
+        <div class="relative min-h-[16rem] md:min-h-0 md:h-[420px] lg:h-[700px]">
           <canvas
             id="leaderboard-countries-chart"
             phx-hook="LeaderboardCountries"
@@ -153,84 +157,192 @@
           </canvas>
         </div>
       </.card>
+
+      <.card padding={false} class="overflow-hidden">
+        <ul class="md:hidden divide-y divide-gray-200 dark:divide-zinc-700">
+          <%= for {{country, value}, index} <- Enum.with_index(sorted_distribution(current_data.distribution), 1) do %>
+            <li class="flex items-center justify-between gap-3 px-4 py-3">
+              <div class="flex items-center min-w-0 gap-2">
+                <span class={"w-7 shrink-0 text-sm font-medium #{text_muted()}"}>#<%= index %></span>
+                <span class="text-xl shrink-0"><%= WololoWeb.PlayerLive.get_country_code_emoji(country) %></span>
+                <span class={"truncate text-sm font-medium #{text_body()}"}><%= get_country_name(country) %></span>
+              </div>
+              <span class={"shrink-0 text-sm font-semibold #{text_heading()}"}><%= value %>%</span>
+            </li>
+          <% end %>
+        </ul>
+        <div class="hidden md:block">
+          <.simple_table>
+            <.simple_table_head>
+              <.simple_table_header_cell>Rank</.simple_table_header_cell>
+              <.simple_table_header_cell>Country</.simple_table_header_cell>
+              <.simple_table_header_cell align="right">Share</.simple_table_header_cell>
+            </.simple_table_head>
+            <.simple_table_body>
+              <%= for {{country, value}, index} <- Enum.with_index(sorted_distribution(current_data.distribution), 1) do %>
+                <.simple_table_row>
+                  <.simple_table_cell class="font-medium">#<%= index %></.simple_table_cell>
+                  <.simple_table_cell class="whitespace-normal">
+                    <div class="flex flex-row items-center">
+                      <span class="mr-2 text-2xl"><%= WololoWeb.PlayerLive.get_country_code_emoji(country) %></span>
+                      <%= get_country_name(country) %>
+                    </div>
+                  </.simple_table_cell>
+                  <.simple_table_cell align="right" class="font-semibold">
+                    <%= value %>%
+                  </.simple_table_cell>
+                </.simple_table_row>
+              <% end %>
+            </.simple_table_body>
+          </.simple_table>
+        </div>
+      </.card>
     <% end %>
 
     <%= if @active_tab == "avg_rank" && length(@avg_rank_data.ranked) > 0 do %>
-      <.card class="overflow-hidden">
-        <.simple_table>
-          <.simple_table_head>
-            <.simple_table_header_cell>Rank</.simple_table_header_cell>
-            <.simple_table_header_cell>Country</.simple_table_header_cell>
-            <.simple_table_header_cell align="right">Players</.simple_table_header_cell>
-            <.simple_table_header_cell align="right">Avg Rank</.simple_table_header_cell>
-            <.simple_table_header_cell align="right">Best Rank</.simple_table_header_cell>
-          </.simple_table_head>
-          <.simple_table_body>
-            <%= for {item, index} <- Enum.with_index(@avg_rank_data.ranked, 1) do %>
-              <.simple_table_row>
-                <.simple_table_cell class="font-medium">#<%= index %></.simple_table_cell>
-                <.simple_table_cell>
-                  <div class=" flex flex-row items-center">
-                  <span class="mr-2 text-2xl"><%= WololoWeb.PlayerLive.get_country_code_emoji(item.country) %></span>
-                  <%= get_country_name(item.country) %>
-                  </div>
-                </.simple_table_cell>
-                <.simple_table_cell align="right"><%= format_number(item.player_count) %></.simple_table_cell>
-                <.simple_table_cell align="right" class="font-semibold #{text_heading()}">
+      <.card padding={false} class="overflow-hidden">
+        <ul class="md:hidden divide-y divide-gray-200 dark:divide-zinc-700">
+          <%= for {item, index} <- Enum.with_index(@avg_rank_data.ranked, 1) do %>
+            <li class="px-4 py-3">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center min-w-0 gap-2">
+                  <span class={"w-7 shrink-0 text-sm font-medium #{text_muted()}"}>#<%= index %></span>
+                  <span class="text-xl shrink-0"><%= WololoWeb.PlayerLive.get_country_code_emoji(item.country) %></span>
+                  <span class={"truncate text-sm font-medium #{text_body()}"}><%= get_country_name(item.country) %></span>
+                </div>
+                <span class={"shrink-0 text-sm font-semibold #{text_heading()}"}>
                   #<%= format_number(trunc(item.avg_rank)) %>
-                </.simple_table_cell>
-                <.simple_table_cell align="right" class={text_muted()}>
-                  #<%= format_number(item.best_rank) %>
-                </.simple_table_cell>
-              </.simple_table_row>
-            <% end %>
-          </.simple_table_body>
-        </.simple_table>
+                </span>
+              </div>
+              <div class={"mt-1 pl-9 text-xs #{text_muted()} flex gap-4"}>
+                <span><%= format_number(item.player_count) %> players</span>
+                <span>Best #<%= format_number(item.best_rank) %></span>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+        <div class="hidden md:block">
+          <.simple_table>
+            <.simple_table_head>
+              <.simple_table_header_cell>Rank</.simple_table_header_cell>
+              <.simple_table_header_cell>Country</.simple_table_header_cell>
+              <.simple_table_header_cell align="right">Players</.simple_table_header_cell>
+              <.simple_table_header_cell align="right">Avg Rank</.simple_table_header_cell>
+              <.simple_table_header_cell align="right">Best Rank</.simple_table_header_cell>
+            </.simple_table_head>
+            <.simple_table_body>
+              <%= for {item, index} <- Enum.with_index(@avg_rank_data.ranked, 1) do %>
+                <.simple_table_row>
+                  <.simple_table_cell class="font-medium">#<%= index %></.simple_table_cell>
+                  <.simple_table_cell>
+                    <div class="flex flex-row items-center">
+                      <span class="mr-2 text-2xl"><%= WololoWeb.PlayerLive.get_country_code_emoji(item.country) %></span>
+                      <%= get_country_name(item.country) %>
+                    </div>
+                  </.simple_table_cell>
+                  <.simple_table_cell align="right"><%= format_number(item.player_count) %></.simple_table_cell>
+                  <.simple_table_cell align="right" class="font-semibold">
+                    #<%= format_number(trunc(item.avg_rank)) %>
+                  </.simple_table_cell>
+                  <.simple_table_cell align="right" class={text_muted()}>
+                    #<%= format_number(item.best_rank) %>
+                  </.simple_table_cell>
+                </.simple_table_row>
+              <% end %>
+            </.simple_table_body>
+          </.simple_table>
+        </div>
       </.card>
     <% end %>
 
     <%= if @active_tab == "per_capita" && Map.has_key?(@per_capita_data, :ranked) do %>
-      <.card class="overflow-hidden">
-        <.simple_table>
-          <.simple_table_head>
-            <.simple_table_header_cell>Rank</.simple_table_header_cell>
-            <.simple_table_header_cell>Country</.simple_table_header_cell>
-            <.simple_table_header_cell align="right">Players</.simple_table_header_cell>
-            <.simple_table_header_cell align="right">Per Million</.simple_table_header_cell>
-          </.simple_table_head>
-          <.simple_table_body>
-            <%= for {item, index} <- Enum.with_index(@per_capita_data.ranked, 1) do %>
-              <.simple_table_row>
-                <.simple_table_cell class="font-medium">#<%= index %></.simple_table_cell>
-                <.simple_table_cell>
-                <div class=" flex flex-row items-center">
-                    <span class="mr-2 text-2xl"><%= WololoWeb.PlayerLive.get_country_code_emoji(item.country) %></span>
-                    <%= get_country_name(item.country) %>
-                  </div>
-                </.simple_table_cell>
-                <.simple_table_cell align="right"><%= format_number(item.count) %></.simple_table_cell>
-                <.simple_table_cell align="right" class="font-semibold #{text_heading()}">
+      <.card padding={false} class="overflow-hidden">
+        <ul class="md:hidden divide-y divide-gray-200 dark:divide-zinc-700">
+          <%= for {item, index} <- Enum.with_index(@per_capita_data.ranked, 1) do %>
+            <li class="px-4 py-3">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center min-w-0 gap-2">
+                  <span class={"w-7 shrink-0 text-sm font-medium #{text_muted()}"}>#<%= index %></span>
+                  <span class="text-xl shrink-0"><%= WololoWeb.PlayerLive.get_country_code_emoji(item.country) %></span>
+                  <span class={"truncate text-sm font-medium #{text_body()}"}><%= get_country_name(item.country) %></span>
+                </div>
+                <span class={"shrink-0 text-sm font-semibold #{text_heading()}"}>
                   <%= item.per_capita %>
-                </.simple_table_cell>
-              </.simple_table_row>
-            <% end %>
-          </.simple_table_body>
-        </.simple_table>
+                </span>
+              </div>
+              <div class={"mt-1 pl-9 text-xs #{text_muted()}"}>
+                <%= format_number(item.count) %> players / million
+              </div>
+            </li>
+          <% end %>
+        </ul>
+        <div class="hidden md:block">
+          <.simple_table>
+            <.simple_table_head>
+              <.simple_table_header_cell>Rank</.simple_table_header_cell>
+              <.simple_table_header_cell>Country</.simple_table_header_cell>
+              <.simple_table_header_cell align="right">Players</.simple_table_header_cell>
+              <.simple_table_header_cell align="right">Per Million</.simple_table_header_cell>
+            </.simple_table_head>
+            <.simple_table_body>
+              <%= for {item, index} <- Enum.with_index(@per_capita_data.ranked, 1) do %>
+                <.simple_table_row>
+                  <.simple_table_cell class="font-medium">#<%= index %></.simple_table_cell>
+                  <.simple_table_cell>
+                    <div class="flex flex-row items-center">
+                      <span class="mr-2 text-2xl"><%= WololoWeb.PlayerLive.get_country_code_emoji(item.country) %></span>
+                      <%= get_country_name(item.country) %>
+                    </div>
+                  </.simple_table_cell>
+                  <.simple_table_cell align="right"><%= format_number(item.count) %></.simple_table_cell>
+                  <.simple_table_cell align="right" class="font-semibold">
+                    <%= item.per_capita %>
+                  </.simple_table_cell>
+                </.simple_table_row>
+              <% end %>
+            </.simple_table_body>
+          </.simple_table>
+        </div>
       </.card>
     <% end %>
 
     <%= if @active_tab == "prowess" && length(@prowess_data.ranked) > 0 do %>
-      <.card class="overflow-hidden">
-        <.simple_table>
-          <.simple_table_head>
-            <.simple_table_header_cell>Rank</.simple_table_header_cell>
-            <.simple_table_header_cell>Country</.simple_table_header_cell>
-            <.simple_table_header_cell align="right">Players</.simple_table_header_cell>
-            <.simple_table_header_cell align="right">
-              <div class="flex items-center justify-end gap-1">
-                Prowess Score
-                <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative" title="Calculation">
-                  <span class="invisible group-hover:visible absolute right-6 top-0 w-96 bg-gray-900 text-white text-sm rounded p-4 z-10 whitespace-pre-line leading-relaxed font-mono">Score = Σ(1/log(rank+1)) / population
+      <.card padding={false} class="overflow-hidden">
+        <p class={"md:hidden px-4 pt-4 pb-2 text-xs #{text_subtle()}"}>
+          Score = Σ(1/log(rank+1)) / population (millions). Higher ranks contribute more.
+        </p>
+        <ul class="md:hidden divide-y divide-gray-200 dark:divide-zinc-700">
+          <%= for {item, index} <- Enum.with_index(@prowess_data.ranked, 1) do %>
+            <li class="px-4 py-3">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center min-w-0 gap-2">
+                  <span class={"w-7 shrink-0 text-sm font-medium #{text_muted()}"}>#<%= index %></span>
+                  <span class="text-xl shrink-0"><%= WololoWeb.PlayerLive.get_country_code_emoji(item.country) %></span>
+                  <span class={"truncate text-sm font-medium #{text_body()}"}><%= get_country_name(item.country) %></span>
+                </div>
+                <span class={"shrink-0 text-sm font-semibold #{text_heading()}"}>
+                  <%= item.prowess_score %>
+                </span>
+              </div>
+              <div class={"mt-1 pl-9 text-xs #{text_muted()} flex flex-wrap gap-x-4 gap-y-1"}>
+                <span><%= format_number(item.player_count) %> players</span>
+                <span>Avg #<%= format_number(trunc(item.avg_rank)) %></span>
+                <span>Best #<%= format_number(item.best_rank) %></span>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+        <div class="hidden md:block">
+          <.simple_table>
+            <.simple_table_head>
+              <.simple_table_header_cell>Rank</.simple_table_header_cell>
+              <.simple_table_header_cell>Country</.simple_table_header_cell>
+              <.simple_table_header_cell align="right">Players</.simple_table_header_cell>
+              <.simple_table_header_cell align="right">
+                <div class="flex items-center justify-end gap-1">
+                  Prowess Score
+                  <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative" title="Calculation">
+                    <span class="invisible group-hover:visible absolute right-6 top-0 w-72 lg:w-96 bg-gray-900 text-white text-sm rounded p-4 z-10 whitespace-pre-line leading-relaxed font-mono">Score = Σ(1/log(rank+1)) / population
 
 For each player (logarithmic weighting):
   Rank #1    → 1.000
@@ -244,37 +356,38 @@ population (in millions)
 ∴ Rewards both quality (better
 ranks contribute more) and
 quantity (more players help)</span>
-                  <.icon name="hero-information-circle" class="h-4 w-4" />
-                </span>
-              </div>
-            </.simple_table_header_cell>
-            <.simple_table_header_cell align="right">Avg Rank</.simple_table_header_cell>
-            <.simple_table_header_cell align="right">Best Rank</.simple_table_header_cell>
-          </.simple_table_head>
-          <.simple_table_body>
-            <%= for {item, index} <- Enum.with_index(@prowess_data.ranked, 1) do %>
-              <.simple_table_row>
-                <.simple_table_cell class="font-medium">#<%= index %></.simple_table_cell>
-                <.simple_table_cell>
-                  <div class="flex flex-row items-center">
-                    <span class="mr-2 text-2xl"><%= WololoWeb.PlayerLive.get_country_code_emoji(item.country) %></span>
-                    <%= get_country_name(item.country) %>
-                  </div>
-                </.simple_table_cell>
-                <.simple_table_cell align="right"><%= format_number(item.player_count) %></.simple_table_cell>
-                <.simple_table_cell align="right" class="font-semibold #{text_heading()}">
-                  <%= item.prowess_score %>
-                </.simple_table_cell>
-                <.simple_table_cell align="right" class={text_muted()}>
-                  #<%= format_number(trunc(item.avg_rank)) %>
-                </.simple_table_cell>
-                <.simple_table_cell align="right" class={text_muted()}>
-                  #<%= format_number(item.best_rank) %>
-                </.simple_table_cell>
-              </.simple_table_row>
-            <% end %>
-          </.simple_table_body>
-        </.simple_table>
+                    <.icon name="hero-information-circle" class="h-4 w-4" />
+                  </span>
+                </div>
+              </.simple_table_header_cell>
+              <.simple_table_header_cell align="right">Avg Rank</.simple_table_header_cell>
+              <.simple_table_header_cell align="right" class="hidden lg:table-cell">Best Rank</.simple_table_header_cell>
+            </.simple_table_head>
+            <.simple_table_body>
+              <%= for {item, index} <- Enum.with_index(@prowess_data.ranked, 1) do %>
+                <.simple_table_row>
+                  <.simple_table_cell class="font-medium">#<%= index %></.simple_table_cell>
+                  <.simple_table_cell>
+                    <div class="flex flex-row items-center">
+                      <span class="mr-2 text-2xl"><%= WololoWeb.PlayerLive.get_country_code_emoji(item.country) %></span>
+                      <%= get_country_name(item.country) %>
+                    </div>
+                  </.simple_table_cell>
+                  <.simple_table_cell align="right"><%= format_number(item.player_count) %></.simple_table_cell>
+                  <.simple_table_cell align="right" class="font-semibold">
+                    <%= item.prowess_score %>
+                  </.simple_table_cell>
+                  <.simple_table_cell align="right" class={text_muted()}>
+                    #<%= format_number(trunc(item.avg_rank)) %>
+                  </.simple_table_cell>
+                  <.simple_table_cell align="right" class={"hidden lg:table-cell #{text_muted()}"}>
+                    #<%= format_number(item.best_rank) %>
+                  </.simple_table_cell>
+                </.simple_table_row>
+              <% end %>
+            </.simple_table_body>
+          </.simple_table>
+        </div>
       </.card>
     <% end %>
 

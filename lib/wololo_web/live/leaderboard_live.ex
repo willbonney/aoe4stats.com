@@ -295,4 +295,14 @@ defmodule WololoWeb.LeaderboardLive do
   end
 
   defp get_country_name(_), do: "Unknown"
+
+  defp sorted_distribution(distribution) when is_map(distribution) do
+    distribution
+    |> Enum.sort_by(fn {country, value} ->
+      other? = country in ["unknown", "other", "Other"]
+      {other?, -value}
+    end)
+  end
+
+  defp sorted_distribution(_), do: []
 end
