@@ -54,6 +54,7 @@ export default {
           },
         },
         responsive: true,
+        maintainAspectRatio: false,
         layout: {
           padding: {
             right: 30,

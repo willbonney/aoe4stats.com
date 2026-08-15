@@ -1,5 +1,6 @@
 import { Chart } from "chart.js/auto";
 import AlwaysShowTooltipPlugin from "../always_show_tooltip_plugin.js";
+import HtmlYLabelsPlugin from "./html_y_labels.js";
 import { COUNTRY_UTILS, getDistributedColors, MUI_COLORS, TW_STONE_800, TW_ZINC_100 } from "./shared.js";
 
 const COMPACT_BREAKPOINT = 768;
@@ -76,7 +77,7 @@ export default {
     if (compact) {
       return new Chart(this.el, {
         type: "bar",
-        plugins: [AlwaysShowTooltipPlugin],
+        plugins: [AlwaysShowTooltipPlugin, HtmlYLabelsPlugin],
         data: {
           labels: [],
           datasets: [
@@ -104,6 +105,7 @@ export default {
             alwaysShowTooltip: {
               fontSize: 12,
               fontWeight: 600,
+              fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
               color: tickColor,
               valueFormatter: (value) => `${value.toFixed(1)}%`,
             },
@@ -116,21 +118,16 @@ export default {
               border: { display: false },
               ticks: {
                 color: tickColor,
-                font: { size: 11 },
+                font: { size: 11, family: 'system-ui, -apple-system, "Segoe UI", sans-serif' },
                 callback: (value) => `${value}%`,
               },
             },
             y: {
               grid: { display: false },
               border: { display: false },
-              ticks: {
-                color: tickColor,
-                font: { size: 15 },
-                autoSkip: false,
-                callback(value) {
-                  const label = this.getLabelForValue(value);
-                  return label.length > 18 ? `${label.slice(0, 17)}…` : label;
-                },
+              ticks: { display: false },
+              afterFit(scale) {
+                scale.width = 136;
               },
             },
           },
@@ -192,8 +189,6 @@ export default {
             fontSize: 14,
             fontWeight: 400,
             valueFormatter: (value) => `${value.toFixed(1)}%`,
-            skipLabels: ["other"],
-            minSliceRatio: 0.06,
           },
         },
       },

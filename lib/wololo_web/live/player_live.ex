@@ -76,7 +76,6 @@ defmodule WololoWeb.PlayerLive do
         {:noreply,
          socket
          |> assign(
-           active: :rating,
            profile_id: profile_id,
            name: stats["name"],
            avatar: get_in(stats, ["avatars", "medium"]),

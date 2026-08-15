@@ -23,9 +23,12 @@
         </div>
       </div>
     <% else %>
-      <h1 class="font-zabal font-gray text-4xl my-8 mx-auto text-center text-stone-800 dark:text-zinc-100">
-        WR by Game Length   </h1>
-      <canvas id="wrs" phx-hook="WrsByGameLength" data-points={Jason.encode!(@wrs)}></canvas>
+      <h1 class="font-zabal font-gray text-2xl sm:text-4xl my-4 sm:my-8 mx-auto text-center text-stone-800 dark:text-zinc-100">
+        WR by Game Length
+      </h1>
+      <div class="relative h-64 sm:h-80 w-full">
+        <canvas id="wrs" phx-hook="WrsByGameLength" data-points={Jason.encode!(@wrs)}></canvas>
+      </div>
     <% end %>
   <% end %>
 </div>

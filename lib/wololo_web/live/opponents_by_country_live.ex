@@ -21,8 +21,6 @@ defmodule WololoWeb.OpponentsByCountryLive do
         }
 
       {:error, reason} ->
-        # send(self(), {:set_loading, false})
-
         {
           :ok,
           socket
@@ -30,4 +28,23 @@ defmodule WololoWeb.OpponentsByCountryLive do
         }
     end
   end
+
+  defp sorted_countries(countries) when is_map(countries) do
+    countries
+    |> Enum.reject(fn {country, _} -> is_nil(country) or country in ["", "unknown"] end)
+    |> Enum.sort_by(fn {_country, value} -> -value end)
+  end
+
+  defp sorted_countries(_), do: []
+
+  defp country_name(country_code) when is_binary(country_code) do
+    country_code = String.upcase(country_code)
+
+    case Cldr.Territory.from_territory_code(country_code, Wololo.Cldr) do
+      {:ok, name} -> name
+      _ -> country_code
+    end
+  end
+
+  defp country_name(_), do: "Unknown"
 end

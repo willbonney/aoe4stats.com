@@ -2,7 +2,27 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+@import "../node_modules/jsvectormap/dist/jsvectormap.css";
+
 /* This file is for your main application CSS */
+
+.opponents-world-map .jvm-container {
+  background: transparent;
+}
+
+.jvm-tooltip {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  color: #fff !important;
+  font-size: 0.85rem !important;
+  padding: 0.4rem 0.55rem !important;
+  border-radius: 0.4rem !important;
+  z-index: 40;
+}
+
+.dark .jvm-zoom-btn {
+  background-color: #e7e5e4;
+  color: #1c1917;
+}
 
 @layer base {
   @font-face {

@@ -1,29 +1,34 @@
-<% common_link_classes = "p-4 mx-2 text-gray-500 hover:text-gray-700"
-active_link_classes = "font-semibold text-stone-800 dark:text-zinc-100" %>
+<% common_link_classes =
+     "w-full lg:w-auto text-center whitespace-nowrap py-2.5 lg:py-4 px-1 text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent"
+   active_link_classes = "font-semibold text-stone-800 dark:text-zinc-100 border-blue-500 text-blue-600 dark:text-blue-400" %>
 
 <div class="mx-auto max-w-4xl">
-  <div class="flex flex-col justify-start mb-8 border-b border-gray-200 pb-4">
-    <div class="flex mb-8">
-      <div class="flex justify-between flex-1">
-        <div class="flex align-center w-full">
-          <img class="mr-4 h-full" src={@avatar} />
-          <div class="flex flex-col">
-            <div class="flex">
-              <h6 class="font-bold text-stone-800 dark:text-zinc-100"><%= @name %></h6>
+  <div class="flex flex-col justify-start mb-6 sm:mb-8 border-b border-gray-200 dark:border-zinc-700 pb-0">
+    <div class="flex mb-4 sm:mb-8">
+      <div class="flex justify-between flex-1 min-w-0">
+        <div class="flex items-center w-full min-w-0">
+          <img class="mr-3 sm:mr-4 h-16 w-16 sm:h-20 sm:w-20 object-cover shrink-0" src={@avatar} />
+          <div class="flex flex-col min-w-0">
+            <div class="flex items-center min-w-0">
+              <h6 class="font-bold text-base sm:text-lg text-stone-800 dark:text-zinc-100 truncate"><%= @name %></h6>
               <%= if @country_code do %>
-                <span title={@country_code} class="text-sm text-stone-800 dark:text-zinc-100 ml-2 pt-1 w-[24px] h-[24px]"><%= get_country_code_emoji(@country_code) %></span>
+                <span title={@country_code} class="text-sm text-stone-800 dark:text-zinc-100 ml-2 shrink-0 w-[24px] h-[24px]"><%= get_country_code_emoji(@country_code) %></span>
               <% end %>
               <%= if @url do %>
-                <a href={@url}>
+                <a href={@url} class="shrink-0">
                   <.icon
                     name="hero-arrow-top-right-on-square"
                     class="cursor-pointer h-4 w-4 ml-2 text-stone-800 dark:text-zinc-100"
                   />
                 </a>
               <% end %>
-              <button phx-click={
-                JS.dispatch("phx:copy", to: "#control-codes") |> JS.push("copy_success")
-              }>
+              <button
+                type="button"
+                class="shrink-0"
+                phx-click={
+                  JS.dispatch("phx:copy", to: "#control-codes") |> JS.push("copy_success")
+                }
+              >
                 <.icon
                   name="hero-link"
                   class="cursor-pointer h-4 w-4 ml-2 text-stone-800 dark:text-zinc-100"
@@ -32,73 +37,64 @@ active_link_classes = "font-semibold text-stone-800 dark:text-zinc-100" %>
               </button>
             </div>
             <%= if @rank do %>
-              <h6 class="text-stone-800 dark:text-zinc-100">rank #<%= @rank %></h6>
+              <h6 class="text-sm sm:text-base text-stone-800 dark:text-zinc-100">rank #<%= @rank %></h6>
             <% end %>
             <%= if @wr do %>
-              <h6 class="text-stone-800 dark:text-zinc-100">wr <%= @wr %> %</h6>
+              <h6 class="text-sm sm:text-base text-stone-800 dark:text-zinc-100">wr <%= @wr %> %</h6>
             <% end %>
           </div>
         </div>
       </div>
     </div>
-    <div class="flex justify-center">
-      <%= if @profile_id do %>
+    <%= if @profile_id do %>
+      <nav class="grid grid-cols-3 gap-x-1 lg:flex lg:justify-center lg:gap-x-4" aria-label="Player sections">
         <.link
           patch={~p"/player/#{@profile_id}/rating"}
           class={[common_link_classes, @active == :rating && active_link_classes]}
         >
-          <div class="rounded-md">
-            Rating
-          </div>
+          Rating
         </.link>
 
         <.link
           patch={~p"/player/#{@profile_id}/rank"}
           class={[common_link_classes, @active == :rank && active_link_classes]}
         >
-          <div class="rounded-md">
-            Rank
-          </div>
+          Rank
         </.link>
 
         <.link
           patch={~p"/player/#{@profile_id}/analysis"}
           class={[common_link_classes, @active == :analysis && active_link_classes]}
         >
-          <div class="rounded-md">
-            Analysis
-          </div>
+          Analysis
         </.link>
 
         <.link
           patch={~p"/player/#{@profile_id}/game_length"}
           class={[common_link_classes, @active == :game_length && active_link_classes]}
         >
-          <div class="rounded-md">
-            Game Length
-          </div>
+          <span class="lg:hidden">Length</span>
+          <span class="hidden lg:inline">Game Length</span>
         </.link>
 
         <.link
           patch={~p"/player/#{@profile_id}/opponents"}
           class={[common_link_classes, @active == :opponents && active_link_classes]}
         >
-          <div class="rounded-md">
-            Opponents
-          </div>
+          Opponents
         </.link>
 
         <.link
           patch={~p"/player/#{@profile_id}/insights"}
           class={[common_link_classes, @active == :insights && active_link_classes]}
         >
-          <div class="rounded-md flex items-center">
-            <.icon name="hero-sparkles" class={["w-5 h-5 mr-2 text-gray-500", @active == :insights && "text-stone-800 dark:text-zinc-100"]} />
+          <span class="inline-flex items-center justify-center gap-1">
+            <.icon name="hero-sparkles" class={["w-4 h-4 text-gray-500", @active == :insights && "text-blue-600 dark:text-blue-400"]} />
             Insights
-          </div>  
+          </span>
         </.link>
-      <% end %>
-    </div>
+      </nav>
+    <% end %>
   </div>
   <%= if @error do %>
     <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">

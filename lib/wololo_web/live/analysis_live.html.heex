@@ -1,6 +1,6 @@
 <div id="analysis">
   <% common_stat_classes =
-    "font-zabal font-black text-4xl mx-auto text-center text-stone-800 dark:text-zinc-100" %>
+    "font-zabal font-black mx-auto text-center text-stone-800 dark:text-zinc-100" %>
 
   <% metrics = [
     %{name: "Peak Proximity", key: :peak_proximity, icon: "hero-arrows-pointing-in", color: "#2196F3", description: "How consistently you perform near your peak rating. Higher scores mean you usually play at your best.", calculation: "Let R = {all ratings}\nR_peak = max(R)\n\nD_avg = μ(R_peak - Rᵢ)\n  (avg distance from peak)\n\nScore = 100 - D_avg / 3\n\nExamples:\n  30 pts from peak → 90 score\n  60 pts from peak → 80 score\n  150 pts from peak → 50 score\n\n∴ Every 3 rating points away = -1 score"},
@@ -39,7 +39,7 @@
       </div>
     </:failed>
 
-    <h1 class={common_stat_classes <> " text-4xl my-8"}>
+    <h1 class={common_stat_classes <> " text-2xl sm:text-4xl my-4 sm:my-8"}>
       Analysis
     </h1>
 
@@ -57,8 +57,8 @@
             <% else %>
               <span class={common_stat_classes <> " !mx-0 text-xl font-bold"}><%= Float.round(Map.get(analysis, metric.key), 1) %></span>
             <% end %>
-            <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative ml-auto" title="Calculation">
-              <span class="invisible group-hover:visible absolute right-6 top-0 w-96 bg-gray-900 text-white text-s rounded p-4 z-10 whitespace-pre-line leading-relaxed font-mono"><%= metric.calculation %></span>
+            <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative ml-auto shrink-0" title="Calculation">
+              <span class="invisible group-hover:visible absolute right-0 sm:right-6 top-6 sm:top-0 w-64 sm:w-96 bg-gray-900 text-white text-xs sm:text-sm rounded p-3 sm:p-4 z-10 whitespace-pre-line leading-relaxed font-mono"><%= metric.calculation %></span>
               <.icon name="hero-information-circle" class="h-4 w-4" />
             </span>
           </div>
@@ -67,6 +67,8 @@
       <% end %>
     </div>
 
-    <canvas id="analysis-chart" phx-hook="Analysis" data-points={}></canvas>
+    <div class="relative w-full md:mx-auto md:max-w-3xl">
+      <canvas id="analysis-chart" phx-hook="Analysis" data-points={}></canvas>
+    </div>
   </.async_result>
 </div>

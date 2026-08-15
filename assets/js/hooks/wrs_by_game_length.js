@@ -9,6 +9,7 @@ export default {
       data: {},
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         scales: {
           y: {
             title: {
@@ -16,6 +17,14 @@ export default {
               text: "Win %",
             },
             beginAtZero: true,
+          },
+          x: {
+            ticks: {
+              maxRotation: 45,
+              minRotation: 0,
+              autoSkip: false,
+              font: { size: 11 },
+            },
           },
         },
         plugins: {
@@ -50,17 +59,22 @@ export default {
       const split = Object.entries(event.byLength);
 
       const sortedSplit = split.sort((a, b) => getMinutesFromBucket(a[0]).order - getMinutesFromBucket(b[0]).order);
-      console.log(sortedSplit);
+      const compact = (this.el.parentElement?.clientWidth || this.el.clientWidth) < 640;
 
-      chart.data.datasets.push({
-        data: sortedSplit.map(([length, wr]) => wr),
-        label: "Win Rate",
-        borderColor: MUI_COLORS.slice(0, sortedSplit.length),
-        backgroundColor: MUI_COLORS.map((color) => `${color.slice(0, -4)}, 0.8)`).slice(0, sortedSplit.length),
-        borderWidth: 1,
-        barThickness: 50,
+      chart.data.datasets = [
+        {
+          data: sortedSplit.map(([length, wr]) => wr),
+          label: "Win Rate",
+          borderColor: MUI_COLORS.slice(0, sortedSplit.length),
+          backgroundColor: MUI_COLORS.map((color) => `${color.slice(0, -4)}, 0.8)`).slice(0, sortedSplit.length),
+          borderWidth: 1,
+          maxBarThickness: compact ? 28 : 50,
+        },
+      ];
+      chart.data.labels = sortedSplit.map(([length]) => {
+        const label = getMinutesFromBucket(length).label;
+        return compact ? label.replace(" Minutes", "m") : label;
       });
-      chart.data.labels = sortedSplit.map(([length]) => getMinutesFromBucket(length).label);
       chart.update();
     });
   },

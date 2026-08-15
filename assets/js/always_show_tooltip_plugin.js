@@ -22,19 +22,56 @@
 const AlwaysShowTooltipPlugin = {
   id: "alwaysShowTooltip",
 
-  // Helper function to determine if background is light or dark
   getContrastColor(backgroundColor) {
-    // Convert hex to RGB
-    const hex = backgroundColor.replace("#", "");
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    const value = String(backgroundColor || "");
 
-    // Calculate luminance
+    if (value.startsWith("rgb")) {
+      const parts = value.match(/[\d.]+/g) || [];
+      r = Number(parts[0]);
+      g = Number(parts[1]);
+      b = Number(parts[2]);
+    } else {
+      const hex = value.replace("#", "");
+      r = parseInt(hex.substr(0, 2), 16) || 0;
+      g = parseInt(hex.substr(2, 2), 16) || 0;
+      b = parseInt(hex.substr(4, 2), 16) || 0;
+    }
+
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-    // Return black for light backgrounds, white for dark backgrounds
     return luminance > 0.5 ? "#000000" : "#FFFFFF";
+  },
+
+  splitFlagLabel(label) {
+    const chars = Array.from(String(label || ""));
+    if (chars.length >= 2) {
+      const first = chars[0].codePointAt(0);
+      const second = chars[1].codePointAt(0);
+      const isRegional = (code) => code >= 0x1f1e6 && code <= 0x1f1ff;
+      if (isRegional(first) && isRegional(second)) {
+        return { flag: chars[0] + chars[1], name: chars.slice(2).join("").trim() };
+      }
+    }
+    return { flag: "", name: String(label || "") };
+  },
+
+  drawFlagWithBorder(ctx, flag, x, y, fontSize) {
+    ctx.save();
+    ctx.font = `${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const width = ctx.measureText(flag).width;
+    const padX = 2;
+    const padY = 1.5;
+    const left = Math.round(x - width / 2 - padX) + 0.5;
+    const top = Math.round(y - fontSize / 2 - padY) + 0.5;
+    ctx.strokeStyle = "#111111";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(left, top, width + padX * 2, fontSize + padY * 2);
+    ctx.fillText(flag, x, y);
+    ctx.restore();
   },
 
   afterDatasetsDraw(chart, _, pluginOptions) {
@@ -46,9 +83,9 @@ const AlwaysShowTooltipPlugin = {
     const minSliceRatio = pluginOptions?.minSliceRatio ?? 0;
 
     ctx.save();
-    ctx.font = `${pluginOptions?.fontSize ?? 24}px Zabal`;
+    const fontFamily = pluginOptions?.fontFamily ?? "Zabal";
+    ctx.font = `${pluginOptions?.fontWeight ?? 900} ${pluginOptions?.fontSize ?? 24}px ${fontFamily}`;
     ctx.textAlign = "center";
-    ctx.fontWeight = `${pluginOptions?.fontWeight ?? 900}`;
 
     chart.data.datasets.forEach((dataset, datasetIndex) => {
       const meta = chart.getDatasetMeta(datasetIndex);
@@ -79,27 +116,44 @@ const AlwaysShowTooltipPlugin = {
         }
 
         if (chartType === "pie" || chartType === "doughnut") {
-          if (minSliceRatio > 0) {
-            const total = dataset.data.reduce((sum, n) => sum + (Number(n) || 0), 0);
-            if (total > 0 && value / total < minSliceRatio) return;
-          }
+          const total = dataset.data.reduce((sum, n) => sum + (Number(n) || 0), 0);
+          const ratio = total > 0 ? value / total : 0;
+          if (minSliceRatio > 0 && ratio < minSliceRatio) return;
 
           const { x, y } = element.getCenterPoint();
-
-          // Get the background color for this segment
-          const backgroundColor = dataset.backgroundColor[index];
-
-          // Determine appropriate text color based on background
+          const backgroundColor = Array.isArray(dataset.backgroundColor)
+            ? dataset.backgroundColor[index]
+            : dataset.backgroundColor;
           const textColor = this.getContrastColor(backgroundColor);
+          const label = chart.data.labels[index];
+          const { flag, name } = this.splitFlagLabel(label);
+          const baseSize = pluginOptions?.fontSize ?? 24;
+          const fontSize = ratio > 0 && ratio < 0.06 ? Math.max(10, baseSize - 3) : baseSize;
+          const displayName = name || label;
+
+          ctx.font = `${pluginOptions?.fontWeight ?? 900} ${fontSize}px ${fontFamily}`;
+          ctx.textBaseline = "middle";
           ctx.fillStyle = textColor;
 
-          // For pie/doughnut charts, show both label and percentage
-          const label = chart.data.labels[index];
-          const percentage = formattedValue;
-
-          // Draw label above the percentage
-          ctx.fillText(label, x, y - 8);
-          ctx.fillText(percentage, x, y + 8);
+          if (flag) {
+            const flagSize = fontSize + 2;
+            const nameWidth = ctx.measureText(displayName).width;
+            const gap = 5;
+            const flagBox = flagSize + 4;
+            const rowWidth = flagBox + gap + nameWidth;
+            const rowLeft = x - rowWidth / 2;
+            this.drawFlagWithBorder(ctx, flag, rowLeft + flagBox / 2, y - 8, flagSize);
+            ctx.font = `${pluginOptions?.fontWeight ?? 900} ${fontSize}px ${fontFamily}`;
+            ctx.textAlign = "left";
+            ctx.fillStyle = textColor;
+            ctx.fillText(displayName, rowLeft + flagBox + gap, y - 8);
+            ctx.textAlign = "center";
+            ctx.fillText(formattedValue, x, y + 10);
+          } else {
+            ctx.textAlign = "center";
+            ctx.fillText(displayName, x, y - 8);
+            ctx.fillText(formattedValue, x, y + 8);
+          }
         }
       });
     });

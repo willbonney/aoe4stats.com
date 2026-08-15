@@ -1,63 +1,170 @@
 import { Chart } from "chart.js/auto";
 import AlwaysShowTooltipPlugin from "../always_show_tooltip_plugin.js";
-import { MUI_COLORS } from "./shared.js";
+import HtmlYLabelsPlugin from "./html_y_labels.js";
+import { MUI_COLORS, TW_STONE_800, TW_ZINC_100 } from "./shared.js";
+
+const COMPACT_BREAKPOINT = 768;
+const BAR_ROW_HEIGHT = 36;
+
+function isDarkTheme() {
+  return localStorage.getItem("theme") === "dark";
+}
+
+function isCompact() {
+  return window.innerWidth < COMPACT_BREAKPOINT;
+}
+
+function prepareRankData(percentageTimeInRank) {
+  const threshold = 3;
+  let otherPercentage = 0;
+  const otherRanks = {};
+  const filtered = [];
+
+  Object.entries(percentageTimeInRank || {}).forEach(([rank, data]) => {
+    if (data.percentage >= threshold) {
+      filtered.push({ rank, percentage: data.percentage, color: data.color });
+    } else {
+      otherPercentage += data.percentage;
+      otherRanks[rank] = data.percentage;
+    }
+  });
+
+  filtered.sort((a, b) => b.percentage - a.percentage);
+
+  if (otherPercentage > 0) {
+    filtered.push({ rank: "other", percentage: otherPercentage, color: MUI_COLORS[3] });
+  }
+
+  return {
+    labels: filtered.map((item) => (item.rank === "other" ? "Other" : item.rank)),
+    values: filtered.map((item) => item.percentage),
+    colors: filtered.map((item) => item.color),
+    otherRanks,
+  };
+}
 
 export default {
   mounted() {
-    const ctx = this.el;
+    this.lastEvent = null;
+    this.compact = isCompact();
+    this.chart = this.createChart(this.compact);
 
-    const data = {
-      type: "doughnut",
-      data: {
-        datasets: [
-          {
-            data: [],
-            backgroundColor: MUI_COLORS,
+    this.onViewportChange = () => {
+      const compact = isCompact();
+      if (compact === this.compact) return;
+      this.compact = compact;
+      this.chart?.destroy();
+      this.chart = this.createChart(compact);
+      if (this.lastEvent) this.applyData(this.lastEvent);
+    };
+    this.media = window.matchMedia(`(max-width: ${COMPACT_BREAKPOINT - 1}px)`);
+    this.media.addEventListener("change", this.onViewportChange);
+
+    this.resizeObserver = new ResizeObserver(() => {
+      this.chart?.resize();
+    });
+    this.resizeObserver.observe(this.el.parentElement || this.el);
+
+    this.handleEvent("update-player", (event) => {
+      this.lastEvent = event;
+      this.applyData(event);
+    });
+  },
+
+  createChart(compact) {
+    this.syncWrapHeight(compact, this.chart?.data?.labels?.length || 6);
+    const tickColor = isDarkTheme() ? TW_ZINC_100 : TW_STONE_800;
+
+    if (compact) {
+      return new Chart(this.el, {
+        type: "bar",
+        plugins: [AlwaysShowTooltipPlugin, HtmlYLabelsPlugin],
+        data: {
+          labels: [],
+          datasets: [
+            {
+              data: [],
+              backgroundColor: MUI_COLORS,
+              borderWidth: 0,
+              borderRadius: 0,
+              barPercentage: 0.75,
+              categoryPercentage: 0.85,
+            },
+          ],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: { right: 44, top: 4, bottom: 4 } },
+          plugins: {
+            legend: { display: false },
+            title: { display: false },
+            tooltip: { enabled: false },
+            alwaysShowTooltip: {
+              fontSize: 12,
+              fontWeight: 600,
+              fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+              color: tickColor,
+              valueFormatter: (value) => `${value.toFixed(0)}%`,
+            },
           },
-        ],
-      },
-      plugins: [AlwaysShowTooltipPlugin],
+          scales: {
+            x: {
+              beginAtZero: true,
+              grace: "14%",
+              grid: { display: false },
+              border: { display: false },
+              ticks: {
+                color: tickColor,
+                font: { size: 11, family: 'system-ui, -apple-system, "Segoe UI", sans-serif' },
+                callback: (value) => `${value}%`,
+              },
+            },
+            y: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: { display: false },
+              afterFit(scale) {
+                scale.width = 120;
+              },
+            },
+          },
+        },
+      });
+    }
 
+    return new Chart(this.el, {
+      type: "doughnut",
+      plugins: [AlwaysShowTooltipPlugin],
+      data: {
+        labels: [],
+        datasets: [{ data: [], backgroundColor: MUI_COLORS }],
+      },
       options: {
         responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 1,
         plugins: {
-          legend: {
-            display: false,
-          },
+          legend: { display: false },
           tooltip: {
             callbacks: {
               label: (context) => `${context.raw.toFixed(0)}%`,
-              afterBody: function (context) {
-                if (!context || !context[0]) {
+              afterBody: (context) => {
+                if (!context?.[0] || context[0].label !== "Other" || !this.chart?.otherRanks) {
                   return [];
                 }
-
-                const label = context[0].label;
-
-                if (label === "other" && chart.otherRanks) {
-                  const otherRanks = Object.entries(chart.otherRanks)
-                    .filter(([rank, percentage]) => percentage > 0)
-                    .map(([rank, percentage]) => `${rank}: ${percentage.toFixed(1)}%`);
-
-                  return ["", ...otherRanks];
-                }
-                return [];
+                return [
+                  "",
+                  ...Object.entries(this.chart.otherRanks)
+                    .filter(([, percentage]) => percentage > 0)
+                    .map(([rank, percentage]) => `${rank}: ${percentage.toFixed(1)}%`),
+                ];
               },
             },
-            filter: function (tooltipItem) {
-              const label = tooltipItem.label || "";
-              return label.toLowerCase().includes("other");
-            },
+            filter: (tooltipItem) => (tooltipItem.label || "").toLowerCase().includes("other"),
           },
-          labels: {
-            font: {
-              size: 14,
-            },
-          },
-          title: {
-            display: false,
-            text: "Percentage Time in Rank",
-          },
+          title: { display: false },
           alwaysShowTooltip: {
             color: "white",
             fontSize: 14,
@@ -67,51 +174,34 @@ export default {
           },
         },
       },
-    };
-
-    const chart = new Chart(ctx, data);
-    this.handleEvent("update-player", (event) => {
-      const percentageTimeInRank = event.percentageTimeInRank;
-
-      if (!percentageTimeInRank) {
-        return;
-      }
-
-      const threshold = 3;
-      let otherPercentage = 0;
-      const otherRanks = {};
-      const filteredData = Object.entries(percentageTimeInRank).reduce((acc, [rank, data]) => {
-        if (data.percentage >= threshold) {
-          acc[rank] = data;
-        } else {
-          otherPercentage += data.percentage;
-          otherRanks[rank] = data.percentage;
-        }
-        return acc;
-      }, {});
-
-      if (otherPercentage > 0) {
-        filteredData.other = {
-          percentage: otherPercentage,
-          color: MUI_COLORS[3],
-        };
-        chart.otherRanks = otherRanks;
-      } else {
-        chart.otherRanks = null;
-      }
-
-      const data = Object.values(filteredData).map((item) => item.percentage);
-      const colors = Object.values(filteredData).map((item) => item.color);
-      const labels = Object.keys(filteredData);
-
-      chart.data.datasets[0].data = data;
-      chart.data.datasets[0].backgroundColor = colors;
-      chart.data.labels = labels;
-
-      chart.update();
     });
   },
-  beforeUnmount() {
-    this.handleEvent("update-percentage-time-in-rank", null);
+
+  applyData(event) {
+    if (!event?.percentageTimeInRank || !this.chart) return;
+
+    const { labels, values, colors, otherRanks } = prepareRankData(event.percentageTimeInRank);
+    this.syncWrapHeight(this.compact, labels.length);
+    this.chart.data.labels = labels;
+    this.chart.data.datasets[0].data = values;
+    this.chart.data.datasets[0].backgroundColor = colors;
+    this.chart.otherRanks = otherRanks;
+    this.chart.update();
+  },
+
+  syncWrapHeight(compact, rowCount) {
+    const wrap = this.el.parentElement;
+    if (!wrap) return;
+    if (compact) {
+      wrap.style.height = `${Math.max(220, rowCount * BAR_ROW_HEIGHT + 16)}px`;
+    } else {
+      wrap.style.height = "";
+    }
+  },
+
+  destroyed() {
+    this.media?.removeEventListener("change", this.onViewportChange);
+    if (this.resizeObserver) this.resizeObserver.disconnect();
+    this.chart?.destroy();
   },
 };

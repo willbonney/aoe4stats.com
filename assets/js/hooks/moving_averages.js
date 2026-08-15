@@ -17,6 +17,7 @@ export default {
           y: {},
         },
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
           annotation: {
             annotations: {},
@@ -24,6 +25,11 @@ export default {
           tooltip: {},
           legend: {
             position: "top",
+            labels: {
+              boxWidth: 12,
+              font: { size: 11 },
+              padding: 8,
+            },
           },
           title: {
             display: false,

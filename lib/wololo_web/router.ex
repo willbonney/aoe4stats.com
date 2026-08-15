@@ -25,6 +25,7 @@ defmodule WololoWeb.Router do
       live("/civs_by_league", CivsByLeagueLive)
       live("/leaderboard", LeaderboardLive)
       live("/player/:profile_id/:section", PlayerLive)
+      live("/player/:profile_id", PlayerLive)
       live("/player", PlayerLive)
     end
   end
