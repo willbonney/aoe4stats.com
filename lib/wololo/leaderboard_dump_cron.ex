@@ -9,6 +9,16 @@ defmodule Wololo.LeaderboardDumpCron do
   @cache_key :leaderboard_data
 
   def fetch_and_cache do
+    Task.start(fn ->
+      case Wololo.MapPool.refresh() do
+        {:ok, %{maps: maps}} ->
+          Logger.info("[LeaderboardDumpCron] Refreshed RM solo map pool (#{length(maps)} maps)")
+
+        {:error, reason} ->
+          Logger.error("[LeaderboardDumpCron] Failed to refresh map pool: #{inspect(reason)}")
+      end
+    end)
+
     Logger.info("[LeaderboardDumpCron] Starting leaderboard data refresh...")
     start_time = System.monotonic_time(:millisecond)
 

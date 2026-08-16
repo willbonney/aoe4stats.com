@@ -26,13 +26,7 @@
       <button
         phx-click="toggle-civ-filter"
         disabled={@loading}
-        class={"px-4 py-2 rounded transition-all font-medium flex items-center gap-2 " <>
-          if MapSet.size(@selected_civs) < length(@civs) - 1 do
-            "bg-accent-500 hover:shadow-[0_0_20px_rgba(217,119,6,0.6)] text-white"
-          else
-            "bg-primary-500 hover:shadow-[0_0_20px_rgba(230,74,25,0.6)] text-white"
-          end
-        }
+        class={if MapSet.size(@selected_civs) < length(@civs) - 1, do: "filter-chip-active", else: "filter-chip"}
       >
         <.icon name="hero-funnel" class="h-5 w-5" />
         Civilizations (<%= MapSet.size(@selected_civs) %>/<%= length(@civs) - 1 %>)
@@ -41,12 +35,10 @@
       <button
         phx-click="toggle-map-filter"
         disabled={@loading}
-        class={"px-4 py-2 rounded transition-all font-medium flex items-center gap-2 " <>
-          if is_nil(@selected_maps) or MapSet.size(@selected_maps) < length(@maps) do
-            "bg-accent-500 hover:shadow-[0_0_20px_rgba(217,119,6,0.6)] text-white"
-          else
-            "bg-primary-500 hover:shadow-[0_0_20px_rgba(230,74,25,0.6)] text-white"
-          end
+        class={
+          if is_nil(@selected_maps) or MapSet.size(@selected_maps) < length(@maps),
+            do: "filter-chip-active",
+            else: "filter-chip"
         }
       >
         <.icon name="hero-funnel" class="h-5 w-5" />
@@ -280,6 +272,65 @@
           </div>
         </div>
       <% end %>
+    </div>
+
+    <%
+      chart_map_name = resolved_chart_map(filtered_maps_list, @chart_map)
+      favored_map = Enum.find(filtered_maps_list, &(&1.name == chart_map_name))
+      favored_chart_rows = favored_rows(favored_map, @selected_civs, @civs)
+      variance_chart_rows = variance_rows(filtered_maps_list, @selected_civs, @civs)
+    %>
+
+    <div
+      id="civs-by-map-charts"
+      class="mt-10 space-y-10"
+      phx-hook="CivsByMapCharts"
+      data-favored={Jason.encode!(favored_chart_rows)}
+      data-variance={Jason.encode!(variance_chart_rows)}
+    >
+      <section>
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-semibold text-stone-800 dark:text-zinc-100">
+              Favored / unfavored
+            </h2>
+            <p class="text-sm text-stone-600 dark:text-zinc-400">
+              Win rate vs 50% on the selected map. Right is favored, left is unfavored.
+            </p>
+          </div>
+          <form phx-change="select-chart-map" class="sm:w-56">
+            <label class="block text-sm font-semibold leading-6 text-zinc-800 dark:text-zinc-200">
+              Map
+            </label>
+            <select
+              name="map"
+              class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-zinc-400 focus:ring-0 sm:text-sm dark:bg-stone-800 dark:border-zinc-600 dark:text-zinc-100"
+            >
+              <%= for map <- filtered_maps_list do %>
+                <option value={map.name} selected={map.name == chart_map_name}><%= map.name %></option>
+              <% end %>
+            </select>
+          </form>
+        </div>
+        <div id="civs-by-map-favored-wrap" class="relative mt-4 w-full">
+          <canvas id="civs-by-map-favored" phx-update="ignore"></canvas>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-stone-800 dark:text-zinc-100">
+          Map specialists vs generalists
+        </h2>
+        <p class="text-sm text-stone-600 dark:text-zinc-400">
+          Each bar is that civ's win-rate range across the selected maps. Wider bars swing more by map; the tick is the average.
+          <%= if length(filtered_maps_list) < 2 do %>
+            Select more than one map to see a real range.
+          <% end %>
+        </p>
+        <div id="civs-by-map-variance-wrap" class="relative mt-4 w-full">
+          <canvas id="civs-by-map-variance" phx-update="ignore"></canvas>
+        </div>
+      </section>
     </div>
     <% end %>
   <% end %>

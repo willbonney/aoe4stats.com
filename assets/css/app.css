@@ -6,6 +6,20 @@
 
 /* This file is for your main application CSS */
 
+@layer components {
+  .filter-chip {
+    @apply px-4 py-2 rounded font-medium flex items-center gap-2 transition-colors;
+    @apply bg-primary-100 text-primary-800 hover:bg-primary-200;
+    @apply dark:bg-primary-900 dark:text-primary-100 dark:hover:bg-primary-800;
+  }
+
+  .filter-chip-active {
+    @apply px-4 py-2 rounded font-medium flex items-center gap-2 transition-colors;
+    @apply bg-primary-600 text-white hover:bg-primary-700;
+    @apply dark:bg-primary-700 dark:text-primary-50 dark:hover:bg-primary-600;
+  }
+}
+
 .opponents-world-map .jvm-container {
   background: transparent;
 }

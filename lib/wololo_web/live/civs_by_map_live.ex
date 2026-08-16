@@ -73,7 +73,8 @@ defmodule WololoWeb.CivsByMapLive do
         loaded_league: nil,
         filters_loaded: false,
         sort_by: nil,
-        sort_dir: :desc
+        sort_dir: :desc,
+        chart_map: nil
       )
 
     if connected?(socket) do
@@ -196,12 +197,17 @@ defmodule WololoWeb.CivsByMapLive do
         show_civ_filter: false,
         show_map_filter: false,
         sort_by: nil,
-        sort_dir: :desc
+        sort_dir: :desc,
+        chart_map: nil
       )
       |> fetch_civs_data(nil)
       |> save_filters_to_client()
 
     {:noreply, socket}
+  end
+
+  def handle_event("select-chart-map", %{"map" => name}, socket) do
+    {:noreply, assign(socket, chart_map: name)}
   end
 
   def handle_event("sort-column", %{"column" => column}, socket) do
@@ -366,7 +372,11 @@ defmodule WololoWeb.CivsByMapLive do
   defp fetch_civs_data(socket, league) do
     case CivsByMapAPI.fetch_civs_by_map(league) do
       {:ok, raw_data} ->
-        transformed_data = CivsByMapAPI.transform_data(raw_data)
+        transformed_data =
+          raw_data
+          |> CivsByMapAPI.transform_data()
+          |> Wololo.MapPool.filter_maps()
+
         all_maps = transformed_data |> Enum.map(& &1.name) |> MapSet.new()
 
         new_selected_maps =
@@ -449,6 +459,79 @@ defmodule WololoWeb.CivsByMapLive do
       val = parse_win_rate(get_in(map, [:civs, civ_key, :win_rate]))
       {is_nil(val), sort_numeric(val, dir)}
     end)
+  end
+
+  def resolved_chart_map(maps, chart_map) do
+    names = Enum.map(maps, & &1.name)
+
+    cond do
+      is_binary(chart_map) and chart_map in names -> chart_map
+      names != [] -> hd(names)
+      true -> nil
+    end
+  end
+
+  def favored_rows(nil, _selected_civs, _civs), do: []
+
+  def favored_rows(map, selected_civs, civs) do
+    civs
+    |> visible_civs(selected_civs)
+    |> Enum.map(fn civ ->
+      win_rate = parse_win_rate(get_in(map, [:civs, civ.key, :win_rate]))
+
+      %{
+        label: civ.label,
+        image: civ.image,
+        win_rate: win_rate,
+        games_count: get_in(map, [:civs, civ.key, :games_count]),
+        delta: if(win_rate, do: Float.round(win_rate - 50.0, 2), else: nil)
+      }
+    end)
+    |> Enum.reject(&is_nil(&1.win_rate))
+    |> Enum.sort_by(& &1.win_rate, :desc)
+  end
+
+  def variance_rows(maps, selected_civs, civs) do
+    civs
+    |> visible_civs(selected_civs)
+    |> Enum.map(fn civ ->
+      rates =
+        maps
+        |> Enum.map(fn map ->
+          {map.name, parse_win_rate(get_in(map, [:civs, civ.key, :win_rate]))}
+        end)
+        |> Enum.reject(fn {_name, win_rate} -> is_nil(win_rate) end)
+
+      win_rates = Enum.map(rates, &elem(&1, 1))
+
+      if win_rates == [] do
+        nil
+      else
+        min_wr = Enum.min(win_rates)
+        max_wr = Enum.max(win_rates)
+        {min_map, _} = Enum.min_by(rates, &elem(&1, 1))
+        {max_map, _} = Enum.max_by(rates, &elem(&1, 1))
+
+        %{
+          label: civ.label,
+          image: civ.image,
+          min: min_wr,
+          max: max_wr,
+          avg: Float.round(Enum.sum(win_rates) / length(win_rates), 2),
+          range: Float.round(max_wr - min_wr, 2),
+          min_map: min_map,
+          max_map: max_map
+        }
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.sort_by(&{-&1.range, &1.label})
+  end
+
+  defp visible_civs(civs, selected_civs) do
+    civs
+    |> Enum.drop(1)
+    |> Enum.filter(&MapSet.member?(selected_civs, &1.key))
   end
 
   def map_average_win_rate(map, civ_keys) do

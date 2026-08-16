@@ -27,6 +27,7 @@ import * as topbar from "../vendor/topbar.cjs";
 import {
   Analysis,
   CivsByLeague,
+  CivsByMapCharts,
   FilterPersistence,
   LeaderboardCountries,
   MovingAverages,
@@ -41,6 +42,7 @@ Chart.register(annotationPlugin);
 const hooks = {
   Analysis,
   CivsByLeague,
+  CivsByMapCharts,
   FilterPersistence,
   LeaderboardCountries,
   MovingAverages,

@@ -13,13 +13,7 @@
       <button
         phx-click="toggle-civ-filter"
         disabled={@loading}
-        class={"px-4 py-2 rounded transition-all font-medium flex items-center gap-2 " <>
-          if MapSet.size(@selected_civs) < length(@civs) do
-            "bg-accent-500 hover:shadow-[0_0_20px_rgba(217,119,6,0.6)] text-white"
-          else
-            "bg-primary-500 hover:shadow-[0_0_20px_rgba(230,74,25,0.6)] text-white"
-          end
-        }
+        class={if MapSet.size(@selected_civs) < length(@civs), do: "filter-chip-active", else: "filter-chip"}
       >
         <.icon name="hero-funnel" class="h-5 w-5" />
         Civilizations (<%= MapSet.size(@selected_civs) %>/<%= length(@civs) %>)

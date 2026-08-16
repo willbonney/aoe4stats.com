@@ -23,7 +23,7 @@ const HtmlYLabelsPlugin = {
     if (!layer) {
       layer = document.createElement("div");
       layer.setAttribute(LABEL_ATTR, "");
-      layer.className = "pointer-events-none absolute inset-0 overflow-visible";
+      layer.className = "pointer-events-none absolute inset-0 z-10 overflow-visible";
       wrap.appendChild(layer);
     }
 
@@ -32,11 +32,16 @@ const HtmlYLabelsPlugin = {
     const dark = localStorage.getItem("theme") === "dark";
     const textClass = dark ? "text-zinc-100" : "text-stone-800";
     const labels = chart.data.labels || [];
+    const images = chart.$htmlYLabelImages || [];
 
     layer.innerHTML = labels
       .map((label, index) => {
         const top = yScale.getPixelForTick(index);
-        return `<div class="absolute ${textClass} text-[15px] leading-5 font-medium truncate" style="top:${top}px;left:0;width:${Math.max(yScale.width - 8, 0)}px;transform:translateY(-50%);text-align:right;padding-right:8px">${escapeHtml(label)}</div>`;
+        const image = images[index];
+        const flag = image
+          ? `<img src="${escapeHtml(image)}" alt="" class="w-8 h-5 shrink-0 object-cover" style="border:1px solid #000" />`
+          : "";
+        return `<div class="absolute ${textClass} text-[15px] leading-5 font-medium flex items-center justify-end gap-1.5" style="top:${top}px;left:0;width:${Math.max(yScale.width - 8, 0)}px;transform:translateY(-50%);padding-right:8px">${flag}<span class="truncate">${escapeHtml(label)}</span></div>`;
       })
       .join("");
   },
