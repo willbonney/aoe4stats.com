@@ -20,4 +20,24 @@ defmodule WololoWeb.LeaderboardControllerTest do
     conn = post(conn, ~p"/api/internal/refresh-leaderboard")
     assert json_response(conn, 200) == %{"status" => "refresh started"}
   end
+
+  test "GET /api/leaderboard is not found until the cron warms cache", %{conn: conn} do
+    Cachex.del(:wololo_cache, :leaderboard_data)
+    conn = get(conn, ~p"/api/leaderboard")
+    assert json_response(conn, 404)["error"] =~ "not yet available"
+  end
+
+  test "GET /api/leaderboard returns cached rows", %{conn: conn} do
+    Cachex.put(:wololo_cache, :leaderboard_data, [
+      %{profile_id: "1", name: "Test", rating: 2000, rank: 1}
+    ])
+
+    Cachex.put(:wololo_cache, :leaderboard_last_updated, ~U[2026-01-01 00:00:00Z])
+
+    conn = get(conn, ~p"/api/leaderboard")
+    body = json_response(conn, 200)
+    assert body["count"] == 1
+    assert hd(body["data"])["name"] == "Test"
+  end
 end
+

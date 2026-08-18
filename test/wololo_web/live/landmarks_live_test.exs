@@ -26,6 +26,12 @@ defmodule WololoWeb.LandmarksLiveTest do
     assert html =~ "Which civ are you playing?"
   end
 
+  test "result loader warns that the first load can take up to a minute" do
+    html = File.read!("lib/wololo_web/live/landmarks_live.html.heex")
+    assert html =~ "Finding the strongest path..."
+    assert html =~ "First load can take 30–60 seconds to complete."
+  end
+
   test "home page links to the landmark wizard", %{conn: conn} do
     {:ok, _view, html} = live(conn, ~p"/")
     assert html =~ ~p"/landmarks"

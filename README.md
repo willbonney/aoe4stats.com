@@ -54,3 +54,5 @@ To start your Phoenix server:
 - Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
 
 Now you can visit [`localhost:4001`](http://localhost:4001) from your browser.
+
+Optional: `mix prepush.install` makes `git push` run the critical-path tests. Skip once with `SKIP_PREPUSH=1 git push`.

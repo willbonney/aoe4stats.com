@@ -190,9 +190,14 @@
 
   <%= if @step == :result do %>
     <%= if @loading or @loading_matchups do %>
-      <div class="flex justify-center items-center py-12">
-        <.spinner size="lg" class="text-primary-500" />
-        <span class="ml-3 text-stone-600 dark:text-zinc-400">Finding the strongest path...</span>
+      <div class="flex flex-col items-center justify-center py-12 text-center">
+        <div class="flex items-center">
+          <.spinner size="lg" class="text-primary-500" />
+          <span class="ml-3 text-stone-600 dark:text-zinc-400">Finding the strongest path...</span>
+        </div>
+        <p class="mt-3 max-w-sm text-sm text-stone-500 dark:text-zinc-500">
+          First load can take 30–60 seconds to complete.
+        </p>
       </div>
     <% else %>
       <%= if @recommendation && @recommendation.path do %>

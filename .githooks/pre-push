@@ -1,0 +1,16 @@
+#!/bin/sh
+# Optional. Enable with: mix prepush.install
+# Skip one push with: SKIP_PREPUSH=1 git push
+set -e
+
+if [ -n "$SKIP_PREPUSH" ]; then
+  echo "Skipping pre-push tests (SKIP_PREPUSH=1)"
+  exit 0
+fi
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+unset PS1
+export MIX_ENV=test
+
+echo "pre-push: mix prepush"
+exec mix prepush
