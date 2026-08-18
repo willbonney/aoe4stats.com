@@ -153,6 +153,9 @@ defmodule Wololo.MatchupsAndMetaTest do
     rec = AgeupsAPI.recommend([popular, counter], opponent: "english", matchups: matchups)
     assert rec.path.age2.name == "Chamber of Commerce"
     assert rec.matchup.win_rate == 61.0
+    assert hd(rec.alternatives).age2.name == "School of Cavalry"
+    assert hd(rec.alternatives).win_rate == 48.0
+    assert hd(rec.alternatives).games == 200
 
     patch = "test-#{System.unique_integer([:positive])}"
     AgeupsAPI.cache_recommendations(%{"french" => [popular, counter]}, patch)

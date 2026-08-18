@@ -1,5 +1,6 @@
 defmodule Wololo.AgeupsFixtures do
   def patch, do: "test-patch"
+  def dry_arabia_id, do: 163361
 
   def options do
     %{
@@ -24,7 +25,11 @@ defmodule Wololo.AgeupsFixtures do
           "options" => [%{"value" => patch(), "label" => "Test Patch"}]
         },
         "kind" => %{"default" => "rm_solo"},
-        "civilization" => %{"default" => nil}
+        "civilization" => %{"default" => nil},
+        "map_id" => %{
+          "default" => nil,
+          "options" => [%{"label" => "Dry Arabia", "value" => dry_arabia_id()}]
+        }
       }
     }
   end
@@ -57,6 +62,32 @@ defmodule Wololo.AgeupsFixtures do
     }
   end
 
+  def map_payload do
+    %{
+      "ageups_metadata" => [
+        %{"pbgid" => 1, "icon" => "https://example.com/a.png", "name" => "School of Cavalry"},
+        %{"pbgid" => 2, "icon" => "https://example.com/b.png", "name" => "Guild Hall"},
+        %{"pbgid" => 3, "icon" => "https://example.com/c.png", "name" => "Red Palace"}
+      ],
+      "data" => %{
+        "age1-4" => [
+          complete_row(
+            "french",
+            62.0,
+            400,
+            4,
+            "Chamber of Commerce",
+            5,
+            "Royal Institute",
+            3,
+            "Red Palace"
+          ),
+          complete_row("french", 50.0, 220, 1, "School of Cavalry", 2, "Guild Hall", 3, "Red Palace")
+        ]
+      }
+    }
+  end
+
   def matchups_json do
     %{
       "data" => [
@@ -65,6 +96,27 @@ defmodule Wololo.AgeupsFixtures do
           "win_rate" => 61.0,
           "player_games_count" => 80,
           "win_count" => 49,
+          "duration_average" => 1500
+        }
+      ]
+    }
+  end
+
+  def civ_matchups_json do
+    %{
+      "data" => [
+        %{
+          "opponent_civilization" => "english",
+          "win_rate" => 47.5,
+          "player_games_count" => 800,
+          "win_count" => 380,
+          "duration_average" => 1500
+        },
+        %{
+          "opponent_civilization" => "delhi_sultanate",
+          "win_rate" => 52.2,
+          "player_games_count" => 872,
+          "win_count" => 455,
           "duration_average" => 1500
         }
       ]

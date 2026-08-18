@@ -2,8 +2,8 @@ defmodule Wololo.AgeupsAPI do
   @moduledoc """
   Ranked 1v1 landmark / age-up stats from AoE4 World.
 
-  The public ageups endpoint is not split by map. Opponent-specific win rates
-  are available per landmark path via the matchups endpoint.
+  Paths can be filtered to the current RM solo map pool via `map_id`.
+  Opponent-specific win rates come from the matchups endpoint.
   """
   require Logger
 
@@ -14,6 +14,7 @@ defmodule Wololo.AgeupsAPI do
   @min_path_games_fallback 25
   @min_matchup_games 20
   @max_matchup_candidates 8
+  @max_map_matchup_candidates 20
   @options_key "ageups_options"
   @updated_key :ageups_last_updated
 
@@ -22,16 +23,17 @@ defmodule Wololo.AgeupsAPI do
   @doc """
   Pulls the current age-up dataset and warms the cache.
 
-  Intended for the daily leaderboard cron. Fetches query options plus the
-  unfiltered rm_solo payload once, then prefetches opponent matchups for
-  each civ's strongest paths.
+  Intended for the daily leaderboard cron. Fetches the unfiltered rm_solo
+  payload plus every civ × current-season map combination, then prefetches
+  opponent matchups for the strongest paths.
   """
   def refresh_cache do
     Logger.info("[AgeupsAPI] Starting ageups cache refresh...")
 
     with {:ok, options} <- fetch_options_remote(),
          {:ok, payload} <- fetch_ageups_remote(options.patch) do
-      warm_from_payload(options, payload, prefetch_matchups: true)
+      maps = current_season_maps()
+      warm_from_payload(options, payload, prefetch_matchups: true, maps: maps)
     else
       {:error, reason} = error ->
         Logger.error("[AgeupsAPI] Cache refresh failed: #{inspect(reason)}")
@@ -51,21 +53,32 @@ defmodule Wololo.AgeupsAPI do
 
     matchups =
       if Keyword.get(opts, :prefetch_matchups, false) do
+        prefetch_civ_matchups(Wololo.Civilizations.slugs(), patch, nil)
         prefetch_matchups(by_civ, patch)
       else
         0
       end
 
     recs = cache_recommendations(by_civ, patch)
+    maps = Keyword.get(opts, :maps, [])
+    map_combos = warm_map_combos(patch, maps, opts)
     Cachex.put(:wololo_cache, @updated_key, DateTime.utc_now())
 
     duration = System.monotonic_time(:millisecond) - started
 
     Logger.info(
-      "[AgeupsAPI] Cached paths for #{map_size(by_civ)} civs, #{matchups} matchup sets, #{recs} recommendations in #{duration}ms (#{patch})"
+      "[AgeupsAPI] Cached paths for #{map_size(by_civ)} civs, #{length(maps)} maps, #{map_combos} map combos, #{matchups} matchup sets, #{recs} recommendations in #{duration}ms (#{patch})"
     )
 
-    {:ok, %{civs: map_size(by_civ), matchups: matchups, recommendations: recs, patch: patch}}
+    {:ok,
+     %{
+       civs: map_size(by_civ),
+       maps: length(maps),
+       map_combos: map_combos,
+       matchups: matchups,
+       recommendations: recs,
+       patch: patch
+     }}
   end
 
   def last_updated do
@@ -92,19 +105,19 @@ defmodule Wololo.AgeupsAPI do
     end
   end
 
-  def fetch_paths(civ_slug, patch) when is_binary(civ_slug) and is_binary(patch) do
-    key = paths_key(patch, civ_slug)
+  def fetch_paths(civ_slug, patch, map_id \\ nil)
+
+  def fetch_paths(civ_slug, patch, map_id) when is_binary(civ_slug) and is_binary(patch) do
+    key = paths_key(patch, civ_slug, map_id)
 
     case cache_get(key) do
       {:ok, paths} ->
         {:ok, paths}
 
       :miss ->
-        url =
-          "#{@base_url}/stats/analytics/ageups?" <>
-            URI.encode_query(%{"kind" => "rm_solo", "patch" => patch, "civilization" => civ_slug})
+        opts = [civilization: civ_slug] ++ if(map_id, do: [map_id: map_id], else: [])
 
-        case get_json(url) do
+        case fetch_ageups_remote(patch, opts) do
           {:ok, payload} ->
             paths = parse_paths(payload, civ_slug)
             Cachex.put(:wololo_cache, key, {:ok, paths}, ttl: @ttl)
@@ -116,15 +129,17 @@ defmodule Wololo.AgeupsAPI do
     end
   end
 
-  def fetch_matchups(civ_slug, path, patch) when is_map(path) do
-    key = matchup_key(patch, civ_slug, path)
+  def fetch_matchups(civ_slug, path, patch, map_id \\ nil)
+
+  def fetch_matchups(civ_slug, path, patch, map_id) when is_map(path) do
+    key = matchup_key(patch, civ_slug, path, map_id)
 
     case cache_get(key) do
       {:ok, rows} ->
         {:ok, rows}
 
       :miss ->
-        case fetch_matchups_remote(civ_slug, path, patch) do
+        case fetch_matchups_remote(civ_slug, path, patch, map_id) do
           {:ok, _rows} = ok ->
             Cachex.put(:wololo_cache, key, ok, ttl: @ttl)
             ok
@@ -158,38 +173,46 @@ defmodule Wololo.AgeupsAPI do
 
   def parse_all_paths(_), do: %{}
 
-  def rec_key(patch, civ_slug, opponent) do
-    "ageups_rec_#{patch}_#{civ_slug}_#{opponent || "any"}"
+  def rec_key(patch, civ_slug, opponent, map_id \\ nil) do
+    base = "ageups_rec_v2_#{patch}_#{civ_slug}_#{opponent || "any"}"
+    if map_id, do: "#{base}_#{map_id}", else: base
   end
 
-  def cached_recommendation(civ_slug, opponent, patch) do
-    cache_get(rec_key(patch, civ_slug, opponent))
+  def cached_recommendation(civ_slug, opponent, patch, map_id \\ nil) do
+    cache_get(rec_key(patch, civ_slug, opponent, map_id))
   end
 
-  def recommend_for(civ_slug, opponent, patch) do
-    case cached_recommendation(civ_slug, opponent, patch) do
+  def recommend_for(civ_slug, opponent, patch, map_id \\ nil) do
+    case cached_recommendation(civ_slug, opponent, patch, map_id) do
       {:ok, rec} ->
         {:ok, rec}
 
       :miss ->
-        compute_and_store(civ_slug, opponent, patch)
+        compute_and_store(civ_slug, opponent, patch, map_id)
     end
   end
 
-  def cache_recommendations(by_civ, patch) when is_map(by_civ) do
+  def cache_recommendations(by_civ, patch, map_id \\ nil)
+
+  def cache_recommendations(by_civ, patch, map_id) when is_map(by_civ) do
     opponents = Wololo.Civilizations.slugs()
 
     Enum.reduce(by_civ, 0, fn {civ, paths}, count ->
-      put_durable(rec_key(patch, civ, nil), recommend(paths))
-      matchups = matchups_from_cache(civ, paths, patch)
+      put_durable(rec_key(patch, civ, nil, map_id), recommend(paths))
+      matchups = matchups_from_cache(civ, paths, patch, map_id)
+      civ_rows = civ_matchups_from_cache(civ, patch, map_id)
 
       Enum.reduce(opponents, count + 1, fn
         ^civ, acc ->
           acc
 
         opp, acc ->
-          rec = recommend(paths, opponent: opp, matchups: matchups)
-          put_durable(rec_key(patch, civ, opp), rec)
+          rec =
+            paths
+            |> recommend(opponent: opp, matchups: matchups)
+            |> Map.put(:civ_matchup, civ_matchup_for(civ_rows, opp))
+
+          put_durable(rec_key(patch, civ, opp, map_id), rec)
           acc + 1
       end)
     end)
@@ -203,21 +226,21 @@ defmodule Wololo.AgeupsAPI do
 
     cond do
       candidates == [] ->
-        %{path: nil, alternatives: [], matchup: nil}
+        %{path: nil, alternatives: [], matchup: nil, civ_matchup: nil}
 
       is_binary(opponent) and opponent != "" ->
         recommend_vs(candidates, opponent, matchups)
 
       true ->
         [best | _rest] = candidates
-        %{path: best, alternatives: alternatives(candidates, best), matchup: nil}
+        %{path: best, alternatives: alternatives(candidates, best), matchup: nil, civ_matchup: nil}
     end
   end
 
-  def matchup_candidates(paths) do
+  def matchup_candidates(paths, limit \\ @max_matchup_candidates) do
     paths
     |> eligible_paths()
-    |> Enum.take(@max_matchup_candidates)
+    |> Enum.take(limit)
   end
 
   def format_clock(nil), do: nil
@@ -236,26 +259,39 @@ defmodule Wololo.AgeupsAPI do
       candidates
       |> Enum.flat_map(fn path ->
         case matchup_for(matchups, path, opponent) do
-          %{games: games} = mu when games >= @min_matchup_games ->
+          %{games: games} = mu when games > 0 ->
             [{path, mu}]
 
           _ ->
             []
         end
       end)
-      |> Enum.sort_by(fn {path, mu} -> {mu.win_rate, mu.games, path.games} end, :desc)
+      |> Enum.sort_by(
+        fn {_path, mu} ->
+          qualified = if mu.games >= @min_matchup_games, do: 1, else: 0
+          {qualified, mu.win_rate, mu.games}
+        end,
+        :desc
+      )
 
     case scored do
-      [{best, mu} | _rest] ->
+      [{best, mu} | rest] when mu.games >= @min_matchup_games ->
         %{
           path: best,
-          alternatives: alternatives(candidates, best),
-          matchup: mu
+          alternatives: alternatives_from_matchups(rest),
+          matchup: mu,
+          civ_matchup: nil
         }
 
-      [] ->
+      _ ->
         [best | _rest] = candidates
-        %{path: best, alternatives: alternatives(candidates, best), matchup: matchup_for(matchups, best, opponent)}
+
+        %{
+          path: best,
+          alternatives: alternatives_from_matchups(reject_path(scored, best)),
+          matchup: matchup_for(matchups, best, opponent),
+          civ_matchup: nil
+        }
     end
   end
 
@@ -267,6 +303,21 @@ defmodule Wololo.AgeupsAPI do
     |> Enum.uniq_by(&path_key/1)
     |> Enum.reject(&(path_key(&1) == path_key(best)))
     |> Enum.take(3)
+  end
+
+  defp alternatives_from_matchups(scored) do
+    scored
+    |> Enum.take(3)
+    |> Enum.map(fn {path, mu} ->
+      path
+      |> Map.put(:win_rate, mu.win_rate)
+      |> Map.put(:games, mu.games)
+      |> Map.put(:wins, mu.wins)
+    end)
+  end
+
+  defp reject_path(scored, path) do
+    Enum.reject(scored, fn {other, _} -> path_key(other) == path_key(path) end)
   end
 
   defp matchup_for(matchups, path, opponent) do
@@ -389,23 +440,28 @@ defmodule Wololo.AgeupsAPI do
     end
   end
 
-  defp fetch_ageups_remote(patch) do
-    url =
-      "#{@base_url}/stats/analytics/ageups?" <>
-        URI.encode_query(%{"kind" => "rm_solo", "patch" => patch})
+  defp fetch_ageups_remote(patch, opts \\ []) do
+    params =
+      %{"kind" => "rm_solo", "patch" => patch}
+      |> maybe_put("civilization", opts[:civilization])
+      |> maybe_put("map_id", opts[:map_id])
+      |> maybe_put("age2_pbgid", opts[:age2_pbgid])
 
+    url = "#{@base_url}/stats/analytics/ageups?" <> URI.encode_query(params)
     get_json(url)
   end
 
-  defp fetch_matchups_remote(civ_slug, path, patch) do
-    params = %{
-      "kind" => "rm_solo",
-      "patch" => patch,
-      "civilization" => civ_slug,
-      "age2_pbgid" => path.age2.pbgid,
-      "age3_pbgid" => path.age3.pbgid,
-      "age4_pbgid" => path.age4.pbgid
-    }
+  defp fetch_matchups_remote(civ_slug, path, patch, map_id) do
+    params =
+      %{
+        "kind" => "rm_solo",
+        "patch" => patch,
+        "civilization" => civ_slug,
+        "age2_pbgid" => path.age2.pbgid,
+        "age3_pbgid" => path.age3.pbgid,
+        "age4_pbgid" => path.age4.pbgid
+      }
+      |> maybe_put("map_id", map_id)
 
     url = "#{@base_url}/stats/analytics/ageups/matchups?" <> URI.encode_query(params)
 
@@ -416,19 +472,19 @@ defmodule Wololo.AgeupsAPI do
     end
   end
 
-  defp prefetch_matchups(by_civ, patch) do
+  defp prefetch_matchups(by_civ, patch, map_id \\ nil) do
     jobs =
       for {civ, paths} <- by_civ,
-          path <- matchup_candidates(paths) do
+          path <- matchup_candidates(paths, matchup_limit(map_id)) do
         {civ, path}
       end
 
     jobs
     |> Task.async_stream(
       fn {civ, path} ->
-        case fetch_matchups_remote(civ, path, patch) do
+        case fetch_matchups_remote(civ, path, patch, map_id) do
           {:ok, rows} ->
-            put_durable(matchup_key(patch, civ, path), rows)
+            put_durable(matchup_key(patch, civ, path, map_id), rows)
             :ok
 
           {:error, reason} ->
@@ -446,26 +502,34 @@ defmodule Wololo.AgeupsAPI do
     end)
   end
 
-  defp compute_and_store(civ_slug, opponent, patch) do
-    with {:ok, paths} <- fetch_paths(civ_slug, patch) do
+  defp compute_and_store(civ_slug, opponent, patch, map_id) do
+    with {:ok, paths} <- fetch_paths(civ_slug, patch, map_id) do
       rec =
         if is_binary(opponent) and opponent != "" do
-          recommend(paths, opponent: opponent, matchups: load_matchups(civ_slug, paths, patch))
+          paths
+          |> recommend(
+            opponent: opponent,
+            matchups: load_matchups(civ_slug, paths, patch, map_id)
+          )
+          |> Map.put(
+            :civ_matchup,
+            civ_matchup_for(load_civ_matchups(civ_slug, patch, map_id), opponent)
+          )
         else
           recommend(paths)
         end
 
-      put_durable(rec_key(patch, civ_slug, opponent), rec)
+      put_durable(rec_key(patch, civ_slug, opponent, map_id), rec)
       {:ok, rec}
     end
   end
 
-  defp load_matchups(civ_slug, paths, patch) do
+  defp load_matchups(civ_slug, paths, patch, map_id) do
     paths
-    |> matchup_candidates()
+    |> matchup_candidates(matchup_limit(map_id))
     |> Map.new(fn path ->
       rows =
-        case fetch_matchups(civ_slug, path, patch) do
+        case fetch_matchups(civ_slug, path, patch, map_id) do
           {:ok, rows} -> rows
           _ -> []
         end
@@ -474,12 +538,12 @@ defmodule Wololo.AgeupsAPI do
     end)
   end
 
-  defp matchups_from_cache(civ_slug, paths, patch) do
+  defp matchups_from_cache(civ_slug, paths, patch, map_id) do
     paths
-    |> matchup_candidates()
+    |> matchup_candidates(matchup_limit(map_id))
     |> Map.new(fn path ->
       rows =
-        case cache_get(matchup_key(patch, civ_slug, path)) do
+        case cache_get(matchup_key(patch, civ_slug, path, map_id)) do
           {:ok, rows} -> rows
           :miss -> []
         end
@@ -488,10 +552,160 @@ defmodule Wololo.AgeupsAPI do
     end)
   end
 
-  defp paths_key(patch, civ_slug), do: "ageups_paths_#{patch}_#{civ_slug}"
+  defp prefetch_civ_matchups(civs, patch, map_id) do
+    civs
+    |> Task.async_stream(
+      fn civ ->
+        case fetch_civ_matchups_remote(civ, patch, map_id) do
+          {:ok, rows} ->
+            put_durable(civ_matchup_key(patch, civ, map_id), rows)
+            :ok
 
-  defp matchup_key(patch, civ_slug, path) do
-    "ageups_mu_#{patch}_#{civ_slug}_#{path.age2.pbgid}_#{path.age3.pbgid}_#{path.age4.pbgid}"
+          {:error, reason} ->
+            Logger.warning("[AgeupsAPI] civ matchup prefetch failed for #{civ}: #{inspect(reason)}")
+            :error
+        end
+      end,
+      max_concurrency: 3,
+      timeout: 30_000,
+      on_timeout: :kill_task
+    )
+    |> Enum.count(fn
+      {:ok, :ok} -> true
+      _ -> false
+    end)
+  end
+
+  defp fetch_civ_matchups_remote(civ_slug, patch, map_id) do
+    params =
+      %{"kind" => "rm_solo", "patch" => patch, "civilization" => civ_slug}
+      |> maybe_put("map_id", map_id)
+
+    url = "#{@base_url}/stats/analytics/ageups/matchups?" <> URI.encode_query(params)
+
+    case get_json(url) do
+      {:ok, %{"data" => data}} when is_list(data) -> {:ok, parse_matchups(data)}
+      {:ok, _} -> {:ok, []}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp load_civ_matchups(civ_slug, patch, map_id) do
+    case cache_get(civ_matchup_key(patch, civ_slug, map_id)) do
+      {:ok, rows} ->
+        rows
+
+      :miss ->
+        case fetch_civ_matchups_remote(civ_slug, patch, map_id) do
+          {:ok, rows} ->
+            put_durable(civ_matchup_key(patch, civ_slug, map_id), rows)
+            rows
+
+          _ ->
+            []
+        end
+    end
+  end
+
+  defp civ_matchups_from_cache(civ_slug, patch, map_id) do
+    case cache_get(civ_matchup_key(patch, civ_slug, map_id)) do
+      {:ok, rows} -> rows
+      :miss -> []
+    end
+  end
+
+  defp civ_matchup_for(rows, opponent) do
+    Enum.find(List.wrap(rows), &(&1.opponent == opponent))
+  end
+
+  defp civ_matchup_key(patch, civ_slug, map_id) do
+    base = "ageups_civmu_#{patch}_#{civ_slug}"
+    if map_id, do: "#{base}_#{map_id}", else: base
+  end
+
+  defp warm_map_combos(_patch, [], _opts), do: 0
+
+  defp warm_map_combos(patch, maps, opts) do
+    prefetch? = Keyword.get(opts, :prefetch_matchups, false)
+
+    Enum.reduce(maps, 0, fn map, acc ->
+      if is_nil(map_ref(map)) do
+        acc
+      else
+        by_civ = fetch_map_paths(patch, map, opts)
+
+        if prefetch? do
+          prefetch_civ_matchups(Map.keys(by_civ), patch, map_ref(map))
+          prefetch_matchups(by_civ, patch, map_ref(map))
+        end
+
+        cache_recommendations(by_civ, patch, map_ref(map))
+
+        acc + map_size(by_civ)
+      end
+    end)
+  end
+
+  defp fetch_map_paths(patch, map, opts) do
+    payloads = Keyword.get(opts, :map_payloads)
+    civs = Wololo.Civilizations.slugs()
+
+    Enum.reduce(civs, %{}, fn civ, acc ->
+      case map_paths_for(civ, map, patch, payloads) do
+        {:ok, paths} ->
+          put_durable(paths_key(patch, civ, map_ref(map)), paths)
+          Map.put(acc, civ, paths)
+
+        {:error, reason} ->
+          Logger.warning(
+            "[AgeupsAPI] map path fetch failed for #{civ} on #{map.name}: #{inspect(reason)}"
+          )
+
+          acc
+      end
+    end)
+  end
+
+  defp map_paths_for(civ, map, _patch, %{} = payloads) do
+    payload = Map.get(payloads, map_ref(map)) || Map.get(payloads, map.name)
+    {:ok, if(payload, do: parse_paths(payload, civ), else: [])}
+  end
+
+  defp map_paths_for(civ, map, patch, _payloads) do
+    case fetch_ageups_remote(patch, civilization: civ, map_id: map.id) do
+      {:ok, payload} -> {:ok, parse_paths(payload, civ)}
+      error -> error
+    end
+  end
+
+  defp current_season_maps do
+    case Wololo.MapPool.refresh() do
+      {:ok, %{maps: maps}} ->
+        Enum.filter(maps, &(not is_nil(map_ref(&1))))
+
+      _ ->
+        []
+    end
+  end
+
+  defp map_ref(%{id: id}) when not is_nil(id), do: id
+  defp map_ref(_), do: nil
+
+  defp matchup_limit(nil), do: @max_matchup_candidates
+  defp matchup_limit(_map_id), do: @max_map_matchup_candidates
+
+  defp maybe_put(params, _key, nil), do: params
+  defp maybe_put(params, _key, ""), do: params
+  defp maybe_put(params, key, value), do: Map.put(params, key, value)
+
+  defp paths_key(patch, civ_slug, map_id \\ nil) do
+    base = "ageups_paths_#{patch}_#{civ_slug}"
+    if map_id, do: "#{base}_#{map_id}", else: base
+  end
+
+  defp matchup_key(patch, civ_slug, path, map_id) do
+    base = "ageups_mu_#{patch}_#{civ_slug}_#{path.age2.pbgid}_#{path.age3.pbgid}_#{path.age4.pbgid}"
+    if map_id, do: "#{base}_#{map_id}", else: base
   end
 
   defp cache_get(key) do

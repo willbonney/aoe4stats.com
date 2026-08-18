@@ -55,7 +55,7 @@ defmodule Wololo.AgeupsAPITest do
   end
 
   test "returns an empty recommendation when there are no paths" do
-    assert AgeupsAPI.recommend([]) == %{path: nil, alternatives: [], matchup: nil}
+    assert AgeupsAPI.recommend([]) == %{path: nil, alternatives: [], matchup: nil, civ_matchup: nil}
   end
 
   test "cleans landmark names with newlines" do
@@ -122,6 +122,48 @@ defmodule Wololo.AgeupsAPITest do
     assert rec.path.age4.name == "Red Palace"
     assert {:ok, vs} = AgeupsAPI.cached_recommendation("french", "english", AgeupsFixtures.patch())
     assert vs.matchup.win_rate == 61.0
+    assert vs.civ_matchup.win_rate == 47.5
+    assert vs.civ_matchup.games == 800
+
+    assert info.maps == 1
+    assert info.map_combos > 0
+
+    assert {:ok, on_map} =
+             AgeupsAPI.cached_recommendation(
+               "french",
+               nil,
+               AgeupsFixtures.patch(),
+               AgeupsFixtures.dry_arabia_id()
+             )
+
+    assert on_map.path.age2.name == "Chamber of Commerce"
+  end
+
+  test "warm_from_payload caches a different recommendation for a season map" do
+    maps = [%{id: AgeupsFixtures.dry_arabia_id(), name: "Dry Arabia"}]
+
+    assert {:ok, info} =
+             AgeupsAPI.warm_from_payload(AgeupsFixtures.options(), AgeupsFixtures.payload(),
+               maps: maps,
+               map_payloads: %{AgeupsFixtures.dry_arabia_id() => AgeupsFixtures.map_payload()}
+             )
+
+    assert info.maps == 1
+    assert info.map_combos == length(Wololo.Civilizations.slugs())
+
+    assert {:ok, any} = AgeupsAPI.recommend_for("french", nil, AgeupsFixtures.patch())
+    assert any.path.age2.name == "School of Cavalry"
+
+    assert {:ok, on_map} =
+             AgeupsAPI.recommend_for(
+               "french",
+               nil,
+               AgeupsFixtures.patch(),
+               AgeupsFixtures.dry_arabia_id()
+             )
+
+    assert on_map.path.age2.name == "Chamber of Commerce"
+    assert on_map.path.win_rate == 62.0
   end
 
   test "refresh_cache returns the HTTP error instead of writing a partial cache" do
@@ -214,5 +256,8 @@ defmodule Wololo.AgeupsAPITest do
     assert {:ok, rec} = AgeupsAPI.recommend_for("french", "english", AgeupsFixtures.patch())
     assert rec.path.age2.name == "Chamber of Commerce"
     assert rec.matchup.win_rate == 61.0
+    assert hd(rec.alternatives).age2.name == "School of Cavalry"
+    assert hd(rec.alternatives).win_rate == 48.0
+    assert hd(rec.alternatives).games == 200
   end
 end

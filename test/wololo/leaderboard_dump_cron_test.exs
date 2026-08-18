@@ -32,6 +32,18 @@ defmodule Wololo.LeaderboardDumpCronTest do
     assert rec.path.age4.name == "Red Palace"
     assert {:ok, vs_english} = AgeupsAPI.cached_recommendation("french", "english", AgeupsFixtures.patch())
     assert vs_english.path
+
+    assert info.maps == 1
+
+    assert {:ok, on_map} =
+             AgeupsAPI.cached_recommendation(
+               "french",
+               nil,
+               AgeupsFixtures.patch(),
+               AgeupsFixtures.dry_arabia_id()
+             )
+
+    assert on_map.path.age2.name == "Chamber of Commerce"
   end
 
   test "crontab still hits every app machine so local Cachex stays warm" do

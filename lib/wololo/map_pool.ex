@@ -63,6 +63,17 @@ defmodule Wololo.MapPool do
   def normalize_name(name) when is_binary(name), do: name |> String.downcase() |> String.trim()
   def normalize_name(_), do: ""
 
+  defp parse_map_id(id) when is_integer(id), do: id
+
+  defp parse_map_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {n, ""} -> n
+      _ -> nil
+    end
+  end
+
+  defp parse_map_id(_), do: nil
+
   defp fetch_remote do
     url = "#{Application.get_env(:wololo, :api_base_url)}/leaderboards/rm_solo/mappool"
     Logger.info("[MapPool] Fetching current map pool from #{url}")
@@ -75,8 +86,8 @@ defmodule Wololo.MapPool do
           {:ok, %{"maps" => maps}} when is_list(maps) ->
             parsed =
               Enum.flat_map(maps, fn
-                %{"map_name" => name} when is_binary(name) and name != "" ->
-                  [%{name: name}]
+                %{"map_name" => name} = row when is_binary(name) and name != "" ->
+                  [%{name: name, id: parse_map_id(row["map_id"])}]
 
                 _ ->
                   []

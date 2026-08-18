@@ -34,6 +34,32 @@
   gap: 0.75rem;
 }
 
+.landmark-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-left: 0;
+  padding: 0.6rem 1.2rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background-color: #c93d15;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+@media (min-width: 640px) {
+  .landmark-reset {
+    width: auto;
+    margin-left: auto;
+  }
+}
+
+.landmark-reset:hover {
+  background-color: #a83211;
+}
+
 .landmark-tile:hover {
   transform: translateY(-4px);
   border-color: #f28360;

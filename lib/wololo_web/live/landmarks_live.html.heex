@@ -38,41 +38,43 @@
   <% end %>
 
   <%= if @selected_civ do %>
-    <div class="mb-6 flex flex-wrap items-center gap-3 text-base sm:text-lg">
-      <button type="button" phx-click="goto" phx-value-step="civ" class="landmark-pill inline-flex items-center rounded-full border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-5 pr-6 py-2.5">
-        <img src={"/images/#{@selected_civ.image}.png"} alt="" class="h-5 w-8 shrink-0 rounded-sm object-cover" />
-        <span class="font-semibold text-stone-800 dark:text-zinc-100"><%= @selected_civ.label %></span>
-      </button>
-
-      <%= if @selected_map do %>
-        <span class="text-stone-400 dark:text-zinc-500">on</span>
-        <button type="button" phx-click="goto" phx-value-step="map" class="landmark-pill inline-flex items-center rounded-full border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-5 pr-6 py-2.5 text-stone-800 dark:text-zinc-100">
-          <%= if map_icon(@selected_map) do %>
-            <span class="h-6 w-6 shrink-0 overflow-hidden rounded-sm">
-              <img src={map_icon(@selected_map)} alt="" class="h-full w-full object-cover" />
-            </span>
-          <% else %>
-            <.icon name="hero-map" class="h-6 w-6 text-stone-500" />
-          <% end %>
-          <span class="font-semibold"><%= if @selected_map.any?, do: "any map", else: @selected_map.name %></span>
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center text-base sm:text-lg">
+      <div class="flex flex-wrap items-center gap-3 min-w-0 sm:flex-1">
+        <button type="button" phx-click="goto" phx-value-step="civ" class="landmark-pill inline-flex items-center rounded-full border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-5 pr-6 py-2.5">
+          <img src={"/images/#{@selected_civ.image}.png"} alt="" class="h-5 w-8 shrink-0 rounded-sm object-cover" />
+          <span class="font-semibold text-stone-800 dark:text-zinc-100"><%= @selected_civ.label %></span>
         </button>
-      <% end %>
 
-      <%= if @selected_map && (@selected_opponent || @step == :result) do %>
-        <span class="text-stone-400 dark:text-zinc-500">vs</span>
-        <%= if @selected_opponent do %>
-          <button type="button" phx-click="goto" phx-value-step="opponent" class="landmark-pill inline-flex items-center rounded-full border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-5 pr-6 py-2.5">
-            <img src={"/images/#{@selected_opponent.image}.png"} alt="" class="h-5 w-8 shrink-0 rounded-sm object-cover" />
-            <span class="font-semibold text-stone-800 dark:text-zinc-100"><%= @selected_opponent.label %></span>
-          </button>
-        <% else %>
-          <button type="button" phx-click="goto" phx-value-step="opponent" class="landmark-pill inline-flex items-center rounded-full border border-dashed border-stone-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-6 py-2.5 text-stone-500 dark:text-zinc-400">
-            anyone
+        <%= if @selected_map do %>
+          <span class="text-stone-400 dark:text-zinc-500">on</span>
+          <button type="button" phx-click="goto" phx-value-step="map" class="landmark-pill inline-flex items-center rounded-full border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-5 pr-6 py-2.5 text-stone-800 dark:text-zinc-100">
+            <%= if map_icon(@selected_map) do %>
+              <span class="h-6 w-6 shrink-0 overflow-hidden rounded-sm">
+                <img src={map_icon(@selected_map)} alt="" class="h-full w-full object-cover" />
+              </span>
+            <% else %>
+              <.icon name="hero-map" class="h-6 w-6 text-stone-500" />
+            <% end %>
+            <span class="font-semibold"><%= if @selected_map.any?, do: "any map", else: @selected_map.name %></span>
           </button>
         <% end %>
-      <% end %>
 
-      <button type="button" phx-click="start-over" class="ml-auto text-base text-stone-500 hover:text-stone-800 dark:hover:text-zinc-200">
+        <%= if @selected_map && (@selected_opponent || @step == :result) do %>
+          <span class="text-stone-400 dark:text-zinc-500">vs</span>
+          <%= if @selected_opponent do %>
+            <button type="button" phx-click="goto" phx-value-step="opponent" class="landmark-pill inline-flex items-center rounded-full border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-5 pr-6 py-2.5">
+              <img src={"/images/#{@selected_opponent.image}.png"} alt="" class="h-5 w-8 shrink-0 rounded-sm object-cover" />
+              <span class="font-semibold text-stone-800 dark:text-zinc-100"><%= @selected_opponent.label %></span>
+            </button>
+          <% else %>
+            <button type="button" phx-click="goto" phx-value-step="opponent" class="landmark-pill inline-flex items-center rounded-full border border-dashed border-stone-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-6 py-2.5 text-stone-500 dark:text-zinc-400">
+              anyone
+            </button>
+          <% end %>
+        <% end %>
+      </div>
+
+      <button type="button" phx-click="start-over" class="landmark-reset">
         Start over
       </button>
     </div>
@@ -106,7 +108,7 @@
   <%= if @step == :map do %>
     <h2 class="mb-1 text-base font-semibold text-stone-800 dark:text-zinc-100">Which map?</h2>
     <p class="mb-4 text-sm text-stone-500 dark:text-zinc-400">
-      Landmark win rates are ranked 1v1 across all maps. If you pick a map, we'll also show this civ's overall win rate there.
+      Paths are ranked 1v1 on the map you pick. Choose any map for the combined sample.
     </p>
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
       <%= for map <- @maps do %>
@@ -196,6 +198,7 @@
       <%= if @recommendation && @recommendation.path do %>
         <% path = @recommendation.path %>
         <% mu = @recommendation.matchup %>
+        <% civ_mu = Map.get(@recommendation, :civ_matchup) %>
         <% ages = [{path.age2, "Age II"}, {path.age3, "Age III"}, {path.age4, "Age IV"}] %>
         <div class="rounded-2xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-900 p-5 sm:p-8">
           <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
@@ -207,44 +210,46 @@
                   <span class="text-stone-400 font-normal"> vs </span><%= @selected_opponent.label %>
                 <% end %>
               </h2>
-              <p class="mt-1 text-sm text-stone-500 dark:text-zinc-400">
-                Ranked 1v1
-                <%= if @patch_label do %>
-                  · <%= @patch_label %>
-                <% end %>
-                · all maps
-                <%= if @selected_map && !@selected_map.any? do %>
-                  · you're on <%= @selected_map.name %>
-                <% end %>
-                <%= if @last_updated do %>
-                  · updated <%= Calendar.strftime(@last_updated, "%Y-%m-%d") %>
-                <% end %>
-              </p>
             </div>
             <div class="text-left sm:text-right">
-              <% display_wr = if mu, do: mu.win_rate, else: path.win_rate %>
-              <% display_games = if mu, do: mu.games, else: path.games %>
+              <% display_wr = cond do
+                civ_mu -> civ_mu.win_rate
+                mu -> mu.win_rate
+                true -> path.win_rate
+              end %>
+              <% display_games = cond do
+                civ_mu -> civ_mu.games
+                mu -> mu.games
+                true -> path.games
+              end %>
               <div class={"text-3xl font-bold #{color_class(display_wr, :text)}"}>
                 <%= format_win_rate(display_wr) %>
               </div>
               <div class="text-sm text-stone-500 dark:text-zinc-400">
-                <%= format_number(display_games) %> games
-                <%= if mu do %>
-                  vs <%= @selected_opponent.label %>
+                <%= cond do %>
+                  <% civ_mu && @selected_opponent -> %>
+                    vs <%= @selected_opponent.label %><%= if @selected_map && !@selected_map.any? do %> on <%= @selected_map.name %><% end %> · <%= format_number(display_games) %> games
+                  <% mu -> %>
+                    this path vs <%= @selected_opponent.label %><%= if @selected_map && !@selected_map.any? do %> on <%= @selected_map.name %><% end %> · <%= format_number(display_games) %> games
+                  <% true -> %>
+                    this path<%= if @selected_map && !@selected_map.any? do %> on <%= @selected_map.name %><% end %> · <%= format_number(display_games) %> games
                 <% end %>
               </div>
-              <%= if mu do %>
-                <div class="text-xs text-stone-400 mt-1">
-                  <%= format_win_rate(path.win_rate) %> overall · <%= format_number(path.games) %> games
-                </div>
-              <% end %>
             </div>
           </div>
+
+          <%= if civ_mu && path do %>
+            <% build_wr = if mu, do: mu.win_rate, else: path.win_rate %>
+            <% build_games = if mu, do: mu.games, else: path.games %>
+            <p class="mb-6 text-sm text-stone-600 dark:text-zinc-400">
+              This build is <%= format_win_rate(build_wr) %><%= if mu && @selected_opponent do %> vs <%= @selected_opponent.label %><% end %>
+              in <%= format_number(build_games) %> games.
+            </p>
+          <% end %>
 
           <%= if @map_wr && @map_wr != "N/A" && @selected_map && !@selected_map.any? do %>
             <p class="mb-6 text-sm text-stone-600 dark:text-zinc-400">
               <%= @selected_civ.label %> win <%= @map_wr %> of ranked games on <%= @selected_map.name %> overall.
-              Landmark paths below are not split by map.
             </p>
           <% end %>
 
@@ -280,16 +285,23 @@
         <%= if @recommendation.alternatives != [] do %>
           <h3 class="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500 dark:text-zinc-400">
             Other strong paths
+            <%= if @selected_opponent do %>
+              vs <%= @selected_opponent.label %><%= if @selected_map && !@selected_map.any? do %> on <%= @selected_map.name %><% end %>
+            <% else %>
+              <%= if @selected_map && !@selected_map.any? do %> on <%= @selected_map.name %><% end %>
+            <% end %>
           </h3>
           <div class="space-y-2">
             <%= for alt <- @recommendation.alternatives do %>
               <div class="landmark-tile flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 rounded-xl border border-stone-200 dark:border-zinc-700 px-4 py-3">
                 <div class="flex-1 text-sm text-stone-800 dark:text-zinc-100">
-                  <%= alt.age2.name %>
-                  <span class="text-primary-400">→</span>
-                  <%= alt.age3.name %>
-                  <span class="text-primary-400">→</span>
-                  <%= alt.age4.name %>
+                  <span class="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                    <%= alt.age2.name %>
+                    <.icon name="hero-arrow-right" class="h-4 w-4 shrink-0 text-primary-400" />
+                    <%= alt.age3.name %>
+                    <.icon name="hero-arrow-right" class="h-4 w-4 shrink-0 text-primary-400" />
+                    <%= alt.age4.name %>
+                  </span>
                 </div>
                 <div class={"text-sm font-semibold #{color_class(alt.win_rate, :text)}"}>
                   <%= format_win_rate(alt.win_rate) %>

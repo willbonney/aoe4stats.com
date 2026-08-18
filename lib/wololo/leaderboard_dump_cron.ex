@@ -20,6 +20,7 @@ defmodule Wololo.LeaderboardDumpCron do
     end)
 
     Task.start(fn ->
+      Wololo.MapPool.refresh()
       refresh_ageups()
     end)
 
