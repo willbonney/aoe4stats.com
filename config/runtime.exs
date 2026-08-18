@@ -5,6 +5,8 @@ if Config.config_env() == :dev do
 end
 
 config :wololo, :grok_api_key, System.get_env("GROK_API_KEY")
+config :wololo, :fly_api_token, System.get_env("FLY_API_TOKEN")
+config :wololo, :fly_app_name, System.get_env("FLY_COST_APP") || System.get_env("FLY_APP_NAME") || "wololo"
 
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the

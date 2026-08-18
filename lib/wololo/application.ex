@@ -32,33 +32,39 @@ defmodule Wololo.Application do
 
     # Warm caches on boot if this machine has nothing yet.
     # Daily cron refreshes both via LeaderboardDumpCron.fetch_and_cache/0.
-    Task.start(fn ->
-      leaderboard_empty? =
-        case Cachex.get(:wololo_cache, "leaderboard_players") do
-          {:ok, nil} -> true
-          {:ok, _} -> false
-          _ -> true
+    if Application.get_env(:wololo, :cache_refresh_on_boot, true) do
+      Task.start(fn ->
+        leaderboard_empty? =
+          case Cachex.get(:wololo_cache, "leaderboard_players") do
+            {:ok, nil} -> true
+            {:ok, _} -> false
+            _ -> true
+          end
+
+        ageups_empty? =
+          case Cachex.get(:wololo_cache, "ageups_options") do
+            {:ok, {:ok, _}} -> false
+            _ -> true
+          end
+
+        cond do
+          leaderboard_empty? ->
+            IO.puts("[Startup] Leaderboard cache is empty, triggering refresh...")
+            Wololo.LeaderboardDumpCron.fetch_and_cache()
+
+          ageups_empty? ->
+            IO.puts("[Startup] Ageups cache is empty, triggering refresh...")
+            Wololo.AgeupsAPI.refresh_cache()
+
+          true ->
+            IO.puts("[Startup] Leaderboard and ageups caches already populated")
         end
 
-      ageups_empty? =
-        case Cachex.get(:wololo_cache, "ageups_options") do
-          {:ok, {:ok, _}} -> false
-          _ -> true
+        if Application.get_env(:wololo, :fly_cost_refresh_on_boot, true) do
+          Wololo.FlyCost.refresh()
         end
-
-      cond do
-        leaderboard_empty? ->
-          IO.puts("[Startup] Leaderboard cache is empty, triggering refresh...")
-          Wololo.LeaderboardDumpCron.fetch_and_cache()
-
-        ageups_empty? ->
-          IO.puts("[Startup] Ageups cache is empty, triggering refresh...")
-          Wololo.AgeupsAPI.refresh_cache()
-
-        true ->
-          IO.puts("[Startup] Leaderboard and ageups caches already populated")
-      end
-    end)
+      end)
+    end
 
     result
   end

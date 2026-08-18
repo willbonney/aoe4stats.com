@@ -138,9 +138,9 @@ defmodule WololoWeb.CivsByMapLiveTest do
       ]
 
       civs = [
-        %{key: :name, label: "Map"},
-        %{key: :english, label: "English"},
-        %{key: :french, label: "French"}
+        %{key: :name, label: "Map", image: nil},
+        %{key: :english, label: "English", image: "english"},
+        %{key: :french, label: "French", image: "french"}
       ]
 
       rows = CivsByMapLive.variance_rows(maps, MapSet.new([:english, :french]), civs)

@@ -113,6 +113,7 @@
         <% selected? = @selected_map && ((map.any? && @selected_map.any?) || (!map.any? && @selected_map.name == map.name)) %>
         <button
           type="button"
+          id={if map.any?, do: "any-map"}
           phx-click="select-map"
           phx-value-map={map.name || ""}
           class={[

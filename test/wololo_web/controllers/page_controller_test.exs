@@ -2,7 +2,8 @@ defmodule WololoWeb.PageControllerTest do
   use WololoWeb.ConnCase
 
   test "GET /", %{conn: conn} do
-    conn = get(conn, ~p"/")
-    assert html_response(conn, 200) =~ "Peace of mind from prototype to production"
+    html = html_response(get(conn, ~p"/"), 200)
+    assert html =~ "AOE4 Stats"
+    assert html =~ "Landmark Path"
   end
 end

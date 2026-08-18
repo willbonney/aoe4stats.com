@@ -20,17 +20,7 @@ defmodule Wololo.LeaderboardDumpCron do
     end)
 
     Task.start(fn ->
-      Logger.info("[LeaderboardDumpCron] Refreshing ageups / landmark cache...")
-
-      case Wololo.AgeupsAPI.refresh_cache() do
-        {:ok, info} ->
-          Logger.info(
-            "[LeaderboardDumpCron] Ageups cache ready (#{info.civs} civs, #{info.matchups} matchup sets)"
-          )
-
-        {:error, reason} ->
-          Logger.error("[LeaderboardDumpCron] Failed to refresh ageups: #{inspect(reason)}")
-      end
+      refresh_ageups()
     end)
 
     Logger.info("[LeaderboardDumpCron] Starting leaderboard data refresh...")
@@ -269,6 +259,23 @@ defmodule Wololo.LeaderboardDumpCron do
 
       error ->
         {:error, error}
+    end
+  end
+
+  def refresh_ageups do
+    Logger.info("[LeaderboardDumpCron] Refreshing ageups / landmark cache...")
+
+    case Wololo.AgeupsAPI.refresh_cache() do
+      {:ok, info} = ok ->
+        Logger.info(
+          "[LeaderboardDumpCron] Ageups cache ready (#{info.civs} civs, #{info.matchups} matchup sets, #{info.recommendations} recommendations)"
+        )
+
+        ok
+
+      {:error, reason} = error ->
+        Logger.error("[LeaderboardDumpCron] Failed to refresh ageups: #{inspect(reason)}")
+        error
     end
   end
 

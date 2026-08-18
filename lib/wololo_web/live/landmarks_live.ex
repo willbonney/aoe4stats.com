@@ -135,10 +135,12 @@ defmodule WololoWeb.LandmarksLive do
     {:noreply, socket}
   end
 
-  def handle_event("select-map", %{"map" => name}, socket) do
+  def handle_event("select-map", params, socket) do
+    name = params["map"]
+
     map =
       cond do
-        name in [nil, ""] -> %{name: nil, any?: true}
+        name in [nil, ""] -> %{name: nil, any?: true, slug: nil}
         true -> Enum.find(socket.assigns.maps, &(&1.name == name))
       end
 

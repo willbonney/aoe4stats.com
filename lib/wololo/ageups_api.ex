@@ -28,33 +28,44 @@ defmodule Wololo.AgeupsAPI do
   """
   def refresh_cache do
     Logger.info("[AgeupsAPI] Starting ageups cache refresh...")
-    started = System.monotonic_time(:millisecond)
 
     with {:ok, options} <- fetch_options_remote(),
          {:ok, payload} <- fetch_ageups_remote(options.patch) do
-      put_durable(@options_key, options)
-      by_civ = parse_all_paths(payload)
-
-      Enum.each(Wololo.Civilizations.slugs(), fn civ ->
-        put_durable(paths_key(options.patch, civ), Map.get(by_civ, civ, []))
-      end)
-
-      matchups = prefetch_matchups(by_civ, options.patch)
-      recs = cache_recommendations(by_civ, options.patch)
-      Cachex.put(:wololo_cache, @updated_key, DateTime.utc_now())
-
-      duration = System.monotonic_time(:millisecond) - started
-
-      Logger.info(
-        "[AgeupsAPI] Cached paths for #{map_size(by_civ)} civs, #{matchups} matchup sets, #{recs} recommendations in #{duration}ms (#{options.patch})"
-      )
-
-      {:ok, %{civs: map_size(by_civ), matchups: matchups, recommendations: recs, patch: options.patch}}
+      warm_from_payload(options, payload, prefetch_matchups: true)
     else
       {:error, reason} = error ->
         Logger.error("[AgeupsAPI] Cache refresh failed: #{inspect(reason)}")
         error
     end
+  end
+
+  def warm_from_payload(options, payload, opts \\ []) do
+    started = System.monotonic_time(:millisecond)
+    patch = options.patch
+    put_durable(@options_key, options)
+    by_civ = parse_all_paths(payload)
+
+    Enum.each(Wololo.Civilizations.slugs(), fn civ ->
+      put_durable(paths_key(patch, civ), Map.get(by_civ, civ, []))
+    end)
+
+    matchups =
+      if Keyword.get(opts, :prefetch_matchups, false) do
+        prefetch_matchups(by_civ, patch)
+      else
+        0
+      end
+
+    recs = cache_recommendations(by_civ, patch)
+    Cachex.put(:wololo_cache, @updated_key, DateTime.utc_now())
+
+    duration = System.monotonic_time(:millisecond) - started
+
+    Logger.info(
+      "[AgeupsAPI] Cached paths for #{map_size(by_civ)} civs, #{matchups} matchup sets, #{recs} recommendations in #{duration}ms (#{patch})"
+    )
+
+    {:ok, %{civs: map_size(by_civ), matchups: matchups, recommendations: recs, patch: patch}}
   end
 
   def last_updated do
@@ -494,8 +505,12 @@ defmodule Wololo.AgeupsAPI do
     Cachex.put(:wololo_cache, key, {:ok, value})
   end
 
+  defp http_client do
+    Application.get_env(:wololo, :http_client, Wololo.HTTPClient)
+  end
+
   defp get_json(url) do
-    case Wololo.HTTPClient.get_with_retry(url) do
+    case http_client().get_with_retry(url) do
       {:ok, body} ->
         case Jason.decode(body) do
           {:ok, decoded} ->

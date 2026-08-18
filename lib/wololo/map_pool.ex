@@ -67,7 +67,9 @@ defmodule Wololo.MapPool do
     url = "#{Application.get_env(:wololo, :api_base_url)}/leaderboards/rm_solo/mappool"
     Logger.info("[MapPool] Fetching current map pool from #{url}")
 
-    case Wololo.HTTPClient.get_with_retry(url) do
+    http = Application.get_env(:wololo, :http_client, Wololo.HTTPClient)
+
+    case http.get_with_retry(url) do
       {:ok, body} ->
         case Jason.decode(body) do
           {:ok, %{"maps" => maps}} when is_list(maps) ->

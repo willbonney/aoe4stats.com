@@ -22,3 +22,6 @@ config :phoenix, :plug_init_mode, :runtime
 # Enable helpful, but potentially expensive runtime checks
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
+
+config :wololo, :fly_cost_refresh_on_boot, false
+config :wololo, :cache_refresh_on_boot, false

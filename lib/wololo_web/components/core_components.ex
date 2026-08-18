@@ -458,6 +458,7 @@ defmodule WololoWeb.CoreComponents do
   Renders a navigation header with home link and dark mode toggle.
   """
   attr(:show_home_link?, :boolean, default: true)
+  attr(:hosting_cost, :map, default: nil)
 
   def nav_header(assigns) do
     ~H"""
@@ -479,6 +480,13 @@ defmodule WololoWeb.CoreComponents do
         </div>
 
         <div class="flex items-center gap-4">
+          <span
+            :if={@hosting_cost}
+            title={@hosting_cost.tooltip}
+            class="text-sm font-medium text-stone-600 dark:text-zinc-300"
+          >
+            {@hosting_cost.label}/mo
+          </span>
           <a
             href="https://ko-fi.com/znmto"
             target="_blank"
