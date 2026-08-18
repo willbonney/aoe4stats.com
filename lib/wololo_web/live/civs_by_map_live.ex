@@ -534,6 +534,20 @@ defmodule WololoWeb.CivsByMapLive do
     |> Enum.filter(&MapSet.member?(selected_civs, &1.key))
   end
 
+  def best_civ_on_map(map, selected_civs, civs) do
+    civs
+    |> visible_civs(selected_civs)
+    |> Enum.map(fn civ ->
+      {civ, parse_win_rate(get_in(map, [:civs, civ.key, :win_rate]))}
+    end)
+    |> Enum.reject(fn {_civ, win_rate} -> is_nil(win_rate) end)
+    |> Enum.max_by(fn {_civ, win_rate} -> win_rate end, fn -> nil end)
+    |> case do
+      nil -> nil
+      {civ, _win_rate} -> civ
+    end
+  end
+
   def map_average_win_rate(map, civ_keys) do
     win_rates =
       civ_keys

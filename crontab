@@ -1,4 +1,4 @@
-# Leaderboard dump cron job  
-# Runs daily at 3 AM UTC - calls endpoint 3 times to hit all app machines
+# Daily 3 AM UTC refresh for leaderboard, map pool, civs-by-league, and landmark/ageups.
+# Hits the endpoint 3 times so every app machine warms its local Cachex.
 0 3 * * * for i in 1 2 3; do curl -X POST http://wololo.internal:8080/api/internal/refresh-leaderboard; sleep 2; done
 

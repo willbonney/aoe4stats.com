@@ -160,4 +160,46 @@ defmodule WololoWeb.CivsByMapLiveTest do
       assert english.avg == 50.0
     end
   end
+
+  describe "best_civ_on_map/3" do
+    test "returns the selected civ with the highest win rate" do
+      map = map("Dry Arabia", english: "55.00%", french: "40.00%", rus: "60.00%")
+
+      civs = [
+        %{key: :name, label: "Map", image: nil},
+        %{key: :english, label: "English", image: "english"},
+        %{key: :french, label: "French", image: "french"},
+        %{key: :rus, label: "Rus", image: "rus"}
+      ]
+
+      best = CivsByMapLive.best_civ_on_map(map, MapSet.new([:english, :french, :rus]), civs)
+      assert best.key == :rus
+      assert best.image == "rus"
+    end
+
+    test "ignores civs that are not selected" do
+      map = map("Dry Arabia", english: "55.00%", french: "40.00%", rus: "60.00%")
+
+      civs = [
+        %{key: :name, label: "Map", image: nil},
+        %{key: :english, label: "English", image: "english"},
+        %{key: :french, label: "French", image: "french"},
+        %{key: :rus, label: "Rus", image: "rus"}
+      ]
+
+      best = CivsByMapLive.best_civ_on_map(map, MapSet.new([:english, :french]), civs)
+      assert best.key == :english
+    end
+
+    test "returns nil when no civ has a win rate" do
+      map = map("Dry Arabia", english: "N/A")
+
+      civs = [
+        %{key: :name, label: "Map", image: nil},
+        %{key: :english, label: "English", image: "english"}
+      ]
+
+      assert CivsByMapLive.best_civ_on_map(map, MapSet.new([:english]), civs) == nil
+    end
+  end
 end

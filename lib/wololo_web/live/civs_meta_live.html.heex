@@ -1,0 +1,39 @@
+<.header>Pick Rate vs Win Rate</.header>
+<p class="mb-4 text-sm text-stone-600 dark:text-zinc-400">
+  High win rate and low pick rate is a sleeper. Low win rate and high pick rate is a trap.
+</p>
+
+<div class="mb-4">
+  <.form for={%{}} phx-change="select-league">
+    <.input
+      type="select"
+      options={@league_options}
+      name="league"
+      prompt="Select a League"
+      value={@selected_league}
+      disabled={@loading}
+    />
+  </.form>
+</div>
+
+<%= if @loading do %>
+  <div class="flex justify-center items-center py-8">
+    <.spinner size="lg" class="text-primary-500" />
+    <span class="ml-3 text-stone-600 dark:text-zinc-400">Loading data...</span>
+  </div>
+<% end %>
+
+<%= if @error do %>
+  <.error><%= @error %></.error>
+<% end %>
+
+<%= if not @loading and @points != [] do %>
+  <div
+    id="civs-meta-chart"
+    class="relative w-full h-[32rem] md:h-[36rem]"
+    phx-hook="CivsMeta"
+    data-points={Jason.encode!(@points)}
+  >
+    <canvas id="civs-meta-canvas" data-chart="meta" phx-update="ignore"></canvas>
+  </div>
+<% end %>

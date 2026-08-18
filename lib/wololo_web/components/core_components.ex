@@ -461,7 +461,7 @@ defmodule WololoWeb.CoreComponents do
 
   def nav_header(assigns) do
     ~H"""
-    <header class="px-4 sm:px-6 lg:px-8">
+    <header class="px-3 sm:px-4 lg:px-5">
       <div class="flex items-center justify-between py-3 text-sm">
         <div class="flex items-center gap-4">
           <%= if @show_home_link? do %>
@@ -529,18 +529,16 @@ defmodule WololoWeb.CoreComponents do
       end
 
     ~H"""
-    <div class="overflow-y-auto px-4 sm:overflow-visible sm:px-0">
-      <table class="w-[40rem] mt-11 sm:w-full">
+    <div class="matrix-scroll">
+      <table class="mt-4 min-w-max w-full">
         <thead class="text-sm text-left leading-6 text-zinc-500">
           <tr>
             <th
               :for={{col, col_index} <- Enum.with_index(@col)}
-              class="p-0 pb-1 pr-2 font-normal"
+              class="p-0 pb-1 pr-3 font-normal whitespace-nowrap"
               data-col-index={col_index}
             >
-              <div class="group-hover/header:scale-[1.02] transition-transform duration-200">
-                {col[:label]}
-              </div>
+              {col[:label]}
             </th>
 
             <th :if={@action != []} class="relative p-0 pb-4">
@@ -557,17 +555,20 @@ defmodule WololoWeb.CoreComponents do
           <tr
             :for={row <- @rows}
             id={@row_id && @row_id.(row)}
-            class="group hover:scale-[1.02] hover:border-t hover:border-b hover:border-zinc-300 dark:hover:border-zinc-600 transition-all duration-200 ease-in-out"
+            class="group hover:bg-gray-50 dark:hover:bg-zinc-800/40"
           >
             <td
               :for={{col, i} <- Enum.with_index(@col)}
               phx-click={@row_click && @row_click.(row)}
-              class={["relative p-0", @row_click && "hover:cursor-pointer"]}
+              class={[
+                "relative p-0",
+                @row_click && "hover:cursor-pointer"
+              ]}
               data-col-index={i}
             >
               <div class="block py-1 pr-2">
                 <span class={["relative", i == 0 && "font-semibold text-zinc-900"]}>
-                  <div class="truncate">
+                  <div class="whitespace-nowrap">
                     {render_slot(col, @row_item.(row))}
                   </div>
                 </span>

@@ -112,18 +112,31 @@ defmodule Wololo.PlayerGamesAPI do
   # Extract player and opponent data from a game
   # Returns {:ok, player_data, opponent_data} or {:error, reason}
   def extract_player_opponent(game, profile_id) do
-    {player_team, opponent_team} =
-      Enum.split_with(game["teams"], fn [team | _] ->
-        to_string(team["player"]["profile_id"]) == profile_id
-      end)
+    teams = game["teams"]
+    profile_id = to_string(profile_id)
 
-    case {player_team, opponent_team} do
-      {[[player]], [[opponent]]} ->
-        {:ok, player, opponent}
+    if is_list(teams) do
+      {player_team, opponent_team} =
+        Enum.split_with(teams, fn
+          [team | _] when is_map(team) ->
+            to_string(get_in(team, ["player", "profile_id"])) == profile_id
 
-      _ ->
-        {:error, :invalid_game_structure}
+          _ ->
+            false
+        end)
+
+      case {player_team, opponent_team} do
+        {[[player]], [[opponent]]} ->
+          {:ok, player, opponent}
+
+        _ ->
+          {:error, :invalid_game_structure}
+      end
+    else
+      {:error, :invalid_game_structure}
     end
+  rescue
+    _ -> {:error, :invalid_game_structure}
   end
 
   def process_games(body, profile_id) do

@@ -183,8 +183,14 @@
     <div class="hidden md:block">
       <.table id="aoe4_civilizations" rows={filtered_maps_list}>
         <:col :let={map} label={civ_header(%{image: nil, label: "Map"})}>
-          <div class="p-2 w-full h-full text-stone-800 dark:text-zinc-100">
+          <div class="p-2 w-full h-full text-stone-800 dark:text-zinc-100 flex items-center gap-1">
             <%= map.name %>
+            <% best = best_civ_on_map(map, @selected_civs, @civs) %>
+            <%= if best && best.image do %>
+              <span class="inline-flex items-center text-stone-500 dark:text-zinc-400 font-normal" title={"Best: #{best.label}"}>
+                <img src={"/images/#{best.image}.png"} alt={best.label} class="inline-block w-6 h-4 object-cover" />
+              </span>
+            <% end %>
           </div>
         </:col>
         <:col
@@ -253,8 +259,14 @@
     <div class="md:hidden space-y-4 w-full max-w-full">
       <%= for map <- filtered_maps_list do %>
         <div class="shadow rounded-lg overflow-hidden w-full">
-          <div class="bg-zinc-100 dark:bg-stone-800  font-bold w-full">
+          <div class="bg-zinc-100 dark:bg-stone-800 font-bold w-full flex items-center gap-1 px-3 py-2">
             <%= map.name %>
+            <% best = best_civ_on_map(map, @selected_civs, @civs) %>
+            <%= if best && best.image do %>
+              <span class="inline-flex items-center font-normal text-stone-500 dark:text-zinc-400" title={"Best: #{best.label}"}>
+                <img src={"/images/#{best.image}.png"} alt={best.label} class="inline-block w-6 h-4 object-cover" />
+              </span>
+            <% end %>
           </div>
           <div class="p-4">
             <div class="grid grid-cols-3 gap-2">
@@ -289,16 +301,8 @@
       data-variance={Jason.encode!(variance_chart_rows)}
     >
       <section>
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-          <div>
-            <h2 class="text-lg font-semibold text-stone-800 dark:text-zinc-100">
-              Favored / unfavored
-            </h2>
-            <p class="text-sm text-stone-600 dark:text-zinc-400">
-              Win rate vs 50% on the selected map. Right is favored, left is unfavored.
-            </p>
-          </div>
-          <form phx-change="select-chart-map" class="sm:w-56">
+        <div class="flex flex-col sm:flex-row sm:items-end gap-3">
+          <form phx-change="select-chart-map" class="w-full sm:w-56">
             <label class="block text-sm font-semibold leading-6 text-zinc-800 dark:text-zinc-200">
               Map
             </label>
@@ -311,9 +315,17 @@
               <% end %>
             </select>
           </form>
+          <div>
+            <h2 class="text-lg font-semibold text-stone-800 dark:text-zinc-100">
+              Favored / unfavored
+            </h2>
+            <p class="text-sm text-stone-600 dark:text-zinc-400">
+              Win rate vs 50% on the selected map. Right is favored, left is unfavored.
+            </p>
+          </div>
         </div>
         <div id="civs-by-map-favored-wrap" class="relative mt-4 w-full">
-          <canvas id="civs-by-map-favored" phx-update="ignore"></canvas>
+          <canvas id="civs-by-map-favored" data-chart="favored" phx-update="ignore"></canvas>
         </div>
       </section>
 
@@ -328,7 +340,7 @@
           <% end %>
         </p>
         <div id="civs-by-map-variance-wrap" class="relative mt-4 w-full">
-          <canvas id="civs-by-map-variance" phx-update="ignore"></canvas>
+          <canvas id="civs-by-map-variance" data-chart="variance" phx-update="ignore"></canvas>
         </div>
       </section>
     </div>

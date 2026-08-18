@@ -36,12 +36,25 @@ function prepareCountryData(byCountry) {
   }
 
   return {
-    labels: filtered.map(([country]) =>
-      country === "other" ? "Other" : COUNTRY_UTILS.getDisplayName(country)
-    ),
+    labels: filtered.map(([country]) => (country === "other" ? "Other" : COUNTRY_UTILS.getName(country))),
     values: filtered.map(([, value]) => value),
+    codes: filtered.map(([country]) => (country === "other" ? null : country)),
     otherCountries,
   };
+}
+
+const flagImageCache = new Map();
+
+function loadFlagImage(code) {
+  const key = String(code || "").toLowerCase();
+  const url = COUNTRY_UTILS.getFlagUrl(key);
+  if (!url) return null;
+  if (flagImageCache.has(key)) return flagImageCache.get(key);
+  const img = new Image();
+  img.decoding = "async";
+  img.src = url;
+  flagImageCache.set(key, img);
+  return img;
 }
 
 export default {
@@ -196,7 +209,7 @@ export default {
   },
 
   applyData(event) {
-    const { labels, values, otherCountries } = prepareCountryData(event.byCountry);
+    const { labels, values, codes, otherCountries } = prepareCountryData(event.byCountry);
     const chart = this.chart;
     if (!chart) return;
 
@@ -206,6 +219,21 @@ export default {
     chart.data.datasets[0].data = values;
     chart.data.datasets[0].backgroundColor = getDistributedColors(labels.length);
     chart.otherCountries = otherCountries;
+    chart.$labelFlags = codes;
+    chart.$htmlYLabelImages = codes.map((code) => COUNTRY_UTILS.getFlagUrl(code));
+    chart.$flagImages = {};
+
+    const redraw = () => {
+      if (this.chart === chart) chart.update("none");
+    };
+
+    codes.forEach((code) => {
+      const img = loadFlagImage(code);
+      if (!img) return;
+      chart.$flagImages[code.toLowerCase()] = img;
+      if (!img.complete) img.addEventListener("load", redraw, { once: true });
+    });
+
     chart.update();
   },
 

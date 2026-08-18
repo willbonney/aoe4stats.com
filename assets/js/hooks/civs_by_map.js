@@ -80,7 +80,7 @@ function htmlTooltip(context) {
   if (!el) {
     el = document.createElement("div");
     el.setAttribute(TOOLTIP_ATTR, "");
-    el.className = "pointer-events-none absolute max-w-xs rounded-lg px-3 py-2 text-sm text-white shadow-lg";
+    el.className = "pointer-events-none absolute rounded-lg px-3 py-2 text-sm text-white shadow-lg";
     el.style.zIndex = "50";
     el.style.backgroundColor = "rgba(0, 0, 0, 0.92)";
     el.style.opacity = "0";
@@ -94,10 +94,10 @@ function htmlTooltip(context) {
   }
 
   const title = tooltip.title?.[0] || "";
-  const lines = tooltip.body.map((body) => body.lines.join(" "));
+  const lines = tooltip.body.flatMap((body) => body.lines).filter(Boolean);
   el.innerHTML = `${
     title ? `<div class="font-semibold mb-0.5">${escapeHtml(title)}</div>` : ""
-  }<div>${lines.map(escapeHtml).join("<br>")}</div>`;
+  }${lines.map((line) => `<div style="white-space:nowrap">${escapeHtml(line)}</div>`).join("")}`;
 
   const minLeft = (chart.scales?.y?.right || 0) + 8;
   const left = tooltip.caretX;
@@ -171,10 +171,12 @@ function fiftyLineAt(value) {
 
 export default {
   mounted() {
-    this.favoredCanvas = this.el.querySelector("#civs-by-map-favored");
-    this.varianceCanvas = this.el.querySelector("#civs-by-map-variance");
-    this.favoredChart = this.createFavoredChart();
-    this.varianceChart = this.createVarianceChart();
+    this.favoredCanvas =
+      this.el.querySelector("[data-chart='favored']") || this.el.querySelector("#civs-by-map-favored");
+    this.varianceCanvas =
+      this.el.querySelector("[data-chart='variance']") || this.el.querySelector("#civs-by-map-variance");
+    this.favoredChart = this.favoredCanvas ? this.createFavoredChart() : null;
+    this.varianceChart = this.varianceCanvas ? this.createVarianceChart() : null;
     this.apply();
 
     this.themeHandler = () => {
@@ -318,7 +320,11 @@ export default {
             label: (ctx) => {
               const row = this.varianceRows?.[ctx.dataIndex];
               if (!row) return null;
-              return `${row.min.toFixed(2)}%–${row.max.toFixed(2)}% (avg ${row.avg.toFixed(2)}%, range ${row.range.toFixed(2)}) · best ${row.max_map}, worst ${row.min_map}`;
+              return [
+                `${row.min.toFixed(2)}%–${row.max.toFixed(2)}% (avg ${row.avg.toFixed(2)}%, range ${row.range.toFixed(2)})`,
+                `best ${row.max_map}`,
+                `worst ${row.min_map}`,
+              ];
             },
           }),
         },

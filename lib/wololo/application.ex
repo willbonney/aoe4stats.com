@@ -30,18 +30,33 @@ defmodule Wololo.Application do
 
     result = Supervisor.start_link(children, opts)
 
-    # Trigger leaderboard cache refresh on startup if cache is empty
+    # Warm caches on boot if this machine has nothing yet.
+    # Daily cron refreshes both via LeaderboardDumpCron.fetch_and_cache/0.
     Task.start(fn ->
-      case Cachex.get(:wololo_cache, "leaderboard_players") do
-        {:ok, nil} ->
+      leaderboard_empty? =
+        case Cachex.get(:wololo_cache, "leaderboard_players") do
+          {:ok, nil} -> true
+          {:ok, _} -> false
+          _ -> true
+        end
+
+      ageups_empty? =
+        case Cachex.get(:wololo_cache, "ageups_options") do
+          {:ok, {:ok, _}} -> false
+          _ -> true
+        end
+
+      cond do
+        leaderboard_empty? ->
           IO.puts("[Startup] Leaderboard cache is empty, triggering refresh...")
           Wololo.LeaderboardDumpCron.fetch_and_cache()
 
-        {:ok, _data} ->
-          IO.puts("[Startup] Leaderboard cache already populated")
+        ageups_empty? ->
+          IO.puts("[Startup] Ageups cache is empty, triggering refresh...")
+          Wololo.AgeupsAPI.refresh_cache()
 
-        {:error, reason} ->
-          IO.puts("[Startup] Error checking cache: #{inspect(reason)}")
+        true ->
+          IO.puts("[Startup] Leaderboard and ageups caches already populated")
       end
     end)
 

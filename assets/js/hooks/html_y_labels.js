@@ -34,6 +34,10 @@ const HtmlYLabelsPlugin = {
     const labels = chart.data.labels || [];
     const images = chart.$htmlYLabelImages || [];
 
+    const hasImages = images.some(Boolean);
+    const align = hasImages ? "justify-start" : "justify-end";
+    const pad = hasImages ? "padding-left:8px;padding-right:8px" : "padding-right:8px";
+
     layer.innerHTML = labels
       .map((label, index) => {
         const top = yScale.getPixelForTick(index);
@@ -41,7 +45,7 @@ const HtmlYLabelsPlugin = {
         const flag = image
           ? `<img src="${escapeHtml(image)}" alt="" class="w-8 h-5 shrink-0 object-cover" style="border:1px solid #000" />`
           : "";
-        return `<div class="absolute ${textClass} text-[15px] leading-5 font-medium flex items-center justify-end gap-1.5" style="top:${top}px;left:0;width:${Math.max(yScale.width - 8, 0)}px;transform:translateY(-50%);padding-right:8px">${flag}<span class="truncate">${escapeHtml(label)}</span></div>`;
+        return `<div class="absolute ${textClass} text-[15px] leading-5 font-medium flex items-center ${align} gap-1.5" style="top:${top}px;left:0;width:${Math.max(yScale.width - 8, 0)}px;transform:translateY(-50%);${pad}">${flag}<span class="truncate">${escapeHtml(label)}</span></div>`;
       })
       .join("");
   },

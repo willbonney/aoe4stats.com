@@ -93,6 +93,13 @@ export const COUNTRY_UTILS = {
     return String.fromCodePoint(...codePoints);
   },
 
+  getFlagUrl: (countryCode) => {
+    if (!countryCode || countryCode === "unknown" || countryCode === "other") return null;
+    const code = String(countryCode).toLowerCase();
+    if (!/^[a-z]{2}$/.test(code)) return null;
+    return `https://flagcdn.com/w40/${code}.png`;
+  },
+
   getName: (countryCode) => {
     if (countryCode === "unknown") return "Unknown";
     try {

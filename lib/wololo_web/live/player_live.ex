@@ -33,7 +33,7 @@ defmodule WololoWeb.PlayerLive do
      assign(
        socket,
        @initial_assigns ++
-         [current_url: url(socket, ~p"/player/#{profile_id}/rating")]
+         [profile_id: profile_id, current_url: url(socket, ~p"/player/#{profile_id}/rating")]
      )}
   end
 

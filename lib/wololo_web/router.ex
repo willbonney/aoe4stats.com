@@ -23,6 +23,8 @@ defmodule WololoWeb.Router do
       live("/", HomeLive)
       live("/civs_by_map", CivsByMapLive)
       live("/civs_by_league", CivsByLeagueLive)
+      live("/meta", CivsMetaLive)
+      live("/landmarks", LandmarksLive)
       live("/leaderboard", LeaderboardLive)
       live("/player/:profile_id/:section", PlayerLive)
       live("/player/:profile_id", PlayerLive)

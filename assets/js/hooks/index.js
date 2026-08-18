@@ -1,6 +1,7 @@
 import Analysis from "./analysis.js";
 import CivsByLeague from "./civs_by_league.js";
 import CivsByMapCharts from "./civs_by_map.js";
+import CivsMeta from "./civs_meta.js";
 import FilterPersistence from "./filter_persistence.js";
 import LeaderboardCountries from "./leaderboard_countries.js";
 import MovingAverages from "./moving_averages.js";
@@ -13,6 +14,7 @@ export {
   Analysis,
   CivsByLeague,
   CivsByMapCharts,
+  CivsMeta,
   FilterPersistence,
   LeaderboardCountries,
   MovingAverages,

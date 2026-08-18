@@ -67,10 +67,23 @@ const AlwaysShowTooltipPlugin = {
     const padY = 1.5;
     const left = Math.round(x - width / 2 - padX) + 0.5;
     const top = Math.round(y - fontSize / 2 - padY) + 0.5;
-    ctx.strokeStyle = "#111111";
+    ctx.strokeStyle = "#000000";
     ctx.lineWidth = 1;
     ctx.strokeRect(left, top, width + padX * 2, fontSize + padY * 2);
     ctx.fillText(flag, x, y);
+    ctx.restore();
+  },
+
+  drawFlagImage(ctx, img, x, y, width, height) {
+    const left = Math.round(x) + 0.5;
+    const top = Math.round(y) + 0.5;
+    ctx.save();
+    if (img?.complete && img.naturalWidth) {
+      ctx.drawImage(img, left, top, width, height);
+    }
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(left, top, width, height);
     ctx.restore();
   },
 
@@ -127,22 +140,30 @@ const AlwaysShowTooltipPlugin = {
           const textColor = this.getContrastColor(backgroundColor);
           const label = chart.data.labels[index];
           const { flag, name } = this.splitFlagLabel(label);
+          const flagCode = chart.$labelFlags?.[index];
+          const flagImg = flagCode ? chart.$flagImages?.[flagCode.toLowerCase()] : null;
+          const hasFlagImage = Boolean(flagImg?.complete && flagImg.naturalWidth);
           const baseSize = pluginOptions?.fontSize ?? 24;
           const fontSize = ratio > 0 && ratio < 0.06 ? Math.max(10, baseSize - 3) : baseSize;
-          const displayName = name || label;
+          const displayName = hasFlagImage || flag ? name || label : label;
 
           ctx.font = `${pluginOptions?.fontWeight ?? 900} ${fontSize}px ${fontFamily}`;
           ctx.textBaseline = "middle";
           ctx.fillStyle = textColor;
 
-          if (flag) {
-            const flagSize = fontSize + 2;
+          if (hasFlagImage || flag) {
+            const flagW = hasFlagImage ? 22 : fontSize + 2;
+            const flagH = hasFlagImage ? 16 : fontSize + 2;
             const nameWidth = ctx.measureText(displayName).width;
             const gap = 5;
-            const flagBox = flagSize + 4;
+            const flagBox = flagW + 2;
             const rowWidth = flagBox + gap + nameWidth;
             const rowLeft = x - rowWidth / 2;
-            this.drawFlagWithBorder(ctx, flag, rowLeft + flagBox / 2, y - 8, flagSize);
+            if (hasFlagImage) {
+              this.drawFlagImage(ctx, flagImg, rowLeft, y - 8 - flagH / 2, flagW, flagH);
+            } else {
+              this.drawFlagWithBorder(ctx, flag, rowLeft + flagBox / 2, y - 8, flagH);
+            }
             ctx.font = `${pluginOptions?.fontWeight ?? 900} ${fontSize}px ${fontFamily}`;
             ctx.textAlign = "left";
             ctx.fillStyle = textColor;
