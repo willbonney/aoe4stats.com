@@ -59,10 +59,6 @@ defmodule Wololo.Application do
           true ->
             IO.puts("[Startup] Leaderboard and ageups caches already populated")
         end
-
-        if Application.get_env(:wololo, :fly_cost_refresh_on_boot, true) do
-          Wololo.FlyCost.refresh()
-        end
       end)
     end
 

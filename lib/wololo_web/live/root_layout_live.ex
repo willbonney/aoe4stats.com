@@ -11,7 +11,7 @@ defmodule WololoWeb.RootLayoutLive do
       socket
       |> attach_hook(:handle_search_events, :handle_event, &handle_search_event/3)
       |> attach_hook(:handle_search_info, :handle_info, &handle_search_info/2)
-      |> assign(show_search: false, hosting_cost: Wololo.FlyCost.cached())
+      |> assign(show_search: false)
 
     {:cont, socket}
   end
