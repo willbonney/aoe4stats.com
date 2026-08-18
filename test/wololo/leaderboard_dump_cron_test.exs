@@ -49,7 +49,7 @@ defmodule Wololo.LeaderboardDumpCronTest do
   test "crontab still hits every app machine so local Cachex stays warm" do
     crontab = File.read!(Path.expand("../../crontab", __DIR__))
     assert crontab =~ "refresh-leaderboard"
-    assert crontab =~ "3 * * *"
+    assert crontab =~ "0 3 * * 0"
   end
 
   test "cron job eval script calls fetch_and_cache" do
