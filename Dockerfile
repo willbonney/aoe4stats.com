@@ -124,7 +124,8 @@ COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/wololo ./
 COPY --chown=nobody:root crontab /app/crontab
 COPY --chown=nobody:root rel/cron_job.exs /app/rel/cron_job.exs
 COPY --chown=nobody:root rel/cron-runner.sh /app/bin/cron-runner
-RUN sed -i 's/\r$//' /app/bin/server /app/bin/cron-runner /app/bin/wololo \
+RUN find /app -type f \( -name '*.sh' -o -name 'server' -o -name 'wololo' -o -name 'cron-runner' \) \
+      -exec sed -i 's/\r$//' {} + \
   && chmod +x /app/bin/server /app/bin/cron-runner /app/bin/wololo
 
 USER nobody
