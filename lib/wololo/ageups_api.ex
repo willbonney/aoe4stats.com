@@ -157,38 +157,37 @@ defmodule Wololo.AgeupsAPI do
   def parse_all_paths(%{"data" => data} = payload) when is_map(data) do
     metadata = index_metadata(payload["ageups_metadata"])
 
-    (data["age1-4"] || [])
-    |> Enum.filter(&complete_path?/1)
-    |> Enum.group_by(& &1["civilization"])
+    [2, 3, 4]
+    |> Enum.flat_map(fn through ->
+      (data["age1-#{through}"] || [])
+      |> Enum.filter(&complete_through?(&1, through))
+      |> Enum.map(&{&1["civilization"], row_to_path(&1, metadata, through)})
+    end)
     |> Enum.reject(fn {civ, _} -> civ in [nil, ""] end)
-    |> Map.new(fn {civ, rows} ->
-      paths =
-        rows
-        |> Enum.map(&row_to_path(&1, metadata))
-        |> Enum.sort_by(&{&1.win_rate, &1.games}, :desc)
-
-      {civ, paths}
+    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+    |> Map.new(fn {civ, paths} ->
+      {civ, Enum.sort_by(paths, &{&1.win_rate, &1.games}, :desc)}
     end)
   end
 
   def parse_all_paths(_), do: %{}
 
-  def rec_key(patch, civ_slug, opponent, map_id \\ nil) do
-    base = "ageups_rec_v2_#{patch}_#{civ_slug}_#{opponent || "any"}"
+  def rec_key(patch, civ_slug, opponent, map_id \\ nil, through \\ 4) do
+    base = "ageups_rec_v3_#{patch}_#{civ_slug}_#{opponent || "any"}_t#{through}"
     if map_id, do: "#{base}_#{map_id}", else: base
   end
 
-  def cached_recommendation(civ_slug, opponent, patch, map_id \\ nil) do
-    cache_get(rec_key(patch, civ_slug, opponent, map_id))
+  def cached_recommendation(civ_slug, opponent, patch, map_id \\ nil, through \\ 4) do
+    cache_get(rec_key(patch, civ_slug, opponent, map_id, through))
   end
 
-  def recommend_for(civ_slug, opponent, patch, map_id \\ nil) do
-    case cached_recommendation(civ_slug, opponent, patch, map_id) do
+  def recommend_for(civ_slug, opponent, patch, map_id \\ nil, through \\ 4) do
+    case cached_recommendation(civ_slug, opponent, patch, map_id, through) do
       {:ok, rec} ->
         {:ok, rec}
 
       :miss ->
-        compute_and_store(civ_slug, opponent, patch, map_id)
+        compute_and_store(civ_slug, opponent, patch, map_id, through)
     end
   end
 
@@ -198,22 +197,25 @@ defmodule Wololo.AgeupsAPI do
     opponents = Wololo.Civilizations.slugs()
 
     Enum.reduce(by_civ, 0, fn {civ, paths}, count ->
-      put_durable(rec_key(patch, civ, nil, map_id), recommend(paths))
-      matchups = matchups_from_cache(civ, paths, patch, map_id)
-      civ_rows = civ_matchups_from_cache(civ, patch, map_id)
+      Enum.reduce([2, 3, 4], count, fn through, acc ->
+        span = filter_through(paths, through)
+        put_durable(rec_key(patch, civ, nil, map_id, through), recommend(span, through: through))
+        matchups = matchups_from_cache(civ, span, patch, map_id)
+        civ_rows = civ_matchups_from_cache(civ, patch, map_id)
 
-      Enum.reduce(opponents, count + 1, fn
-        ^civ, acc ->
-          acc
+        Enum.reduce(opponents, acc + 1, fn
+          ^civ, inner ->
+            inner
 
-        opp, acc ->
-          rec =
-            paths
-            |> recommend(opponent: opp, matchups: matchups)
-            |> Map.put(:civ_matchup, civ_matchup_for(civ_rows, opp))
+          opp, inner ->
+            rec =
+              span
+              |> recommend(opponent: opp, matchups: matchups, through: through)
+              |> attach_rec_context(civ, opp, patch, map_id, civ_rows)
 
-          put_durable(rec_key(patch, civ, opp, map_id), rec)
-          acc + 1
+            put_durable(rec_key(patch, civ, opp, map_id, through), rec)
+            inner + 1
+        end)
       end)
     end)
   end
@@ -221,19 +223,21 @@ defmodule Wololo.AgeupsAPI do
   def recommend(paths, opts \\ []) when is_list(paths) do
     opponent = Keyword.get(opts, :opponent)
     matchups = Keyword.get(opts, :matchups, %{})
+    through = Keyword.get(opts, :through, 4)
+    paths = filter_through(paths, through)
 
     candidates = eligible_paths(paths)
 
     cond do
       candidates == [] ->
-        %{path: nil, alternatives: [], matchup: nil, civ_matchup: nil}
+        %{path: nil, alternatives: [], matchup: nil, civ_matchup: nil, any_map_matchup: nil}
 
       is_binary(opponent) and opponent != "" ->
         recommend_vs(candidates, opponent, matchups)
 
       true ->
         [best | _rest] = candidates
-        %{path: best, alternatives: alternatives(candidates, best), matchup: nil, civ_matchup: nil}
+        %{path: best, alternatives: alternatives(candidates, best), matchup: nil, civ_matchup: nil, any_map_matchup: nil}
     end
   end
 
@@ -280,7 +284,8 @@ defmodule Wololo.AgeupsAPI do
           path: best,
           alternatives: alternatives_from_matchups(rest),
           matchup: mu,
-          civ_matchup: nil
+          civ_matchup: nil,
+          any_map_matchup: nil
         }
 
       _ ->
@@ -290,7 +295,8 @@ defmodule Wololo.AgeupsAPI do
           path: best,
           alternatives: alternatives_from_matchups(reject_path(scored, best)),
           matchup: matchup_for(matchups, best, opponent),
-          civ_matchup: nil
+          civ_matchup: nil,
+          any_map_matchup: nil
         }
     end
   end
@@ -326,7 +332,13 @@ defmodule Wololo.AgeupsAPI do
     |> Enum.find(&(&1.opponent == opponent))
   end
 
-  def path_key(path), do: "#{path.age2.pbgid}-#{path.age3.pbgid}-#{path.age4.pbgid}"
+  def path_key(path) do
+    "#{landmark_pbgid(path.age2)}-#{landmark_pbgid(path.age3)}-#{landmark_pbgid(path.age4)}"
+  end
+
+  def filter_through(paths, through) do
+    Enum.filter(paths, &(Map.get(&1, :through, 4) == through))
+  end
 
   defp eligible_paths(paths) do
     qualified = Enum.filter(paths, &(&1.games >= @min_path_games))
@@ -340,24 +352,26 @@ defmodule Wololo.AgeupsAPI do
     end
   end
 
-  defp complete_path?(row) do
-    present?(row["age2_name"]) and present?(row["age3_name"]) and present?(row["age4_name"]) and
-      not is_nil(row["age2_pbgid"]) and not is_nil(row["age3_pbgid"]) and not is_nil(row["age4_pbgid"])
+  defp complete_through?(row, through) when through in [2, 3, 4] do
+    Enum.all?(2..through, fn age ->
+      present?(row["age#{age}_name"]) and not is_nil(row["age#{age}_pbgid"])
+    end)
   end
 
   defp present?(name) when is_binary(name), do: String.trim(name) != ""
   defp present?(_), do: false
 
-  defp row_to_path(row, metadata) do
+  defp row_to_path(row, metadata, through) do
     %{
       civilization: row["civilization"],
       win_rate: to_float(row["win_rate"]),
       games: row["player_games_count"] || 0,
       wins: row["win_count"] || 0,
       duration_average: row["duration_average"],
-      age2: landmark(row, 2, metadata),
-      age3: landmark(row, 3, metadata),
-      age4: landmark(row, 4, metadata)
+      through: through,
+      age2: if(through >= 2, do: landmark(row, 2, metadata)),
+      age3: if(through >= 3, do: landmark(row, 3, metadata)),
+      age4: if(through >= 4, do: landmark(row, 4, metadata))
     }
   end
 
@@ -453,14 +467,10 @@ defmodule Wololo.AgeupsAPI do
 
   defp fetch_matchups_remote(civ_slug, path, patch, map_id) do
     params =
-      %{
-        "kind" => "rm_solo",
-        "patch" => patch,
-        "civilization" => civ_slug,
-        "age2_pbgid" => path.age2.pbgid,
-        "age3_pbgid" => path.age3.pbgid,
-        "age4_pbgid" => path.age4.pbgid
-      }
+      %{"kind" => "rm_solo", "patch" => patch, "civilization" => civ_slug}
+      |> maybe_put("age2_pbgid", landmark_pbgid(path.age2))
+      |> maybe_put("age3_pbgid", landmark_pbgid(path.age3))
+      |> maybe_put("age4_pbgid", landmark_pbgid(path.age4))
       |> maybe_put("map_id", map_id)
 
     url = "#{@base_url}/stats/analytics/ageups/matchups?" <> URI.encode_query(params)
@@ -475,7 +485,8 @@ defmodule Wololo.AgeupsAPI do
   defp prefetch_matchups(by_civ, patch, map_id \\ nil) do
     jobs =
       for {civ, paths} <- by_civ,
-          path <- matchup_candidates(paths, matchup_limit(map_id)) do
+          through <- [2, 3, 4],
+          path <- matchup_candidates(filter_through(paths, through), matchup_limit(map_id)) do
         {civ, path}
       end
 
@@ -502,24 +513,30 @@ defmodule Wololo.AgeupsAPI do
     end)
   end
 
-  defp compute_and_store(civ_slug, opponent, patch, map_id) do
+  defp compute_and_store(civ_slug, opponent, patch, map_id, through) do
     with {:ok, paths} <- fetch_paths(civ_slug, patch, map_id) do
+      span = filter_through(paths, through)
+
       rec =
         if is_binary(opponent) and opponent != "" do
-          paths
+          span
           |> recommend(
             opponent: opponent,
-            matchups: load_matchups(civ_slug, paths, patch, map_id)
+            matchups: load_matchups(civ_slug, span, patch, map_id),
+            through: through
           )
-          |> Map.put(
-            :civ_matchup,
-            civ_matchup_for(load_civ_matchups(civ_slug, patch, map_id), opponent)
+          |> attach_rec_context(
+            civ_slug,
+            opponent,
+            patch,
+            map_id,
+            load_civ_matchups(civ_slug, patch, map_id)
           )
         else
-          recommend(paths)
+          recommend(span, through: through)
         end
 
-      put_durable(rec_key(patch, civ_slug, opponent, map_id), rec)
+      put_durable(rec_key(patch, civ_slug, opponent, map_id, through), rec)
       {:ok, rec}
     end
   end
@@ -614,6 +631,22 @@ defmodule Wololo.AgeupsAPI do
     end
   end
 
+  defp attach_rec_context(rec, civ_slug, opponent, patch, map_id, civ_rows) do
+    rec
+    |> Map.put(:civ_matchup, civ_matchup_for(civ_rows, opponent))
+    |> Map.put(:any_map_matchup, path_matchup_vs(civ_slug, rec.path, opponent, patch, map_id))
+  end
+
+  def path_matchup_vs(_civ, nil, _opponent, _patch, _map_id), do: nil
+  def path_matchup_vs(_civ, _path, _opponent, _patch, nil), do: nil
+
+  def path_matchup_vs(civ_slug, path, opponent, patch, _map_id) do
+    case fetch_matchups(civ_slug, path, patch, nil) do
+      {:ok, rows} -> Enum.find(rows, &(&1.opponent == opponent))
+      _ -> nil
+    end
+  end
+
   defp civ_matchup_for(rows, opponent) do
     Enum.find(List.wrap(rows), &(&1.opponent == opponent))
   end
@@ -699,14 +732,19 @@ defmodule Wololo.AgeupsAPI do
   defp maybe_put(params, key, value), do: Map.put(params, key, value)
 
   defp paths_key(patch, civ_slug, map_id \\ nil) do
-    base = "ageups_paths_#{patch}_#{civ_slug}"
+    base = "ageups_paths_v2_#{patch}_#{civ_slug}"
     if map_id, do: "#{base}_#{map_id}", else: base
   end
 
   defp matchup_key(patch, civ_slug, path, map_id) do
-    base = "ageups_mu_#{patch}_#{civ_slug}_#{path.age2.pbgid}_#{path.age3.pbgid}_#{path.age4.pbgid}"
+    base =
+      "ageups_mu_#{patch}_#{civ_slug}_#{landmark_pbgid(path.age2)}_#{landmark_pbgid(path.age3)}_#{landmark_pbgid(path.age4)}"
+
     if map_id, do: "#{base}_#{map_id}", else: base
   end
+
+  defp landmark_pbgid(%{pbgid: pbgid}), do: pbgid
+  defp landmark_pbgid(_), do: nil
 
   defp cache_get(key) do
     case Cachex.get(:wololo_cache, key) do

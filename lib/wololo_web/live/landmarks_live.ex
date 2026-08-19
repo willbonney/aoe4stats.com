@@ -3,10 +3,15 @@ defmodule WololoWeb.LandmarksLive do
 
   alias Wololo.AgeupsAPI
   alias Wololo.Civilizations
-  alias Wololo.CivsByMapAPI
   alias Wololo.MapPool
   alias WololoWeb.CivHelpers
   import WololoWeb.Components.Spinner
+
+  @through_choices [
+    %{value: 2, slug: "1-2", label: "Age II"},
+    %{value: 3, slug: "1-3", label: "Age III"},
+    %{value: 4, slug: "1-4", label: "Age IV"}
+  ]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -18,16 +23,18 @@ defmodule WololoWeb.LandmarksLive do
         selected_civ: nil,
         selected_map: nil,
         selected_opponent: nil,
+        selected_through: 4,
+        through_choices: @through_choices,
         patch: AgeupsAPI.fallback_patch(),
         patch_label: nil,
         paths: [],
         recommendation: nil,
-        map_wr: nil,
         loading: true,
         loading_matchups: false,
         error: nil,
         last_updated: nil,
-        paths_key: nil
+        paths_key: nil,
+        open_menu: nil
       )
 
     if connected?(socket), do: send(self(), :load_options)
@@ -85,14 +92,24 @@ defmodule WololoWeb.LandmarksLive do
     end
   end
 
-  def handle_info({:load_recommendation, opponent}, socket) do
+  def handle_info({:load_recommendation, opponent, through}, socket) do
     civ = socket.assigns.selected_civ
     same_opp = opponent_slug(socket.assigns.selected_opponent) == opponent
+    same_through = socket.assigns.selected_through == through
 
-    if civ && same_opp do
-      case AgeupsAPI.recommend_for(civ.slug, opponent, socket.assigns.patch, selected_map_id(socket)) do
+    if civ && same_opp && same_through do
+      case AgeupsAPI.recommend_for(
+             civ.slug,
+             opponent,
+             socket.assigns.patch,
+             selected_map_id(socket),
+             through
+           ) do
         {:ok, rec} ->
-          {:noreply, assign(socket, recommendation: rec, loading_matchups: false, error: nil)}
+          {:noreply,
+           socket
+           |> assign(recommendation: rec, loading_matchups: false, error: nil)
+           |> maybe_fill_any_map_matchup()}
 
         {:error, reason} ->
           {:noreply,
@@ -101,18 +118,6 @@ defmodule WololoWeb.LandmarksLive do
              error: "Failed to load landmark path: #{reason}"
            )}
       end
-    else
-      {:noreply, socket}
-    end
-  end
-
-  def handle_info({:fetch_map_wr, civ_key, map_name}, socket) do
-    same_civ = socket.assigns.selected_civ && socket.assigns.selected_civ.key == civ_key
-    same_map = socket.assigns.selected_map && socket.assigns.selected_map.name == map_name
-
-    if same_civ and same_map do
-      wr = lookup_map_wr(civ_key, map_name)
-      {:noreply, assign(socket, map_wr: wr)}
     else
       {:noreply, socket}
     end
@@ -145,8 +150,42 @@ defmodule WololoWeb.LandmarksLive do
     {:noreply, push_patch(socket, to: result_path(socket, "any"))}
   end
 
-  def handle_event("goto", %{"step" => step}, socket) do
-    {:noreply, push_patch(socket, to: path_for_step(socket, step))}
+  def handle_event("toggle-menu", %{"menu" => menu}, socket) do
+    if pills_locked?(socket) do
+      {:noreply, assign(socket, open_menu: nil)}
+    else
+      open =
+        case menu do
+          "civ" -> :civ
+          "map" -> :map
+          "opponent" -> :opponent
+          "ages" -> :ages
+          _ -> nil
+        end
+
+      {:noreply, assign(socket, open_menu: if(socket.assigns.open_menu == open, do: nil, else: open))}
+    end
+  end
+
+  def handle_event("close-menu", _params, socket) do
+    {:noreply, assign(socket, open_menu: nil)}
+  end
+
+  def handle_event("change-civ", %{"civ" => slug}, socket) do
+    {:noreply, push_patch(socket, to: retain_path(socket, %{"civ" => slug}))}
+  end
+
+  def handle_event("change-map", params, socket) do
+    map = if params["map"] in [nil, ""], do: "any", else: params["map"]
+    {:noreply, push_patch(socket, to: retain_path(socket, %{"map" => map}))}
+  end
+
+  def handle_event("change-opponent", %{"civ" => slug}, socket) do
+    {:noreply, push_patch(socket, to: retain_path(socket, %{"opponent" => slug}))}
+  end
+
+  def handle_event("change-ages", %{"ages" => ages}, socket) do
+    {:noreply, push_patch(socket, to: retain_path(socket, %{"ages" => ages}))}
   end
 
   def handle_event("start-over", _params, socket) do
@@ -157,6 +196,7 @@ defmodule WololoWeb.LandmarksLive do
     civ = find_civ(socket, params["civ"])
     map = find_map(socket, params["map"])
     opponent = find_civ(socket, normalize_any(params["opponent"]))
+    through = parse_through(params["ages"])
     step = resolve_step(params["step"], civ, map, params)
 
     socket
@@ -164,11 +204,12 @@ defmodule WololoWeb.LandmarksLive do
       selected_civ: civ,
       selected_map: map,
       selected_opponent: opponent,
+      selected_through: through,
       step: step,
-      error: nil
+      error: nil,
+      open_menu: nil
     )
     |> maybe_load_paths()
-    |> maybe_refresh_map_wr()
     |> maybe_refresh_result()
   end
 
@@ -185,7 +226,7 @@ defmodule WololoWeb.LandmarksLive do
 
       true ->
         send(self(), {:fetch_paths, civ.slug})
-        assign(socket, paths: [], paths_key: key, recommendation: nil, loading: true)
+        assign(socket, paths: [], paths_key: key, recommendation: nil, loading: true, open_menu: nil)
     end
   end
 
@@ -230,38 +271,51 @@ defmodule WololoWeb.LandmarksLive do
   defp normalize_any(value) when value in [nil, "", "any"], do: nil
   defp normalize_any(value), do: value
 
-  defp path_for_step(socket, "civ") do
-    wizard_path(%{"step" => "civ", "civ" => civ_slug(socket.assigns.selected_civ)})
-  end
+  defp retain_path(socket, overrides) do
+    civ = overrides["civ"] || civ_slug(socket.assigns.selected_civ)
+    map = overrides["map"] || map_param(socket.assigns.selected_map)
 
-  defp path_for_step(socket, "map") do
-    wizard_path(%{
-      "step" => "map",
-      "civ" => civ_slug(socket.assigns.selected_civ),
-      "map" => map_param(socket.assigns.selected_map)
-    })
-  end
+    opp =
+      cond do
+        Map.has_key?(overrides, "opponent") -> overrides["opponent"]
+        socket.assigns.step == :result -> civ_slug(socket.assigns.selected_opponent) || "any"
+        true -> civ_slug(socket.assigns.selected_opponent)
+      end
 
-  defp path_for_step(socket, "opponent") do
-    wizard_path(%{
-      "step" => "opponent",
-      "civ" => civ_slug(socket.assigns.selected_civ),
-      "map" => map_param(socket.assigns.selected_map)
-    })
-  end
+    opp = if is_binary(opp) and opp == civ, do: "any", else: opp
 
-  defp path_for_step(socket, "result") do
-    result_path(socket, civ_slug(socket.assigns.selected_opponent) || "any")
-  end
+    step =
+      case socket.assigns.step do
+        :result -> if map, do: "result", else: "map"
+        :opponent -> if map, do: "opponent", else: "map"
+        :map -> "map"
+        _ -> "map"
+      end
 
-  defp path_for_step(_socket, _), do: ~p"/landmarks"
+    ages =
+      cond do
+        Map.has_key?(overrides, "ages") -> ages_param(overrides["ages"])
+        true -> ages_param(socket.assigns.selected_through)
+      end
+
+    attrs = %{"step" => step, "civ" => civ, "map" => map, "ages" => ages}
+
+    attrs =
+      cond do
+        step == "result" -> Map.put(attrs, "opponent", opp || "any")
+        true -> attrs
+      end
+
+    wizard_path(attrs)
+  end
 
   defp result_path(socket, opponent) do
     wizard_path(%{
       "step" => "result",
       "civ" => civ_slug(socket.assigns.selected_civ),
       "map" => map_param(socket.assigns.selected_map),
-      "opponent" => opponent
+      "opponent" => opponent,
+      "ages" => ages_param(socket.assigns.selected_through)
     })
   end
 
@@ -269,7 +323,7 @@ defmodule WololoWeb.LandmarksLive do
     query =
       attrs
       |> Map.new(fn {key, value} -> {to_string(key), value} end)
-      |> Map.take(["step", "civ", "map", "opponent"])
+      |> Map.take(["step", "civ", "map", "opponent", "ages"])
       |> Enum.reject(fn {_key, value} -> value in [nil, ""] end)
       |> Map.new()
 
@@ -282,6 +336,29 @@ defmodule WololoWeb.LandmarksLive do
 
   defp civ_slug(nil), do: nil
   defp civ_slug(%{slug: slug}), do: slug
+
+  defp parse_through(value) when value in ["1-2", "2"], do: 2
+  defp parse_through(value) when value in ["1-3", "3"], do: 3
+  defp parse_through(_), do: 4
+
+  defp ages_param(2), do: "1-2"
+  defp ages_param(3), do: "1-3"
+  defp ages_param("1-2"), do: "1-2"
+  defp ages_param("1-3"), do: "1-3"
+  defp ages_param(_), do: nil
+
+  def through_choice(through) do
+    Enum.find(@through_choices, &(&1.value == through)) || hd(@through_choices)
+  end
+
+  def path_landmarks(path) do
+    [{path.age2, "Age II"}, {path.age3, "Age III"}, {path.age4, "Age IV"}]
+    |> Enum.reject(fn {landmark, _} -> is_nil(landmark) or is_nil(landmark.name) end)
+  end
+
+  def through_range_label(2), do: "Age II"
+  def through_range_label(3), do: "Age III"
+  def through_range_label(_), do: "Age IV"
 
   defp maybe_refresh_result(socket) do
     if socket.assigns.step == :result do
@@ -297,13 +374,23 @@ defmodule WololoWeb.LandmarksLive do
     if is_nil(civ) do
       socket
     else
-      case AgeupsAPI.cached_recommendation(civ.slug, opponent, socket.assigns.patch, selected_map_id(socket)) do
+      through = socket.assigns.selected_through
+
+      case AgeupsAPI.cached_recommendation(
+             civ.slug,
+             opponent,
+             socket.assigns.patch,
+             selected_map_id(socket),
+             through
+           ) do
         {:ok, rec} ->
-          assign(socket, recommendation: rec, loading_matchups: false)
+          socket
+          |> assign(recommendation: rec, loading_matchups: false)
+          |> maybe_fill_any_map_matchup()
 
         :miss ->
-          send(self(), {:load_recommendation, opponent})
-          assign(socket, loading_matchups: true)
+          send(self(), {:load_recommendation, opponent, through})
+          assign(socket, loading_matchups: true, open_menu: nil)
       end
     end
   end
@@ -311,30 +398,26 @@ defmodule WololoWeb.LandmarksLive do
   defp opponent_slug(nil), do: nil
   defp opponent_slug(%{slug: slug}), do: slug
 
-  defp maybe_refresh_map_wr(socket) do
-    civ = socket.assigns.selected_civ
-    map = socket.assigns.selected_map
-
-    if civ && map && !map.any? do
-      send(self(), {:fetch_map_wr, civ.key, map.name})
-    end
-
-    socket
+  defp pills_locked?(socket) do
+    socket.assigns.loading or socket.assigns.loading_matchups
   end
 
-  defp lookup_map_wr(civ_key, map_name) do
-    case CivsByMapAPI.fetch_civs_by_map(nil) do
-      {:ok, raw} ->
-        raw
-        |> CivsByMapAPI.transform_data()
-        |> Enum.find(&(MapPool.normalize_name(&1.name) == MapPool.normalize_name(map_name)))
-        |> case do
-          %{civs: civs} -> get_in(civs, [civ_key, :win_rate])
-          _ -> nil
-        end
+  defp maybe_fill_any_map_matchup(socket) do
+    rec = socket.assigns.recommendation
+    civ = socket.assigns.selected_civ
+    opp = opponent_slug(socket.assigns.selected_opponent)
+    map_id = selected_map_id(socket)
 
-      _ ->
-        nil
+    cond do
+      is_nil(rec) or is_nil(rec.path) or is_nil(opp) or is_nil(map_id) ->
+        socket
+
+      Map.get(rec, :any_map_matchup) ->
+        socket
+
+      true ->
+        any_mu = AgeupsAPI.path_matchup_vs(civ.slug, rec.path, opp, socket.assigns.patch, map_id)
+        assign(socket, recommendation: Map.put(rec, :any_map_matchup, any_mu))
     end
   end
 
@@ -374,6 +457,64 @@ defmodule WololoWeb.LandmarksLive do
   def map_icon(%{slug: slug}) when is_binary(slug), do: "/images/maps/#{slug}.png"
   def map_icon(%{name: name}) when is_binary(name), do: "/images/maps/#{map_slug(name)}.png"
   def map_icon(_), do: nil
+
+  def result_stats(_civ, map, opponent, rec) do
+    path = rec && rec.path
+    mu = rec && rec.matchup
+    any_mu = rec && Map.get(rec, :any_map_matchup)
+    map_name = if map && !map.any?, do: map.name
+    opp_label = opponent && opponent.label
+
+    exact =
+      cond do
+        mu && opp_label && map_name ->
+          %{
+            wr: mu.win_rate,
+            games: mu.games,
+            title: "This exact combo",
+            detail: "vs #{opp_label} on #{map_name}"
+          }
+
+        mu && opp_label ->
+          %{
+            wr: mu.win_rate,
+            games: mu.games,
+            title: "This exact combo",
+            detail: "vs #{opp_label} · any map"
+          }
+
+        path && map_name ->
+          %{
+            wr: path.win_rate,
+            games: path.games,
+            title: "This exact combo",
+            detail: "on #{map_name} · Any Civ"
+          }
+
+        path ->
+          %{
+            wr: path.win_rate,
+            games: path.games,
+            title: "This exact combo",
+            detail: "any map · Any Civ"
+          }
+
+        true ->
+          nil
+      end
+
+    any_map =
+      if any_mu && opp_label && map_name do
+        %{
+          wr: any_mu.win_rate,
+          games: any_mu.games,
+          title: "This build vs #{opp_label}",
+          detail: "any map"
+        }
+      end
+
+    Enum.reject([exact, any_map], &is_nil/1)
+  end
 
   defdelegate format_clock(seconds), to: AgeupsAPI
   defdelegate format_win_rate(rate), to: CivHelpers

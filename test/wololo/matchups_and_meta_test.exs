@@ -106,7 +106,7 @@ defmodule Wololo.MatchupsAndMetaTest do
     assert Map.keys(by_civ) -- ["french", "english"] == []
     assert length(by_civ["english"]) == 1
 
-    paths = AgeupsAPI.parse_paths(raw, "french")
+    paths = AgeupsAPI.filter_through(AgeupsAPI.parse_paths(raw, "french"), 4)
     assert length(paths) == 3
 
     rec = AgeupsAPI.recommend(paths)

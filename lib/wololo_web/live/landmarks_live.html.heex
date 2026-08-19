@@ -1,8 +1,8 @@
 <div class="mx-auto max-w-5xl">
   <.header>Landmark Path</.header>
   <p class="mb-4 text-sm text-stone-600 dark:text-zinc-400">
-    Pick a civ, the map you're on, and optionally the opponent. We'll recommend the Age II–IV
-    landmark path with the highest ranked 1v1 win rate.
+    Pick a civ, the map you're on, and optionally the opponent. We'll recommend the landmark
+    path through Age II, III, or IV with the highest ranked 1v1 win rate.
   </p>
 
   <%= if is_nil(@selected_civ) do %>
@@ -38,40 +38,117 @@
   <% end %>
 
   <%= if @selected_civ do %>
+    <% pills_locked? = @loading or @loading_matchups %>
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center text-base sm:text-lg">
-      <div class="flex flex-wrap items-center gap-3 min-w-0 sm:flex-1">
-        <button type="button" phx-click="goto" phx-value-step="civ" class="landmark-pill inline-flex items-center rounded-full border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-5 pr-6 py-2.5">
-          <img src={"/images/#{@selected_civ.image}.png"} alt="" class="h-5 w-8 shrink-0 rounded-sm object-cover" />
-          <span class="font-semibold text-stone-800 dark:text-zinc-100"><%= @selected_civ.label %></span>
-        </button>
+      <div class="flex flex-wrap items-center gap-3 min-w-0 sm:flex-1" phx-click-away="close-menu">
+        <div class="relative">
+          <button type="button" phx-click="toggle-menu" phx-value-menu="civ" disabled={pills_locked?} class="landmark-pill inline-flex items-center rounded-full border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-5 pr-5 py-2.5">
+            <img src={"/images/#{@selected_civ.image}.png"} alt="" class="h-5 w-8 shrink-0 rounded-sm object-cover" />
+            <span class="font-semibold text-stone-800 dark:text-zinc-100"><%= @selected_civ.label %></span>
+            <svg class="h-4 w-4 shrink-0 text-stone-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+          <%= if @open_menu == :civ and not pills_locked? do %>
+            <div class="absolute left-0 top-full z-40 mt-2 max-h-80 w-56 overflow-y-auto rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+              <%= for civ <- @civs do %>
+                <button type="button" phx-click="change-civ" phx-value-civ={civ.slug} class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-stone-800 hover:bg-stone-100 dark:text-zinc-100 dark:hover:bg-zinc-800">
+                  <img src={"/images/#{civ.image}.png"} alt="" class="h-4 w-7 rounded-sm object-cover" />
+                  <span class={@selected_civ.slug == civ.slug && "font-semibold"}><%= civ.label %></span>
+                </button>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
 
         <%= if @selected_map do %>
           <span class="text-stone-400 dark:text-zinc-500">on</span>
-          <button type="button" phx-click="goto" phx-value-step="map" class="landmark-pill inline-flex items-center rounded-full border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-5 pr-6 py-2.5 text-stone-800 dark:text-zinc-100">
-            <%= if map_icon(@selected_map) do %>
-              <span class="h-6 w-6 shrink-0 overflow-hidden rounded-sm">
-                <img src={map_icon(@selected_map)} alt="" class="h-full w-full object-cover" />
-              </span>
-            <% else %>
-              <.icon name="hero-map" class="h-6 w-6 text-stone-500" />
+          <div class="relative">
+            <button type="button" phx-click="toggle-menu" phx-value-menu="map" disabled={pills_locked?} class="landmark-pill inline-flex items-center rounded-full border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-5 pr-5 py-2.5 text-stone-800 dark:text-zinc-100">
+              <%= if map_icon(@selected_map) do %>
+                <span class="h-6 w-6 shrink-0 overflow-hidden rounded-sm">
+                  <img src={map_icon(@selected_map)} alt="" class="h-full w-full object-cover" />
+                </span>
+              <% else %>
+                <.icon name="hero-map" class="h-6 w-6 text-stone-500" />
+              <% end %>
+              <span class="font-semibold"><%= if @selected_map.any?, do: "any map", else: @selected_map.name %></span>
+              <svg class="h-4 w-4 shrink-0 text-stone-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+            <%= if @open_menu == :map and not pills_locked? do %>
+              <div class="absolute left-0 top-full z-40 mt-2 max-h-80 w-56 overflow-y-auto rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                <%= for map <- @maps do %>
+                  <button type="button" phx-click="change-map" phx-value-map={map.name || ""} class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-stone-800 hover:bg-stone-100 dark:text-zinc-100 dark:hover:bg-zinc-800">
+                    <%= if map_icon(map) do %>
+                      <img src={map_icon(map)} alt="" class="h-5 w-5 rounded-sm object-cover" />
+                    <% else %>
+                      <.icon name="hero-map" class="h-5 w-5 text-stone-400" />
+                    <% end %>
+                    <span class={@selected_map && ((map.any? && @selected_map.any?) || map.name == @selected_map.name) && "font-semibold"}>
+                      <%= if map.any?, do: "any map", else: map.name %>
+                    </span>
+                  </button>
+                <% end %>
+              </div>
             <% end %>
-            <span class="font-semibold"><%= if @selected_map.any?, do: "any map", else: @selected_map.name %></span>
-          </button>
+          </div>
         <% end %>
 
         <%= if @selected_map && (@selected_opponent || @step == :result) do %>
           <span class="text-stone-400 dark:text-zinc-500">vs</span>
-          <%= if @selected_opponent do %>
-            <button type="button" phx-click="goto" phx-value-step="opponent" class="landmark-pill inline-flex items-center rounded-full border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-5 pr-6 py-2.5">
-              <img src={"/images/#{@selected_opponent.image}.png"} alt="" class="h-5 w-8 shrink-0 rounded-sm object-cover" />
-              <span class="font-semibold text-stone-800 dark:text-zinc-100"><%= @selected_opponent.label %></span>
+          <div class="relative">
+            <button type="button" phx-click="toggle-menu" phx-value-menu="opponent" disabled={pills_locked?} class={[
+              "landmark-pill inline-flex items-center rounded-full border bg-white dark:bg-zinc-900 pl-5 pr-5 py-2.5",
+              @selected_opponent && "border-stone-300 dark:border-zinc-700",
+              !@selected_opponent && "border-dashed border-stone-300 dark:border-zinc-600 text-stone-500 dark:text-zinc-400"
+            ]}>
+              <%= if @selected_opponent do %>
+                <img src={"/images/#{@selected_opponent.image}.png"} alt="" class="h-5 w-8 shrink-0 rounded-sm object-cover" />
+                <span class="font-semibold text-stone-800 dark:text-zinc-100"><%= @selected_opponent.label %></span>
+              <% else %>
+                <span class="font-semibold">Any Civ</span>
+              <% end %>
+              <svg class="h-4 w-4 shrink-0 text-stone-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
             </button>
-          <% else %>
-            <button type="button" phx-click="goto" phx-value-step="opponent" class="landmark-pill inline-flex items-center rounded-full border border-dashed border-stone-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-6 py-2.5 text-stone-500 dark:text-zinc-400">
-              anyone
-            </button>
-          <% end %>
+            <%= if @open_menu == :opponent and not pills_locked? do %>
+              <div class="absolute left-0 top-full z-40 mt-2 max-h-80 w-56 overflow-y-auto rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                <button type="button" phx-click="change-opponent" phx-value-civ="any" class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-stone-800 hover:bg-stone-100 dark:text-zinc-100 dark:hover:bg-zinc-800">
+                  <span class={is_nil(@selected_opponent) && "font-semibold"}>Any Civ</span>
+                </button>
+                <%= for civ <- @civs, is_nil(@selected_civ) or civ.slug != @selected_civ.slug do %>
+                  <button type="button" phx-click="change-opponent" phx-value-civ={civ.slug} class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-stone-800 hover:bg-stone-100 dark:text-zinc-100 dark:hover:bg-zinc-800">
+                    <img src={"/images/#{civ.image}.png"} alt="" class="h-4 w-7 rounded-sm object-cover" />
+                    <span class={@selected_opponent && @selected_opponent.slug == civ.slug && "font-semibold"}><%= civ.label %></span>
+                  </button>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
         <% end %>
+
+        <span class="text-stone-400 dark:text-zinc-500">through</span>
+        <% current_through = through_choice(@selected_through) %>
+        <div class="relative">
+          <button type="button" phx-click="toggle-menu" phx-value-menu="ages" disabled={pills_locked?} class="landmark-pill inline-flex items-center rounded-full border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-5 pr-5 py-2.5 text-stone-800 dark:text-zinc-100">
+            <span class="font-semibold"><%= current_through.label %></span>
+            <svg class="h-4 w-4 shrink-0 text-stone-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+          <%= if @open_menu == :ages and not pills_locked? do %>
+            <div class="absolute left-0 top-full z-40 mt-2 w-36 overflow-y-auto rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+              <%= for choice <- @through_choices do %>
+                <button type="button" phx-click="change-ages" phx-value-ages={choice.slug} class="flex w-full items-center px-3 py-2 text-left text-sm text-stone-800 hover:bg-stone-100 dark:text-zinc-100 dark:hover:bg-zinc-800">
+                  <span class={@selected_through == choice.value && "font-semibold"}><%= choice.label %></span>
+                </button>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
       </div>
 
       <button type="button" phx-click="start-over" class="landmark-reset">
@@ -166,7 +243,7 @@
         phx-click="skip-opponent"
         class="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700"
       >
-        Skip — any opponent
+        Skip — Any Civ
       </button>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -202,60 +279,38 @@
     <% else %>
       <%= if @recommendation && @recommendation.path do %>
         <% path = @recommendation.path %>
-        <% mu = @recommendation.matchup %>
-        <% civ_mu = Map.get(@recommendation, :civ_matchup) %>
-        <% ages = [{path.age2, "Age II"}, {path.age3, "Age III"}, {path.age4, "Age IV"}] %>
+        <% ages = path_landmarks(path) %>
+        <% stats = result_stats(@selected_civ, @selected_map, @selected_opponent, @recommendation) %>
         <div class="rounded-2xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-900 p-5 sm:p-8">
-          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-            <div>
-              <p class="text-sm uppercase tracking-wide text-stone-500 dark:text-zinc-400">Recommended path</p>
-              <h2 class="text-xl sm:text-2xl font-semibold text-stone-800 dark:text-zinc-100">
-                <%= @selected_civ.label %>
-                <%= if @selected_opponent do %>
-                  <span class="text-stone-400 font-normal"> vs </span><%= @selected_opponent.label %>
-                <% end %>
-              </h2>
-            </div>
-            <div class="text-left sm:text-right">
-              <% display_wr = cond do
-                civ_mu -> civ_mu.win_rate
-                mu -> mu.win_rate
-                true -> path.win_rate
-              end %>
-              <% display_games = cond do
-                civ_mu -> civ_mu.games
-                mu -> mu.games
-                true -> path.games
-              end %>
-              <div class={"text-3xl font-bold #{color_class(display_wr, :text)}"}>
-                <%= format_win_rate(display_wr) %>
-              </div>
-              <div class="text-sm text-stone-500 dark:text-zinc-400">
-                <%= cond do %>
-                  <% civ_mu && @selected_opponent -> %>
-                    vs <%= @selected_opponent.label %><%= if @selected_map && !@selected_map.any? do %> on <%= @selected_map.name %><% end %> · <%= format_number(display_games) %> games
-                  <% mu -> %>
-                    this path vs <%= @selected_opponent.label %><%= if @selected_map && !@selected_map.any? do %> on <%= @selected_map.name %><% end %> · <%= format_number(display_games) %> games
-                  <% true -> %>
-                    this path<%= if @selected_map && !@selected_map.any? do %> on <%= @selected_map.name %><% end %> · <%= format_number(display_games) %> games
-                <% end %>
-              </div>
-            </div>
+          <div class="mb-5">
+            <p class="text-sm uppercase tracking-wide text-stone-500 dark:text-zinc-400">Recommended path</p>
+            <h2 class="text-xl sm:text-2xl font-semibold text-stone-800 dark:text-zinc-100">
+              <%= @selected_civ.label %>
+              <%= if @selected_opponent do %>
+                <span class="text-stone-400 font-normal"> vs </span><%= @selected_opponent.label %>
+              <% end %>
+            </h2>
           </div>
 
-          <%= if civ_mu && path do %>
-            <% build_wr = if mu, do: mu.win_rate, else: path.win_rate %>
-            <% build_games = if mu, do: mu.games, else: path.games %>
-            <p class="mb-6 text-sm text-stone-600 dark:text-zinc-400">
-              This build is <%= format_win_rate(build_wr) %><%= if mu && @selected_opponent do %> vs <%= @selected_opponent.label %><% end %>
-              in <%= format_number(build_games) %> games.
-            </p>
-          <% end %>
-
-          <%= if @map_wr && @map_wr != "N/A" && @selected_map && !@selected_map.any? do %>
-            <p class="mb-6 text-sm text-stone-600 dark:text-zinc-400">
-              <%= @selected_civ.label %> win <%= @map_wr %> of ranked games on <%= @selected_map.name %> overall.
-            </p>
+          <%= if stats != [] do %>
+            <div class="mb-6 grid grid-cols-1 overflow-hidden rounded-xl border border-stone-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 sm:grid-cols-2">
+              <%= for {stat, idx} <- Enum.with_index(stats) do %>
+                <div class={[
+                  "px-4 py-4 text-center",
+                  idx > 0 && "border-t border-stone-200 dark:border-zinc-700 sm:border-t-0 sm:border-l"
+                ]}>
+                  <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-zinc-400">
+                    <%= stat.title %>
+                  </p>
+                  <p class={"text-2xl font-bold tabular-nums #{color_class(stat.wr, :text)}"}>
+                    <%= format_win_rate(stat.wr) %>
+                  </p>
+                  <p class="mt-1 text-sm text-stone-500 dark:text-zinc-400">
+                    <%= stat.detail %><%= if stat.games do %> · <%= format_number(stat.games) %> games<% end %>
+                  </p>
+                </div>
+              <% end %>
+            </div>
           <% end %>
 
           <div class="flex flex-col sm:flex-row sm:items-stretch">
@@ -275,12 +330,14 @@
                 <% end %>
               </div>
 
-              <%= if idx < 2 do %>
-                <div class="flex sm:flex-col items-center justify-center shrink-0 py-1 sm:py-0 sm:px-1">
-                  <div class="h-4 w-0.5 sm:h-0.5 sm:w-4 bg-primary-400 dark:bg-primary-600"></div>
-                  <.icon name="hero-chevron-right" class="hidden sm:block h-6 w-6 text-primary-500" />
-                  <.icon name="hero-chevron-down" class="sm:hidden h-6 w-6 text-primary-500" />
-                  <div class="h-4 w-0.5 sm:h-0.5 sm:w-4 bg-primary-400 dark:bg-primary-600"></div>
+              <%= if idx < length(ages) - 1 do %>
+                <div class="flex items-center justify-center shrink-0 py-2 sm:py-0 sm:px-2 text-primary-500">
+                  <svg class="hidden sm:block h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                  </svg>
+                  <svg class="sm:hidden h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
+                  </svg>
                 </div>
               <% end %>
             <% end %>
@@ -289,23 +346,19 @@
 
         <%= if @recommendation.alternatives != [] do %>
           <h3 class="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500 dark:text-zinc-400">
-            Other strong paths
-            <%= if @selected_opponent do %>
-              vs <%= @selected_opponent.label %><%= if @selected_map && !@selected_map.any? do %> on <%= @selected_map.name %><% end %>
-            <% else %>
-              <%= if @selected_map && !@selected_map.any? do %> on <%= @selected_map.name %><% end %>
-            <% end %>
+            Other paths...
           </h3>
           <div class="space-y-2">
             <%= for alt <- @recommendation.alternatives do %>
               <div class="landmark-tile flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 rounded-xl border border-stone-200 dark:border-zinc-700 px-4 py-3">
                 <div class="flex-1 text-sm text-stone-800 dark:text-zinc-100">
                   <span class="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                    <%= alt.age2.name %>
-                    <.icon name="hero-arrow-right" class="h-4 w-4 shrink-0 text-primary-400" />
-                    <%= alt.age3.name %>
-                    <.icon name="hero-arrow-right" class="h-4 w-4 shrink-0 text-primary-400" />
-                    <%= alt.age4.name %>
+                    <%= for {{landmark, _label}, idx} <- Enum.with_index(path_landmarks(alt)) do %>
+                      <%= if idx > 0 do %>
+                        <.icon name="hero-arrow-right" class="h-4 w-4 shrink-0 text-primary-400" />
+                      <% end %>
+                      <%= landmark.name %>
+                    <% end %>
                   </span>
                 </div>
                 <div class={"text-sm font-semibold #{color_class(alt.win_rate, :text)}"}>
@@ -318,7 +371,7 @@
         <% end %>
       <% else %>
         <p class="text-stone-600 dark:text-zinc-400">
-          No complete Age II–IV landmark paths found for this civ in the current sample.
+          No complete <%= through_range_label(@selected_through) %> landmark paths found for this civ in the current sample.
         </p>
       <% end %>
     <% end %>

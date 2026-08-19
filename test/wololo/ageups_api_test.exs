@@ -11,11 +11,64 @@ defmodule Wololo.AgeupsAPITest do
 
   test "parses complete paths and ignores incomplete ones" do
     paths = AgeupsAPI.parse_paths(AgeupsFixtures.payload(), "french")
-    assert length(paths) == 2
+    assert length(paths) == 6
     assert Enum.all?(paths, & &1.age2.name)
-    assert Enum.all?(paths, & &1.age3.name)
-    assert Enum.all?(paths, & &1.age4.name)
     assert AgeupsAPI.parse_paths(AgeupsFixtures.payload(), "unknown") == []
+
+    age4 = AgeupsAPI.filter_through(paths, 4)
+    assert length(age4) == 2
+    assert Enum.all?(age4, &(&1.through == 4 and is_binary(&1.age3.name) and is_binary(&1.age4.name)))
+
+    age2 = AgeupsAPI.filter_through(paths, 2)
+    assert length(age2) == 2
+    assert Enum.all?(age2, &(&1.through == 2 and is_nil(&1.age3) and is_nil(&1.age4)))
+  end
+
+  test "recommends a 1-2 path without inventing later landmarks" do
+    rec = AgeupsAPI.recommend(AgeupsAPI.parse_paths(AgeupsFixtures.payload(), "french"), through: 2)
+    assert rec.path.through == 2
+    assert rec.path.age2.name == "School of Cavalry"
+    assert rec.path.age3 == nil
+    assert rec.path.age4 == nil
+  end
+
+  test "parses real-shaped age1-3 rows that stop at Castle Age" do
+    payload = %{
+      "data" => %{
+        "age1-3" => [
+          %{
+            "civilization" => "french",
+            "win_rate" => 51.1,
+            "player_games_count" => 15_629,
+            "win_count" => 7987,
+            "age2_pbgid" => 132778,
+            "age2_name" => "School of Cavalry",
+            "age3_pbgid" => 132779,
+            "age3_name" => "Guild Hall",
+            "age4_pbgid" => nil,
+            "age4_name" => nil
+          },
+          %{
+            "civilization" => "french",
+            "win_rate" => 50.9,
+            "player_games_count" => 10_694,
+            "age2_pbgid" => 132778,
+            "age2_name" => "School of Cavalry",
+            "age3_pbgid" => nil,
+            "age3_name" => nil
+          }
+        ]
+      }
+    }
+
+    [path] = AgeupsAPI.parse_paths(payload, "french")
+    assert path.through == 3
+    assert path.age2.name == "School of Cavalry"
+    assert path.age3.name == "Guild Hall"
+    assert path.age4 == nil
+
+    rec = AgeupsAPI.recommend([path], through: 3)
+    assert rec.path.age3.name == "Guild Hall"
   end
 
   test "recommends the highest win rate path with enough games" do
@@ -55,7 +108,13 @@ defmodule Wololo.AgeupsAPITest do
   end
 
   test "returns an empty recommendation when there are no paths" do
-    assert AgeupsAPI.recommend([]) == %{path: nil, alternatives: [], matchup: nil, civ_matchup: nil}
+    assert AgeupsAPI.recommend([]) == %{
+             path: nil,
+             alternatives: [],
+             matchup: nil,
+             civ_matchup: nil,
+             any_map_matchup: nil
+           }
   end
 
   test "cleans landmark names with newlines" do
@@ -93,10 +152,18 @@ defmodule Wololo.AgeupsAPITest do
     assert info.recommendations > 0
 
     assert {:ok, paths} = AgeupsAPI.fetch_paths("french", AgeupsFixtures.patch())
-    assert length(paths) == 2
+    assert length(AgeupsAPI.filter_through(paths, 4)) == 2
+    assert length(AgeupsAPI.filter_through(paths, 2)) == 2
+    assert length(AgeupsAPI.filter_through(paths, 3)) == 2
 
     assert {:ok, rec} = AgeupsAPI.recommend_for("french", nil, AgeupsFixtures.patch())
     assert rec.path.age2.name == "School of Cavalry"
+    assert rec.path.age4.name == "Red Palace"
+
+    assert {:ok, early} = AgeupsAPI.recommend_for("french", nil, AgeupsFixtures.patch(), nil, 2)
+    assert early.path.through == 2
+    assert early.path.age2.name == "School of Cavalry"
+    assert early.path.age4 == nil
     assert {:ok, %DateTime{}} = AgeupsAPI.last_updated()
   end
 
@@ -200,13 +267,13 @@ defmodule Wololo.AgeupsAPITest do
     assert options.patch_label == "Test Patch"
 
     assert {:ok, paths} = AgeupsAPI.fetch_paths("french", AgeupsFixtures.patch())
-    assert length(paths) == 2
-    assert hd(paths).age2.name == "School of Cavalry"
+    assert length(AgeupsAPI.filter_through(paths, 4)) == 2
+    assert hd(AgeupsAPI.filter_through(paths, 4)).age2.name == "School of Cavalry"
   end
 
   test "opponent rec falls back to overall best when matchup samples are thin" do
     {:ok, _} = AgeupsAPI.warm_from_payload(AgeupsFixtures.options(), AgeupsFixtures.payload())
-    paths = AgeupsAPI.parse_paths(AgeupsFixtures.payload(), "french")
+    paths = AgeupsAPI.filter_through(AgeupsAPI.parse_paths(AgeupsFixtures.payload(), "french"), 4)
     popular = Enum.find(paths, &(&1.age2.name == "School of Cavalry"))
     counter = Enum.find(paths, &(&1.age2.name == "Chamber of Commerce"))
 
@@ -234,7 +301,7 @@ defmodule Wololo.AgeupsAPITest do
 
   test "cached opponent recommendations prefer the stronger matchup path" do
     {:ok, _} = AgeupsAPI.warm_from_payload(AgeupsFixtures.options(), AgeupsFixtures.payload())
-    paths = AgeupsAPI.parse_paths(AgeupsFixtures.payload(), "french")
+    paths = AgeupsAPI.filter_through(AgeupsAPI.parse_paths(AgeupsFixtures.payload(), "french"), 4)
     popular = Enum.find(paths, &(&1.age2.name == "School of Cavalry"))
     counter = Enum.find(paths, &(&1.age2.name == "Chamber of Commerce"))
 

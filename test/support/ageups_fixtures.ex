@@ -42,6 +42,14 @@ defmodule Wololo.AgeupsFixtures do
         %{"pbgid" => 3, "icon" => "https://example.com/c.png", "name" => "Red Palace"}
       ],
       "data" => %{
+        "age1-2" => [
+          age2_row("french", 63.0, 20_000, 1, "School of Cavalry"),
+          age2_row("french", 52.0, 18_000, 4, "Chamber of Commerce")
+        ],
+        "age1-3" => [
+          age3_row("french", 61.0, 15_000, 1, "School of Cavalry", 2, "Guild Hall"),
+          age3_row("french", 50.0, 11_000, 4, "Chamber of Commerce", 5, "Royal Institute")
+        ],
         "age1-4" => [
           complete_row("french", 58.5, 12_000, 1, "School of Cavalry", 2, "Guild Hall", 3, "Red Palace"),
           complete_row("french", 54.0, 30_000, 4, "Chamber of Commerce", 5, "Royal Institute", 3, "Red Palace"),
@@ -70,6 +78,14 @@ defmodule Wololo.AgeupsFixtures do
         %{"pbgid" => 3, "icon" => "https://example.com/c.png", "name" => "Red Palace"}
       ],
       "data" => %{
+        "age1-2" => [
+          age2_row("french", 71.0, 300, 4, "Chamber of Commerce"),
+          age2_row("french", 55.0, 180, 1, "School of Cavalry")
+        ],
+        "age1-3" => [
+          age3_row("french", 68.0, 260, 4, "Chamber of Commerce", 5, "Royal Institute"),
+          age3_row("french", 53.0, 200, 1, "School of Cavalry", 2, "Guild Hall")
+        ],
         "age1-4" => [
           complete_row(
             "french",
@@ -124,6 +140,24 @@ defmodule Wololo.AgeupsFixtures do
   end
 
   def complete_row(civ, wr, games, a2, n2, a3, n3, a4, n4) do
+    age3_row(civ, wr, games, a2, n2, a3, n3)
+    |> Map.merge(%{
+      "age4_pbgid" => a4,
+      "age4_name" => n4,
+      "age4_finished_at_average" => 1500.0
+    })
+  end
+
+  def age3_row(civ, wr, games, a2, n2, a3, n3) do
+    age2_row(civ, wr, games, a2, n2)
+    |> Map.merge(%{
+      "age3_pbgid" => a3,
+      "age3_name" => n3,
+      "age3_finished_at_average" => 800.0
+    })
+  end
+
+  def age2_row(civ, wr, games, a2, n2) do
     %{
       "civilization" => civ,
       "win_rate" => wr,
@@ -131,13 +165,7 @@ defmodule Wololo.AgeupsFixtures do
       "win_count" => round(wr / 100 * games),
       "age2_pbgid" => a2,
       "age2_name" => n2,
-      "age2_finished_at_average" => 280.0,
-      "age3_pbgid" => a3,
-      "age3_name" => n3,
-      "age3_finished_at_average" => 800.0,
-      "age4_pbgid" => a4,
-      "age4_name" => n4,
-      "age4_finished_at_average" => 1500.0
+      "age2_finished_at_average" => 280.0
     }
   end
 end
