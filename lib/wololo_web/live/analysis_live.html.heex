@@ -7,10 +7,10 @@
     %{name: "Recovery", key: :recovery, icon: "hero-arrow-trending-up", color: "#4CAF50", description: "How quickly you bounce back from losing streaks. Higher scores mean faster recovery.", calculation: "Let S = {losing streaks}\nFor each streak sᵢ where sᵢ < 0:\n  Record |sᵢ| when streak breaks\n\nμ_loss = μ(|S|)\n\nScore = max(0, 100 - μ_loss × 10)\n\n∴ Shorter losing streaks → Higher score"},
     %{name: "Momentum", key: :momentum, icon: "hero-rocket-launch", color: "#9C27B0", description: "Your ability to maintain winning streaks. Higher scores indicate longer win streaks.", calculation: "Let W = {all positive streaks}\n\nμ_win = μ(W)\n\nScore = 100 × (1 - 1.05/μ_win^2.3)\n\n∴ Asymptotic curve approaching 100:\n  2-game → 73 pts\n  3-game → 88 pts\n  4-game → 95 pts\n  5-game → 97 pts\n  6-game → 98 pts"},
     %{name: "Anti-Tilt", key: :anti_tilt, icon: "hero-shield-check", color: "#00BCD4", description: "Mental resilience after losses. Higher scores show you tilt less often.", calculation: "For consecutive games (gᵢ, gᵢ₊₁):\n  W→W, W→L, L→W, L→L\n\nP_ww = W→W / (W→W + W→L)\nP_ll = L→L / (L→W + L→L)\n\nScore = [P_ww + (1 - P_ll)] / 2 × 100\n\n∴ High W→W rate & Low L→L rate → High score"},
-    %{name: "Pressure", key: :pressure_performance, icon: "hero-fire", color: "#FF9800", description: "Win rate when near rank thresholds (±25 rating). Higher scores mean you perform better when your rank is on the line.", calculation: "T = {700, 800, 900, 1000, 1100, ...}\nFor each game at rating R:\n  If |R - t| ≤ 25 for any t ∈ T:\n    Count as pressure game\n\nW_p = wins in pressure\nG_p = total pressure games\n\nScore = (W_p / G_p) × 100\n\n∴ Higher win rate near thresholds → Higher score"},
+    %{name: "Pressure", key: :pressure_performance, icon: "hero-fire", color: "#FF7043", description: "Win rate when near rank thresholds (±25 rating). Higher scores mean you perform better when your rank is on the line.", calculation: "T = {700, 800, 900, 1000, 1100, ...}\nFor each game at rating R:\n  If |R - t| ≤ 25 for any t ∈ T:\n    Count as pressure game\n\nW_p = wins in pressure\nG_p = total pressure games\n\nScore = (W_p / G_p) × 100\n\n∴ Higher win rate near thresholds → Higher score"},
     %{name: "Efficiency", key: :rating_efficiency, icon: "hero-bolt", color: "#FFC107", description: "How much rating you gain per game played. Higher scores mean faster climbing.", calculation: "R₀ = initial rating\nRₙ = final rating\nN = total games\n\nΔR = Rₙ - R₀\nη = ΔR / N  (rating per game)\n\nScore = min(100, max(0, (η + 5) × 10))\n\n∴ More rating gained per game → Higher score"},
-    %{name: "Versatility", key: :versatility, icon: "hero-cube", color: "#FF69B4", description: "Success across multiple civilizations. Higher scores mean you excel with more civs.", calculation: "Let C = {civs with ≥ 5% of total games}\nC_good = {c ∈ C | WR_c ≥ 50%}\nn = |C_good|\n\nIf n ≤ 1: Score = 0\nElse:\n  μ_wr = μ(WR for c ∈ C_good)\n  D = 100 × (1 - 1/n) × 1.15\n  M = (μ_wr / 50)^1.8\n  Score = min(100, D × M)\n\n∴ More civs + Higher WR → Higher score"},
-    %{name: "Underdog Power", key: :underdog_success, icon: "hero-trophy", color: "#E91E63", description: "Win rate when facing significantly higher-rated opponents. Higher scores show you rise to challenges.", calculation: "Let D = {rating differences}\nDᵢ = Opponent_Rating - Player_Rating\n\nμ_d = μ(D)\nσ_d = σ(D)\n\nThreshold = μ_d + 0.75σ_d\n\nU = {games where Dᵢ ≥ Threshold}\nW_u = wins in U\n\nScore = (W_u / |U|) × 100\n\n∴ Win rate vs higher-rated players"}
+    %{name: "Versatility", key: :versatility, icon: "hero-cube", color: "#F06292", description: "Success across multiple civilizations. Higher scores mean you excel with more civs.", calculation: "Let C = {civs with ≥ 5% of total games}\nC_good = {c ∈ C | WR_c ≥ 50%}\nn = |C_good|\n\nIf n ≤ 1: Score = 0\nElse:\n  μ_wr = μ(WR for c ∈ C_good)\n  D = 100 × (1 - 1/n) × 1.15\n  M = (μ_wr / 50)^1.8\n  Score = min(100, D × M)\n\n∴ More civs + Higher WR → Higher score"},
+    %{name: "Underdog Power", key: :underdog_success, icon: "hero-trophy", color: "#F44336", description: "Win rate when facing significantly higher-rated opponents. Higher scores show you rise to challenges.", calculation: "Let D = {rating differences}\nDᵢ = Opponent_Rating - Player_Rating\n\nμ_d = μ(D)\nσ_d = σ(D)\n\nThreshold = μ_d + 0.75σ_d\n\nU = {games where Dᵢ ≥ Threshold}\nW_u = wins in U\n\nScore = (W_u / |U|) × 100\n\n∴ Win rate vs higher-rated players"}
   ] %>
 
   <.async_result :let={analysis} assign={@analysis}>
@@ -46,7 +46,11 @@
     <!-- Metric Descriptions -->
     <div class="max-w-6xl mx-auto mb-8 grid grid-cols-1 md:grid-cols-2 gap-4" id="metric-descriptions">
       <%= for metric <- metrics do %>
-        <div class="bg-white dark:bg-zinc-800 rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition-shadow" data-metric={metric.name}>
+        <div
+          class="bg-white dark:bg-zinc-800 rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 border-l-[3px]"
+          style={"border-left-color: #{metric.color}"}
+          data-metric={metric.name}
+        >
           <div class="flex items-center gap-2 mb-2">
             <span style={"color: #{metric.color}"}>
               <.icon name={metric.icon} class="h-6 w-6 flex-shrink-0" />
@@ -55,7 +59,7 @@
             <%= if is_nil(Map.get(analysis, metric.key)) do %>
               <span class="text-sm text-stone-500 dark:text-zinc-400 italic">(insufficient data)</span>
             <% else %>
-              <span class={common_stat_classes <> " !mx-0 text-xl font-bold"}><%= Float.round(Map.get(analysis, metric.key), 1) %></span>
+              <span class={common_stat_classes <> " !mx-0 text-xl font-bold tabular-nums"} style={"color: #{metric.color}"}><%= Float.round(Map.get(analysis, metric.key), 1) %></span>
             <% end %>
             <span class="text-stone-400 dark:text-zinc-500 cursor-help group relative ml-auto shrink-0" title="Calculation">
               <span class="invisible group-hover:visible absolute right-0 sm:right-6 top-6 sm:top-0 w-64 sm:w-96 bg-gray-900 text-white text-xs sm:text-sm rounded p-3 sm:p-4 z-10 whitespace-pre-line leading-relaxed font-mono"><%= metric.calculation %></span>
@@ -67,8 +71,8 @@
       <% end %>
     </div>
 
-    <div class="relative w-full md:mx-auto md:max-w-3xl">
-      <canvas id="analysis-chart" phx-hook="Analysis" data-points={}></canvas>
+    <div class="relative w-full md:mx-auto md:max-w-3xl overflow-visible">
+      <canvas id="analysis-chart" phx-hook="Analysis" phx-update="ignore" data-points={}></canvas>
     </div>
   </.async_result>
 </div>
