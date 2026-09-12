@@ -7,13 +7,14 @@
 # This file is based on these images:
 #
 #   - https://hub.docker.com/r/hexpm/elixir/tags - for the build image
-#   - https://hub.docker.com/_/debian?tab=tags&page=1&name=bullseye-20240612-slim - for the release image
+#   - https://hub.docker.com/_/debian?tab=tags&page=1&name=bookworm-20260610-slim - for the release image
 #   - https://pkgs.org/ - resource for finding needed packages
-#   - Ex: hexpm/elixir:1.17.1-erlang-26.2.5-debian-bullseye-20240612-slim
+#   - Ex: hexpm/elixir:1.17.1-erlang-26.2.5-debian-bookworm-20260610-slim
 #
 ARG ELIXIR_VERSION=1.17.1
 ARG OTP_VERSION=26.2.5
-ARG DEBIAN_VERSION=bullseye-20240612-slim
+ARG DEBIAN_VERSION=bookworm-20260610-slim
+ARG NODE_VERSION=20.20.2
 
 ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
 ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
@@ -51,18 +52,12 @@ COPY lib lib
 
 COPY assets assets
 
-# install build dependencies
-RUN apt-get update -y && apt-get install -y build-essential git nodejs npm \
+# Official Node tarball — Debian's nodejs/npm packages pull gtk/mesa and 404 on security.debian.org
+ARG NODE_VERSION
+RUN apt-get update -y && apt-get install -y --no-install-recommends curl ca-certificates xz-utils \
+    && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+      | tar -xJ -C /usr/local --strip-components=1 \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
-
-# WORKDIR /app/assets
-# # Install node, npm and yarn
-# RUN curl -sL https://deb.nodesource.com/setup_22.x | bash
-# RUN apt-get install -y nodejs
-# RUN npm install
-
-# # Switch back to main app directory for Elixir/Phoenix commands
-# WORKDIR /app
 
 # Now you can run Elixir/Phoenix build steps
 RUN mix deps.get
@@ -94,7 +89,7 @@ RUN ls -la /app/_build/${MIX_ENV}/rel/wololo/bin/ && \
 FROM ${RUNNER_IMAGE}
 
 RUN apt-get update -y && \
-  apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates curl \
+  apt-get install -y --no-install-recommends libstdc++6 openssl libncurses6 locales ca-certificates curl \
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # Install supercronic for cron jobs
