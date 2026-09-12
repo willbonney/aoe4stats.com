@@ -38,11 +38,15 @@ defmodule Wololo.LeaderboardDumpCron do
         # Also refresh civs_by_league data in the background
         Task.start(fn ->
           Logger.info("[LeaderboardDumpCron] Refreshing civs_by_league cache...")
+
           case refresh_civs_by_league_cache() do
             {:ok, _data} ->
               Logger.info("[LeaderboardDumpCron] Successfully refreshed civs_by_league cache")
+
             {:error, reason} ->
-              Logger.error("[LeaderboardDumpCron] Failed to refresh civs_by_league: #{inspect(reason)}")
+              Logger.error(
+                "[LeaderboardDumpCron] Failed to refresh civs_by_league: #{inspect(reason)}"
+              )
           end
         end)
 
@@ -85,7 +89,10 @@ defmodule Wololo.LeaderboardDumpCron do
   defp get_download_url do
     Logger.info("[LeaderboardDumpCron] Fetching download link from #{@dumps_page_url}")
 
-    case HTTPoison.get(@dumps_page_url, [], timeout: 30_000, recv_timeout: 30_000) do
+    case HTTPoison.get(@dumps_page_url, aoe4world_headers(),
+           timeout: 30_000,
+           recv_timeout: 30_000
+         ) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         case Floki.parse_document(body) do
           {:ok, document} ->
@@ -132,7 +139,7 @@ defmodule Wololo.LeaderboardDumpCron do
   defp download_zip(url) do
     Logger.info("[LeaderboardDumpCron] Downloading leaderboard gzip from #{url}")
 
-    case HTTPoison.get(url, [], timeout: 60_000, recv_timeout: 60_000) do
+    case HTTPoison.get(url, aoe4world_headers(), timeout: 60_000, recv_timeout: 60_000) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         Logger.info("[LeaderboardDumpCron] Downloaded #{byte_size(body)} bytes")
         {:ok, body}
@@ -296,9 +303,14 @@ defmodule Wololo.LeaderboardDumpCron do
     end
   end
 
+  defp aoe4world_headers do
+    [{"User-Agent", Wololo.HTTPClient.user_agent()}]
+  end
+
   defp refresh_civs_by_league_cache do
     # Clear the cache to force a fresh fetch
     Cachex.del(:wololo_cache, "civs_by_league_all")
+
     Enum.each(["bronze", "silver", "gold", "platinum", "diamond", "conqueror"], fn league ->
       Cachex.del(:wololo_cache, "civs_by_league_#{league}")
     end)

@@ -3,10 +3,13 @@ defmodule Wololo.HTTPClient do
 
   @timeout Application.compile_env(:wololo, [:http_client, :timeout], 30_000)
   @max_retries Application.compile_env(:wololo, [:http_client, :max_retries], 3)
+  @user_agent "aoe4stats/1.0"
+
+  def user_agent, do: @user_agent
 
   def get(url, headers \\ []) do
     Logger.debug("Making HTTP GET request to: #{url}")
-    request = Finch.build(:get, url, headers)
+    request = Finch.build(:get, url, with_default_headers(headers))
 
     case Finch.request(request, Wololo.Finch, receive_timeout: @timeout) do
       {:ok, %Finch.Response{status: 200, body: body}} ->
@@ -48,7 +51,7 @@ defmodule Wololo.HTTPClient do
   end
 
   def post(url, body, headers \\ []) do
-    request = Finch.build(:post, url, headers, body)
+    request = Finch.build(:post, url, with_default_headers(headers), body)
 
     case Finch.request(request, Wololo.Finch, receive_timeout: @timeout) do
       {:ok, %Finch.Response{status: 200, body: response_body}} ->
@@ -70,6 +73,14 @@ defmodule Wololo.HTTPClient do
       {:error, error} ->
         Logger.error("HTTP POST unexpected error: #{inspect(error)}")
         {:error, "HTTP POST unexpected error: #{inspect(error)}"}
+    end
+  end
+
+  defp with_default_headers(headers) do
+    if Enum.any?(headers, fn {name, _} -> String.downcase(to_string(name)) == "user-agent" end) do
+      headers
+    else
+      [{"user-agent", @user_agent} | headers]
     end
   end
 end

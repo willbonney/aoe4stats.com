@@ -30,7 +30,10 @@ defmodule Wololo.LeaderboardDumpCronTest do
 
     assert {:ok, rec} = AgeupsAPI.recommend_for("french", nil, AgeupsFixtures.patch())
     assert rec.path.age4.name == "Red Palace"
-    assert {:ok, vs_english} = AgeupsAPI.cached_recommendation("french", "english", AgeupsFixtures.patch())
+
+    assert {:ok, vs_english} =
+             AgeupsAPI.cached_recommendation("french", "english", AgeupsFixtures.patch())
+
     assert vs_english.path
 
     assert info.maps == 1
@@ -61,6 +64,12 @@ defmodule Wololo.LeaderboardDumpCronTest do
     source = File.read!(Path.expand("../../lib/wololo/leaderboard_dump_cron.ex", __DIR__))
     assert source =~ "refresh_ageups()"
     assert source =~ "Wololo.AgeupsAPI.refresh_cache()"
+  end
+
+  test "aoe4world requests send a recognizable user-agent" do
+    source = File.read!(Path.expand("../../lib/wololo/leaderboard_dump_cron.ex", __DIR__))
+    assert source =~ "HTTPClient.user_agent()"
+    assert Wololo.HTTPClient.user_agent() == "aoe4stats/1.0"
   end
 
   test "refresh_ageups returns the HTTP error when ageups is unreachable" do

@@ -7,6 +7,16 @@ defmodule WololoWeb.LandmarksLiveTest do
 
   setup do
     Cachex.clear(:wololo_cache)
+    previous = Application.get_env(:wololo, :http_client)
+    Application.put_env(:wololo, :http_client, Wololo.FakeHTTP)
+
+    on_exit(fn ->
+      if previous do
+        Application.put_env(:wololo, :http_client, previous)
+      else
+        Application.delete_env(:wololo, :http_client)
+      end
+    end)
 
     Cachex.put(:wololo_cache, :rm_solo_mappool, %{
       fetched_at: DateTime.utc_now(),

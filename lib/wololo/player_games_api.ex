@@ -62,20 +62,7 @@ defmodule Wololo.PlayerGamesAPI do
     base_endpoint = "#{@base_url}/players/#{profile_id}/games?leaderboard=rm_solo"
 
     with {:ok, page1_data} <- fetch_page(base_endpoint, 1) do
-      # Only fetch page 2 if there are more than 50 games (games per page)
-      data =
-        if page1_data["total"] > 50 do
-          case fetch_page(base_endpoint, 2) do
-            {:ok, page2_data} ->
-              merge_page_data(page1_data, page2_data)
-
-            {:error, _} ->
-              # If page 2 fails, just use page 1 data
-              page1_data
-          end
-        else
-          page1_data
-        end
+      data = maybe_fetch_next_page(base_endpoint, page1_data)
 
       if should_process do
         case process_games(Jason.encode!(data), profile_id) do
@@ -90,16 +77,38 @@ defmodule Wololo.PlayerGamesAPI do
     end
   end
 
+  # AoE4World returns next_page as an integer, or null when this is the last page.
+  # Do not infer extra pages from `total` — requesting a missing page 500s.
+  defp maybe_fetch_next_page(base_endpoint, page_data) do
+    case page_data["next_page"] do
+      next_page when is_integer(next_page) and next_page > 1 ->
+        case fetch_page(base_endpoint, next_page) do
+          {:ok, next_data} ->
+            merge_page_data(page_data, next_data)
+
+          {:error, _} ->
+            page_data
+        end
+
+      _ ->
+        page_data
+    end
+  end
+
   defp fetch_page(base_endpoint, page) do
     endpoint = "#{base_endpoint}&page=#{page}"
 
-    case Wololo.HTTPClient.get_with_retry(endpoint) do
+    case http_client().get_with_retry(endpoint) do
       {:ok, body} ->
         {:ok, Jason.decode!(body)}
 
       {:error, reason} ->
         {:error, "player_games_api fetch_page failed: #{reason}"}
     end
+  end
+
+  defp http_client do
+    Application.get_env(:wololo, :http_client, Wololo.HTTPClient)
   end
 
   defp merge_page_data(page1_data, page2_data) do
@@ -147,7 +156,8 @@ defmodule Wololo.PlayerGamesAPI do
       |> Enum.reverse()
 
     if Enum.empty?(games) do
-      {:error, "No 1v1 ranked games found for this player. They may not have played enough games this season."}
+      {:error,
+       "No 1v1 ranked games found for this player. They may not have played enough games this season."}
     else
       result =
         games
@@ -211,7 +221,8 @@ defmodule Wololo.PlayerGamesAPI do
         end)
 
       if result[:valid_games] == 0 do
-        {:error, "No valid 1v1 ranked games found for this player. They may not have played enough games this season."}
+        {:error,
+         "No valid 1v1 ranked games found for this player. They may not have played enough games this season."}
       else
         %{countries: countries, ratings: ratings} = result
         valid_games_count = result[:valid_games]

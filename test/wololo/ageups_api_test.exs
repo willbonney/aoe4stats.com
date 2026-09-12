@@ -207,6 +207,17 @@ defmodule Wololo.AgeupsAPITest do
   end
 
   test "warm_from_payload caches a different recommendation for a season map" do
+    previous = Application.get_env(:wololo, :http_client)
+    Application.put_env(:wololo, :http_client, Wololo.FakeHTTP)
+
+    on_exit(fn ->
+      if previous do
+        Application.put_env(:wololo, :http_client, previous)
+      else
+        Application.delete_env(:wololo, :http_client)
+      end
+    end)
+
     maps = [%{id: AgeupsFixtures.dry_arabia_id(), name: "Dry Arabia"}]
 
     assert {:ok, info} =
