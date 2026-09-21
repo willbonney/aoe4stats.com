@@ -15,6 +15,11 @@ defmodule WololoWeb.Router do
   end
 
   scope "/", WololoWeb do
+    get("/sitemap.xml", SitemapController, :index)
+    get("/8f3c2a91e4b64c7d9a12f0e5c8b3d176.txt", SitemapController, :indexnow_key)
+  end
+
+  scope "/", WololoWeb do
     pipe_through(:browser)
 
     live_session :default,

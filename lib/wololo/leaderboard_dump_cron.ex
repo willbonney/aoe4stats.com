@@ -295,6 +295,34 @@ defmodule Wololo.LeaderboardDumpCron do
     end
   end
 
+  def get_player(profile_id) do
+    profile_id = to_string(profile_id)
+
+    case get_cached_data() do
+      {:ok, data} when is_list(data) ->
+        case Enum.find(data, fn entry -> entry.profile_id == profile_id end) do
+          nil -> {:error, :not_found}
+          player -> {:ok, player}
+        end
+
+      _ ->
+        {:error, :not_found}
+    end
+  end
+
+  def sitemap_profile_ids(limit \\ 50_000) do
+    case get_cached_data() do
+      {:ok, data} when is_list(data) ->
+        data
+        |> Enum.take(limit)
+        |> Enum.map(& &1.profile_id)
+        |> Enum.reject(&(&1 in [nil, ""]))
+
+      _ ->
+        []
+    end
+  end
+
   def last_updated do
     case Cachex.get(:wololo_cache, :leaderboard_last_updated) do
       {:ok, nil} -> {:error, :not_found}

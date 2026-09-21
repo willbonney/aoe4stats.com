@@ -4,9 +4,38 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title suffix=" · Phoenix Framework">
-      <%= assigns[:page_title] || "Wololo" %>
-    </.live_title>
+    <.live_title><%= assigns[:page_title] || WololoWeb.SEO.default_title() %></.live_title>
+    <meta
+      name="description"
+      content={assigns[:page_description] || WololoWeb.SEO.default_description()}
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="application-name" content={WololoWeb.SEO.site_name()} />
+    <meta name="theme-color" content="#1a2744" />
+    <link rel="canonical" href={assigns[:canonical_url] || WololoWeb.SEO.canonical_url("/")} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={WololoWeb.SEO.site_name()} />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content={assigns[:page_title] || WololoWeb.SEO.default_title()} />
+    <meta
+      property="og:description"
+      content={assigns[:page_description] || WololoWeb.SEO.default_description()}
+    />
+    <meta property="og:url" content={assigns[:canonical_url] || WololoWeb.SEO.canonical_url("/")} />
+    <meta property="og:image" content={assigns[:og_image_url] || WololoWeb.SEO.og_image_url()} />
+    <meta property="og:image:alt" content="AoE4 Stats — Age of Empires 4 statistics" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={assigns[:page_title] || WololoWeb.SEO.default_title()} />
+    <meta
+      name="twitter:description"
+      content={assigns[:page_description] || WololoWeb.SEO.default_description()}
+    />
+    <meta name="twitter:image" content={assigns[:og_image_url] || WololoWeb.SEO.og_image_url()} />
+    <script type="application/ld+json">
+      <%= raw(WololoWeb.SEO.json_ld(assigns)) %>
+    </script>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <link rel="apple-touch-icon" sizes="180x180" href={~p"/favicon/apple-touch-icon.png"} />
     <link rel="icon" type="image/png" sizes="32x32" href={~p"/favicon/favicon-32x32.png"} />

@@ -30,11 +30,12 @@ defmodule WololoWeb.PlayerLive do
     end
 
     {:ok,
-     assign(
-       socket,
+     socket
+     |> assign(
        @initial_assigns ++
          [profile_id: profile_id, current_url: url(socket, ~p"/player/#{profile_id}/rating")]
-     )}
+     )
+     |> hydrate_from_leaderboard(profile_id)}
   end
 
   def mount(_params, _session, socket) do
@@ -86,7 +87,8 @@ defmodule WololoWeb.PlayerLive do
            show_search: false,
            current_url: url(socket, ~p"/player/#{profile_id}/rating"),
            country_code: stats["country"]
-         )}
+         )
+         |> WololoWeb.SEO.assign_player()}
 
       {:error, reason} ->
         {:noreply,
@@ -123,8 +125,38 @@ defmodule WololoWeb.PlayerLive do
         _ -> :rating
       end
 
-    {:noreply, assign(socket, active: active)}
+    {:noreply, socket |> assign(active: active) |> WololoWeb.SEO.assign_player()}
   end
+
+  defp hydrate_from_leaderboard(socket, profile_id) do
+    case Wololo.LeaderboardDumpCron.get_player(profile_id) do
+      {:ok, player} ->
+        wr =
+          cond do
+            is_integer(player.games_count) and player.games_count > 0 and
+                is_integer(player.wins_count) ->
+              Float.round(player.wins_count / player.games_count * 100, 1)
+
+            true ->
+              nil
+          end
+
+        assign(socket,
+          name: player.name,
+          rank: player.rank,
+          country_code: empty_to_nil(player.country),
+          wr: wr
+        )
+
+      _ ->
+        socket
+    end
+  end
+
+  defp empty_to_nil(nil), do: nil
+  defp empty_to_nil(""), do: nil
+  defp empty_to_nil(value) when is_binary(value), do: value
+  defp empty_to_nil(_), do: nil
 
   def render_section(assigns) do
     if(!assigns.profile_id) do

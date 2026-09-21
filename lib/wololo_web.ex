@@ -19,7 +19,9 @@ defmodule WololoWeb do
 
   # alias WololoWeb.CustomComponents
 
-  def static_paths, do: ~w(assets fonts images favicon robots.txt)
+  def static_paths,
+    do:
+      ~w(assets fonts images favicon robots.txt favicon.ico apple-touch-icon.png apple-touch-icon-precomposed.png)
 
   def router do
     quote do

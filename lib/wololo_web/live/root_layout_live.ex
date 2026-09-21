@@ -9,11 +9,17 @@ defmodule WololoWeb.RootLayoutLive do
 
     socket =
       socket
+      |> WololoWeb.SEO.assign_defaults()
       |> attach_hook(:handle_search_events, :handle_event, &handle_search_event/3)
       |> attach_hook(:handle_search_info, :handle_info, &handle_search_info/2)
+      |> attach_hook(:seo_canonical, :handle_params, &handle_seo_params/3)
       |> assign(show_search: false)
 
     {:cont, socket}
+  end
+
+  defp handle_seo_params(_params, uri, socket) do
+    {:cont, WololoWeb.SEO.assign_canonical_from_uri(socket, uri)}
   end
 
   defp handle_search_event("show_search", _params, socket) do

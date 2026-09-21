@@ -78,7 +78,7 @@ defmodule WololoWeb.CoreComponents do
                   <.icon name="hero-x-mark-solid" class="h-5 w-5" />
                 </button>
               </div>
-
+              
               <div id={"#{@id}-content"}>
                 {render_slot(@inner_block)}
               </div>
@@ -126,9 +126,9 @@ defmodule WololoWeb.CoreComponents do
         <.icon :if={@kind == :info} name="hero-information-circle-mini" class="h-4 w-4" />
         <.icon :if={@kind == :error} name="hero-exclamation-circle-mini" class="h-4 w-4" /> {@title}
       </p>
-
+      
       <p class="mt-2 text-sm leading-5">{msg}</p>
-
+      
       <button type="button" class="group absolute top-1 right-1 p-2" aria-label={gettext("close")}>
         <.icon name="hero-x-mark-solid" class="h-5 w-5 opacity-40 group-hover:opacity-70" />
       </button>
@@ -162,7 +162,7 @@ defmodule WololoWeb.CoreComponents do
         {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 h-3 w-3 animate-spin" />
       </.flash>
-
+      
       <.flash
         id="server-error"
         kind={:error}
@@ -329,7 +329,7 @@ defmodule WololoWeb.CoreComponents do
           {@rest}
         /> {@label}
       </label>
-
+      
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -339,7 +339,7 @@ defmodule WololoWeb.CoreComponents do
     ~H"""
     <div>
       <.label for={@id}>{@label}</.label>
-
+      
       <select
         id={@id}
         name={@name}
@@ -350,7 +350,7 @@ defmodule WololoWeb.CoreComponents do
         <option :if={@prompt} value="">{@prompt}</option>
          {Phoenix.HTML.Form.options_for_select(@options, @value)}
       </select>
-
+      
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -380,7 +380,7 @@ defmodule WololoWeb.CoreComponents do
     ~H"""
     <div>
       <.label for={@id}>{@label}</.label>
-
+      
       <input
         type={@type}
         name={@name}
@@ -443,12 +443,12 @@ defmodule WololoWeb.CoreComponents do
         <h1 class="text-lg font-semibold leading-8 text-zinc-800 dark:text-zinc-100">
           {render_slot(@inner_block)}
         </h1>
-
+        
         <p :if={@subtitle != []} class="mt-2 text-sm leading-6 text-zinc-600">
           {render_slot(@subtitle)}
         </p>
       </div>
-
+      
       <div class="flex-none">{render_slot(@actions)}</div>
     </header>
     """
@@ -465,10 +465,11 @@ defmodule WololoWeb.CoreComponents do
       <div class="flex items-center justify-between py-3 text-sm">
         <div class="flex items-center gap-4">
           <%= if @show_home_link? do %>
-            <a href="/">
+            <a href="/" class="flex items-center gap-2" aria-label="AoE4 Stats home">
               <.icon name="hero-home" class="h-6 w-6 dark:text-zinc-100" />
+              <span class="font-semibold text-stone-800 dark:text-zinc-100">AoE4 Stats</span>
             </a>
-
+            
             <button class="cursor-pointer" phx-click="show_search">
               <.icon
                 name="hero-magnifying-glass"
@@ -477,7 +478,7 @@ defmodule WololoWeb.CoreComponents do
             </button>
           <% end %>
         </div>
-
+        
         <div class="flex items-center gap-4">
           <a
             href="https://ko-fi.com/znmto"
@@ -487,12 +488,43 @@ defmodule WololoWeb.CoreComponents do
             class="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <img src="https://storage.ko-fi.com/cdn/logomarkLogo.png" alt="Ko-fi" class="h-6 w-6" />
-            <span class="text-base font-medium text-stone-800 dark:text-zinc-100">Buy me a coffee</span>
+            <span class="text-base font-medium text-stone-800 dark:text-zinc-100">
+              Buy me a coffee
+            </span>
           </a>
-          <DarktoggleWeb.Components.ToggleTheme.render />
+           <DarktoggleWeb.Components.ToggleTheme.render />
         </div>
       </div>
     </header>
+    """
+  end
+
+  @doc """
+  Site footer with crawlable internal links.
+  """
+  def site_footer(assigns) do
+    ~H"""
+    <footer class="px-3 pb-8 pt-4 sm:px-4 lg:px-5 mt-10 border-t border-stone-200 dark:border-zinc-800">
+      <nav
+        class="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-stone-600 dark:text-zinc-400"
+        aria-label="Site"
+      >
+        <a href="/" class="hover:underline">Home</a>
+        <a href="/civs_by_map" class="hover:underline">Civ win rates by map</a>
+        <a href="/civs_by_league" class="hover:underline">Civ win rates by league</a>
+        <a href="/meta" class="hover:underline">Pick rate vs win rate</a>
+        <a href="/landmarks" class="hover:underline">Landmark paths</a>
+        <a href="/leaderboard" class="hover:underline">Leaderboard</a>
+        <a href="/player" class="hover:underline">Player stats</a>
+      </nav>
+      
+      <p class="mt-3 text-center text-sm text-stone-500 dark:text-zinc-500">
+        AoE4 Stats — Age of Empires 4 statistics. Data derived from <a
+          href="https://aoe4world.com"
+          class="underline"
+        >aoe4world.com</a>.
+      </p>
+    </footer>
     """
   end
 
@@ -540,13 +572,13 @@ defmodule WololoWeb.CoreComponents do
             >
               {col[:label]}
             </th>
-
+            
             <th :if={@action != []} class="relative p-0 pb-4">
               <span class="sr-only">{gettext("Actions")}</span>
             </th>
           </tr>
         </thead>
-
+        
         <tbody
           id={@id}
           phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
@@ -574,7 +606,7 @@ defmodule WololoWeb.CoreComponents do
                 </span>
               </div>
             </td>
-
+            
             <td :if={@action != []} class="relative w-14 p-0">
               <div class="relative whitespace-nowrap py-4 text-right text-sm font-medium">
                 <span
@@ -612,7 +644,7 @@ defmodule WololoWeb.CoreComponents do
       <dl class="-my-4 divide-y divide-zinc-100">
         <div :for={item <- @item} class="flex gap-4 py-4 text-sm leading-6 sm:gap-8">
           <dt class="w-1/4 flex-none text-zinc-500">{item.title}</dt>
-
+          
           <dd class="text-zinc-700">{render_slot(item)}</dd>
         </div>
       </dl>
