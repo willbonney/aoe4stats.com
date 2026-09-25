@@ -465,9 +465,8 @@ defmodule WololoWeb.CoreComponents do
       <div class="flex items-center justify-between py-3 text-sm">
         <div class="flex items-center gap-4">
           <%= if @show_home_link? do %>
-            <a href="/" class="flex items-center gap-2" aria-label="AoE4 Stats home">
+            <a href="/" class="flex items-center" aria-label="AoE4 Stats home">
               <.icon name="hero-home" class="h-6 w-6 dark:text-zinc-100" />
-              <span class="font-semibold text-stone-800 dark:text-zinc-100">AoE4 Stats</span>
             </a>
             
             <button class="cursor-pointer" phx-click="show_search">

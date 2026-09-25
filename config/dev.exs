@@ -58,6 +58,10 @@ config :wololo, dev_routes: true
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"
 
+# Cachex is empty on every dev boot. The production warm downloads the
+# leaderboard dump and then requests age-up matchups for every civ and map.
+config :wololo, :cache_refresh_on_boot, false
+
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
 config :phoenix, :stacktrace_depth, 20

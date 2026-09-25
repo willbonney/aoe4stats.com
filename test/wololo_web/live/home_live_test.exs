@@ -6,6 +6,8 @@ defmodule WololoWeb.HomeLiveTest do
     {:ok, _view, html} = live(conn, ~p"/")
     assert html =~ "AoE4 Stats"
     assert html =~ "Landmark Path"
+    refute html =~ "beyond the ladder"
+    refute html =~ "All data is derived from the"
     refute html =~ "This site costs about"
     refute html =~ "$25/mo"
   end
