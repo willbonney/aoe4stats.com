@@ -3,97 +3,151 @@ defmodule Wololo.PlayerStatsAPI do
 
   @base_url Application.compile_env(:wololo, :api_base_url)
 
-
+  # Header loads only need the player record. `full_history=true` is a large
+  # rating log (hundreds of KB) and is what rank/rating/analysis read.
+  def fetch_player_summary(profile_id) do
+    request_player(profile_id, false, false)
+  end
 
   def fetch_player_data(profile_id, with_stats \\ false) do
-    endpoint = "#{@base_url}/players/#{profile_id}?full_history=true"
+    request_player(profile_id, with_stats, true)
+  end
 
-    case Wololo.HTTPClient.get_with_retry(endpoint) do
+  # A 200 whose body stops mid-JSON used to raise Jason.DecodeError and kill
+  # the LiveView. Treat that as a failed response and try once more.
+  defp request_player(profile_id, with_stats, full_history, attempts \\ 2) do
+    endpoint = player_endpoint(profile_id, full_history)
+
+    case http_client().get_with_retry(endpoint) do
       {:ok, body} ->
-        {:ok, if(with_stats, do: process_player_stats(body), else: Jason.decode!(body))}
+        case Jason.decode(body) do
+          {:ok, data} when with_stats and is_map(data) ->
+            {:ok, process_player_stats(data)}
+
+          {:ok, data} when not with_stats ->
+            {:ok, data}
+
+          {:ok, _data} ->
+            {:error, "fetch_player_data failed: invalid JSON"}
+
+          {:error, %Jason.DecodeError{} = error} when attempts > 1 ->
+            Logger.warning(
+              "player #{profile_id} JSON ended at byte #{error.position} of #{byte_size(body)}, retrying"
+            )
+
+            Process.sleep(200)
+            request_player(profile_id, with_stats, full_history, attempts - 1)
+
+          {:error, %Jason.DecodeError{} = error} ->
+            Logger.error(
+              "player #{profile_id} JSON ended at byte #{error.position} of #{byte_size(body)}"
+            )
+
+            {:error, "fetch_player_data failed: invalid JSON"}
+        end
 
       {:error, reason} ->
         {:error, "fetch_player_data failed: #{reason}"}
     end
   end
 
-  def process_player_stats(body) do
-    with {:ok, data} <- Jason.decode(body) do
-      rating_history = get_in(data, ["modes", "rm_solo", "rating_history"])
-      previous_seasons = get_in(data, ["modes", "rm_solo", "previous_seasons"])
-      _current_rank = get_in(data, ["modes", "rm_solo", "rank"])
-      current_season = get_in(data, ["modes", "rm_solo", "season"])
-      civ_stats = get_in(data, ["modes", "rm_solo", "civilizations"])
+  defp player_endpoint(profile_id, true) do
+    "#{@base_url}/players/#{profile_id}?full_history=true"
+  end
 
-      total_count = if is_map(rating_history), do: map_size(rating_history), else: 0
+  defp player_endpoint(profile_id, false) do
+    "#{@base_url}/players/#{profile_id}"
+  end
 
-      # Build rank_history and total_seasons only if we have previous_seasons data
-      {rank_history, total_seasons} =
-        if is_list(previous_seasons) and is_integer(current_season) do
-          seasons_count = Enum.count(previous_seasons) + 1
+  defp http_client do
+    Application.get_env(:wololo, :http_client, Wololo.HTTPClient)
+  end
 
-          history =
-            Enum.reduce(
-              previous_seasons,
-              [],
-              fn season, acc ->
-                if season["rank"] != nil do
-                  [
-                    %{
-                      rank: season["rank"],
-                      season: season["season"]
-                    }
-                    | acc
-                  ]
-                else
-                  acc
-                end
-              end
-            )
-            |> Enum.reverse()
-
-          {history, seasons_count}
-        else
-          {[], 0}
-        end
-
-      %{
-        max_rating: get_in(data, ["modes", "rm_solo", "max_rating"]) || "N/A",
-        max_rating_7d: get_in(data, ["modes", "rm_solo", "max_rating_7d"]) || "N/A",
-        max_rating_1m: get_in(data, ["modes", "rm_solo", "max_rating_1m"]) || "N/A",
-        average_rating:
-          if(total_count > 0,
-            do: calculate_average_rating(rating_history, total_count),
-            else: "N/A"
-          ),
-        total_count: total_count,
-        rank_history: rank_history,
-        total_seasons: total_seasons,
-        average_rank:
-          if(total_seasons > 0,
-            do: calculate_average_rank(rank_history, total_seasons),
-            else: "N/A"
-          ),
-        rating_spread: calculate_rating_spread(rating_history),
-        min_rank:
-          if(length(rank_history) > 0,
-            do: Enum.max_by(rank_history, fn %{rank: rank} -> rank end).rank,
-            else: nil
-          ),
-        max_rank:
-          if(length(rank_history) > 0,
-            do: Enum.min_by(rank_history, fn %{rank: rank} -> rank end).rank,
-            else: nil
-          ),
-        percentage_time_in_rank:
-          if(is_map(rating_history), do: get_percentage_time_in_rank(rating_history), else: nil),
-        civ_stats: civ_stats
-      }
-    else
-      error ->
-        Logger.error("Jason decode failed: #{inspect(error)}")
-        %{error: "Invalid data structure"}
+  def process_player_stats(body) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, data} -> process_player_stats(data)
+      error -> invalid_player_stats(error)
     end
+  end
+
+  def process_player_stats(data) when is_map(data) do
+    rating_history = get_in(data, ["modes", "rm_solo", "rating_history"])
+    previous_seasons = get_in(data, ["modes", "rm_solo", "previous_seasons"])
+    _current_rank = get_in(data, ["modes", "rm_solo", "rank"])
+    current_season = get_in(data, ["modes", "rm_solo", "season"])
+    civ_stats = get_in(data, ["modes", "rm_solo", "civilizations"])
+
+    total_count = if is_map(rating_history), do: map_size(rating_history), else: 0
+
+    # Build rank_history and total_seasons only if we have previous_seasons data
+    {rank_history, total_seasons} =
+      if is_list(previous_seasons) and is_integer(current_season) do
+        seasons_count = Enum.count(previous_seasons) + 1
+
+        history =
+          Enum.reduce(
+            previous_seasons,
+            [],
+            fn season, acc ->
+              if season["rank"] != nil do
+                [
+                  %{
+                    rank: season["rank"],
+                    season: season["season"]
+                  }
+                  | acc
+                ]
+              else
+                acc
+              end
+            end
+          )
+          |> Enum.reverse()
+
+        {history, seasons_count}
+      else
+        {[], 0}
+      end
+
+    %{
+      max_rating: get_in(data, ["modes", "rm_solo", "max_rating"]) || "N/A",
+      max_rating_7d: get_in(data, ["modes", "rm_solo", "max_rating_7d"]) || "N/A",
+      max_rating_1m: get_in(data, ["modes", "rm_solo", "max_rating_1m"]) || "N/A",
+      average_rating:
+        if(total_count > 0,
+          do: calculate_average_rating(rating_history, total_count),
+          else: "N/A"
+        ),
+      total_count: total_count,
+      rank_history: rank_history,
+      total_seasons: total_seasons,
+      average_rank:
+        if(total_seasons > 0,
+          do: calculate_average_rank(rank_history, total_seasons),
+          else: "N/A"
+        ),
+      rating_spread: calculate_rating_spread(rating_history),
+      min_rank:
+        if(length(rank_history) > 0,
+          do: Enum.max_by(rank_history, fn %{rank: rank} -> rank end).rank,
+          else: nil
+        ),
+      max_rank:
+        if(length(rank_history) > 0,
+          do: Enum.min_by(rank_history, fn %{rank: rank} -> rank end).rank,
+          else: nil
+        ),
+      percentage_time_in_rank:
+        if(is_map(rating_history), do: get_percentage_time_in_rank(rating_history), else: nil),
+      civ_stats: civ_stats
+    }
+  end
+
+  def process_player_stats(_data), do: invalid_player_stats(:invalid_data)
+
+  defp invalid_player_stats(error) do
+    Logger.error("Jason decode failed: #{inspect(error)}")
+    %{error: "Invalid data structure"}
   end
 
   def calculate_average_rating(rating_history, total_count) when total_count > 0 do

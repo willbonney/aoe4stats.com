@@ -72,7 +72,7 @@ defmodule WololoWeb.PlayerLive do
   def handle_info({:load_player_data, %{"id" => profile_id}}, socket) do
     WololoWeb.SentryContext.set_player_context(profile_id)
 
-    case PlayerStatsAPI.fetch_player_data(profile_id) do
+    case PlayerStatsAPI.fetch_player_summary(profile_id) do
       {:ok, stats} ->
         {:noreply,
          socket
