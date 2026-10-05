@@ -479,19 +479,7 @@ defmodule WololoWeb.CoreComponents do
         </div>
         
         <div class="flex items-center gap-4">
-          <a
-            href="https://ko-fi.com/znmto"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Support me on Ko-fi"
-            class="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-            <img src="https://storage.ko-fi.com/cdn/logomarkLogo.png" alt="Ko-fi" class="h-6 w-6" />
-            <span class="text-base font-medium text-stone-800 dark:text-zinc-100">
-              Buy me a coffee
-            </span>
-          </a>
-           <DarktoggleWeb.Components.ToggleTheme.render />
+          <DarktoggleWeb.Components.ToggleTheme.render />
         </div>
       </div>
     </header>
