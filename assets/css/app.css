@@ -8,15 +8,15 @@
 
 @layer components {
   .filter-chip {
-    @apply px-4 py-2 rounded font-medium flex items-center gap-2 transition-colors;
-    @apply bg-primary-100 text-primary-800 hover:bg-primary-200;
-    @apply dark:bg-primary-900 dark:text-primary-100 dark:hover:bg-primary-800;
+    @apply px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors border;
+    @apply border-stone-300 bg-white text-stone-800 hover:bg-stone-50;
+    @apply dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700;
   }
 
   .filter-chip-active {
-    @apply px-4 py-2 rounded font-medium flex items-center gap-2 transition-colors;
-    @apply bg-primary-600 text-white hover:bg-primary-700;
-    @apply dark:bg-primary-700 dark:text-primary-50 dark:hover:bg-primary-600;
+    @apply px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors border;
+    @apply border-primary-500 bg-primary-50 text-primary-800 hover:bg-primary-100;
+    @apply dark:border-primary-400 dark:bg-zinc-800 dark:text-primary-100 dark:hover:bg-zinc-700;
   }
 }
 
