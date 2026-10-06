@@ -55,15 +55,16 @@ defmodule WololoWeb.LeaderboardController do
     end
   end
 
-  def search(conn, %{"name" => name}) do
+  def search(conn, %{"name" => name}) when is_binary(name) and name != "" do
     case LeaderboardDumpCron.get_cached_data() do
-      {:ok, data} ->
+      {:ok, data} when is_list(data) ->
         name_lower = String.downcase(name)
 
         results =
           data
           |> Enum.filter(fn entry ->
-            String.downcase(entry.name) |> String.contains?(name_lower)
+            entry_name = entry_name(entry)
+            entry_name != "" and String.contains?(String.downcase(entry_name), name_lower)
           end)
           |> Enum.take(20)
 
@@ -81,15 +82,33 @@ defmodule WololoWeb.LeaderboardController do
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "Failed to retrieve leaderboard data: #{inspect(reason)}"})
+
+      _ ->
+        json(conn, %{results: [], count: 0})
     end
   end
 
+  def search(conn, _params) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: "Missing name"})
+  end
+
+  defp entry_name(%{name: name}) when is_binary(name), do: name
+  defp entry_name(%{"name" => name}) when is_binary(name), do: name
+  defp entry_name(_), do: ""
+
   def refresh(conn, _params) do
     # Run refresh on THIS machine in a Task
-    Task.start(fn ->
-      LeaderboardDumpCron.fetch_and_cache()
-    end)
+    Task.start(fn -> run_refresh() end)
 
     json(conn, %{status: "refresh started"})
+  end
+
+  defp run_refresh do
+    refresh =
+      Application.get_env(:wololo, :leaderboard_refresh, &LeaderboardDumpCron.fetch_and_cache/0)
+
+    if is_function(refresh, 0), do: refresh.(), else: LeaderboardDumpCron.fetch_and_cache()
   end
 end

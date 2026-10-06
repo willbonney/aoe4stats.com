@@ -63,7 +63,7 @@ defmodule Wololo.CivsByMapAPI do
   end
 
   defp make_api_request(url) do
-    case Wololo.HTTPClient.get_with_retry(url) do
+    case http_client().get_with_retry(url) do
       {:ok, body} ->
         case Jason.decode(body) do
           {:ok, decoded} ->
@@ -128,4 +128,8 @@ defmodule Wololo.CivsByMapAPI do
   end
 
   defp format_win_rate(_), do: "N/A"
+
+  defp http_client do
+    Application.get_env(:wololo, :http_client, Wololo.HTTPClient)
+  end
 end

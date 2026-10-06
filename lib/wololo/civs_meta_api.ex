@@ -35,10 +35,12 @@ defmodule Wololo.CivsMetaAPI do
   end
 
   defp make_api_request(url) do
-    case Wololo.HTTPClient.get_with_retry(url) do
+    case http_client().get_with_retry(url) do
       {:ok, body} ->
         case Jason.decode(body) do
-          {:ok, decoded} -> {:ok, decoded}
+          {:ok, decoded} ->
+            {:ok, decoded}
+
           {:error, reason} ->
             Logger.error("Failed to decode civs meta JSON: #{inspect(reason)}")
             {:error, "Invalid JSON response"}
@@ -76,4 +78,8 @@ defmodule Wololo.CivsMetaAPI do
   end
 
   def transform_data(_), do: []
+
+  defp http_client do
+    Application.get_env(:wololo, :http_client, Wololo.HTTPClient)
+  end
 end

@@ -85,7 +85,7 @@ defmodule WololoWeb.AnalysisLive do
       rating_history
       |> sort_rating_history_by_time()
       |> Enum.map(fn {_, data} -> data["rating"] end)
-      |> Enum.reject(&is_nil/1)
+      |> Enum.filter(&is_number/1)
 
     if length(sorted_ratings) < 10 do
       @default_score_insufficient_data
@@ -129,11 +129,11 @@ defmodule WololoWeb.AnalysisLive do
           streak = data["streak"]
 
           cond do
-            streak < 0 ->
+            is_number(streak) and streak < 0 ->
               {recoveries, abs(streak), true}
 
             # Recovery!
-            streak > 0 and in_losing_streak ->
+            is_number(streak) and streak > 0 and in_losing_streak ->
               {[current_streak | recoveries], 0, false}
 
             true ->
@@ -162,7 +162,7 @@ defmodule WololoWeb.AnalysisLive do
       rating_history
       |> sort_rating_history_by_time()
       |> Enum.map(fn {_, data} -> data["streak"] end)
-      |> Enum.reject(&is_nil/1)
+      |> Enum.filter(&is_number/1)
 
     if length(sorted_entries) < 5 do
       @default_score_insufficient_data
@@ -197,14 +197,21 @@ defmodule WololoWeb.AnalysisLive do
         |> Enum.chunk_every(2, 1, :discard)
         |> Enum.reduce({0, 0, 0, 0}, fn [{_, data1}, {_, data2}],
                                         {win_win, win_loss, loss_win, loss_loss} ->
-          game1_win = data1["streak"] > 0
-          game2_win = data2["streak"] > 0
+          streak1 = data1["streak"]
+          streak2 = data2["streak"]
 
-          case {game1_win, game2_win} do
-            {true, true} -> {win_win + 1, win_loss, loss_win, loss_loss}
-            {true, false} -> {win_win, win_loss + 1, loss_win, loss_loss}
-            {false, true} -> {win_win, win_loss, loss_win + 1, loss_loss}
-            {false, false} -> {win_win, win_loss, loss_win, loss_loss + 1}
+          if is_number(streak1) and is_number(streak2) do
+            game1_win = streak1 > 0
+            game2_win = streak2 > 0
+
+            case {game1_win, game2_win} do
+              {true, true} -> {win_win + 1, win_loss, loss_win, loss_loss}
+              {true, false} -> {win_win, win_loss + 1, loss_win, loss_loss}
+              {false, true} -> {win_win, win_loss, loss_win + 1, loss_loss}
+              {false, false} -> {win_win, win_loss, loss_win, loss_loss + 1}
+            end
+          else
+            {win_win, win_loss, loss_win, loss_loss}
           end
         end)
 
@@ -247,14 +254,18 @@ defmodule WololoWeb.AnalysisLive do
           rating = data["rating"]
           streak = data["streak"]
 
-          near_threshold =
-            Enum.any?(thresholds, fn threshold ->
-              abs(rating - threshold) <= threshold_range
-            end)
+          if is_number(rating) and is_number(streak) do
+            near_threshold =
+              Enum.any?(thresholds, fn threshold ->
+                abs(rating - threshold) <= threshold_range
+              end)
 
-          if near_threshold do
-            win = if streak > 0, do: 1, else: 0
-            {wins + win, total + 1}
+            if near_threshold do
+              win = if streak > 0, do: 1, else: 0
+              {wins + win, total + 1}
+            else
+              {wins, total}
+            end
           else
             {wins, total}
           end
@@ -283,10 +294,14 @@ defmodule WololoWeb.AnalysisLive do
       last_rating = sorted_entries |> List.last() |> elem(1) |> Map.get("rating")
       games_played = length(sorted_entries)
 
-      rating_change = last_rating - first_rating
-      rating_per_game = rating_change / games_played
+      if is_number(first_rating) and is_number(last_rating) and games_played > 0 do
+        rating_change = last_rating - first_rating
+        rating_per_game = rating_change / games_played
 
-      max(0.0, min(100.0, (rating_per_game + 5) * 10))
+        max(0.0, min(100.0, (rating_per_game + 5) * 10))
+      else
+        @default_score_insufficient_data
+      end
     end
   end
 
@@ -295,7 +310,11 @@ defmodule WololoWeb.AnalysisLive do
   # Calculate how versatile a player is across different civilizations
   # Higher score = more versatile (plays multiple civs well)
   defp calculate_versatility(civ_stats) when is_list(civ_stats) and length(civ_stats) > 0 do
-    total_games = Enum.sum(Enum.map(civ_stats, fn civ -> civ["games_count"] end))
+    total_games =
+      civ_stats
+      |> Enum.map(& &1["games_count"])
+      |> Enum.filter(&is_number/1)
+      |> Enum.sum()
 
     if total_games < 10 do
       @default_score_insufficient_data
@@ -305,11 +324,13 @@ defmodule WololoWeb.AnalysisLive do
 
       civs_played_enough_list =
         civ_stats
-        |> Enum.filter(fn civ -> civ["games_count"] >= min_games_threshold end)
+        |> Enum.filter(fn civ ->
+          is_number(civ["games_count"]) and civ["games_count"] >= min_games_threshold
+        end)
 
       good_civs_list =
         civs_played_enough_list
-        |> Enum.filter(fn civ -> civ["win_rate"] >= 50.0 end)
+        |> Enum.filter(fn civ -> is_number(civ["win_rate"]) and civ["win_rate"] >= 50.0 end)
 
       good_civs_count = length(good_civs_list)
 
@@ -465,10 +486,13 @@ defmodule WololoWeb.AnalysisLive do
   end
 
   defp extract_games_with_opponent_rating(games_json, profile_id) do
-    games_json
-    |> Jason.decode!()
-    |> Map.get("games", [])
-    |> Enum.flat_map(fn game ->
+    games =
+      case Jason.decode(games_json) do
+        {:ok, %{"games" => games}} when is_list(games) -> games
+        _ -> []
+      end
+
+    Enum.flat_map(games, fn game ->
       case PlayerGamesAPI.extract_player_opponent(game, profile_id) do
         {:ok, player, opponent} ->
           [%{

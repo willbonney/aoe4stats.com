@@ -31,10 +31,43 @@ defmodule Wololo.PlayerStatsAPITest do
     assert stats.total_count == 2
     assert stats.average_rating == 1520
     assert stats.total_seasons == 3
-    assert stats.average_rank == 47
+    # Completed-season ranks only: (80 + 60) / 2. The in-progress rank is not in the history.
+    assert stats.average_rank == 70
     assert stats.min_rank == 80
     assert stats.max_rank == 60
+    assert Enum.map(stats.rank_history, & &1.rank) == [80, 60]
     assert stats.rating_spread > 0
+  end
+
+  test "average rank ignores seasons that have no rank and missing rating keys" do
+    stats =
+      PlayerStatsAPI.process_player_stats(%{
+        "modes" => %{
+          "rm_solo" => %{
+            "season" => 4,
+            "rank" => 10,
+            "previous_seasons" => [
+              %{"season" => 1, "rank" => 90},
+              %{"season" => 2, "rank" => nil},
+              %{"season" => 3}
+            ],
+            "rating_history" => %{
+              "1" => %{"rating" => 1000},
+              "2" => %{"streak" => 1},
+              "3" => %{"rating" => 1100},
+              "4" => %{"rating" => 1200},
+              "5" => %{"rating" => 1300},
+              "6" => %{"rating" => 1600}
+            }
+          }
+        }
+      })
+
+    assert stats.average_rank == 90
+    assert stats.rank_history == [%{rank: 90, season: 1}]
+
+    time = stats.percentage_time_in_rank
+    assert time["Conqueror III"].percentage == 100.0
   end
 
   test "rating helpers handle empty histories" do
@@ -51,7 +84,17 @@ defmodule Wololo.PlayerStatsAPITest.HTTPStub do
   end
 
   def stop do
-    if pid = Process.whereis(__MODULE__), do: Agent.stop(pid)
+    case Process.whereis(__MODULE__) do
+      pid when is_pid(pid) ->
+        try do
+          Agent.stop(pid)
+        catch
+          :exit, _ -> :ok
+        end
+
+      _ ->
+        :ok
+    end
   end
 
   def urls do

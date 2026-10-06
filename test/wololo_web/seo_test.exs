@@ -143,5 +143,21 @@ defmodule WololoWeb.SEOTest do
     meta = SEO.player_meta("Beasty", "1676400", :analysis)
     assert meta.path == "/player/1676400/analysis"
     assert meta.title =~ "Analysis"
+
+    for section <- [:rank, :game_length, :opponents, :insights] do
+      meta = SEO.player_meta(nil, 1676400, section)
+      assert meta.title =~ "AoE4 Player"
+      assert meta.path =~ "/player/1676400"
+    end
+  end
+
+  test "sitemap escapes player ids in loc", %{conn: conn} do
+    Cachex.put(:wololo_cache, :leaderboard_data, [
+      %{profile_id: "1&2", name: "Amp"}
+    ])
+
+    body = response(get(conn, "/sitemap.xml"), 200)
+    assert body =~ "https://aoe4stats.com/player/1&amp;2"
+    refute body =~ "https://aoe4stats.com/player/1&2<"
   end
 end

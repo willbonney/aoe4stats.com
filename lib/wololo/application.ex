@@ -34,35 +34,46 @@ defmodule Wololo.Application do
     # Daily cron refreshes both via LeaderboardDumpCron.fetch_and_cache/0.
     if Application.get_env(:wololo, :cache_refresh_on_boot, true) do
       Task.start(fn ->
-        leaderboard_empty? =
-          case Cachex.get(:wololo_cache, "leaderboard_players") do
-            {:ok, nil} -> true
-            {:ok, _} -> false
-            _ -> true
-          end
-
-        ageups_empty? =
-          case Cachex.get(:wololo_cache, "ageups_options") do
-            {:ok, {:ok, _}} -> false
-            _ -> true
-          end
-
-        cond do
-          leaderboard_empty? ->
+        case cache_refresh_plan() do
+          :leaderboard ->
             IO.puts("[Startup] Leaderboard cache is empty, triggering refresh...")
             Wololo.LeaderboardDumpCron.fetch_and_cache()
 
-          ageups_empty? ->
+          :ageups ->
             IO.puts("[Startup] Ageups cache is empty, triggering refresh...")
             Wololo.AgeupsAPI.refresh_cache()
 
-          true ->
+          :ready ->
             IO.puts("[Startup] Leaderboard and ageups caches already populated")
         end
       end)
     end
 
     result
+  end
+
+  @doc false
+  def cache_refresh_plan do
+    cond do
+      leaderboard_cache_empty?() -> :leaderboard
+      ageups_cache_empty?() -> :ageups
+      true -> :ready
+    end
+  end
+
+  defp leaderboard_cache_empty? do
+    case Cachex.get(:wololo_cache, :leaderboard_data) do
+      {:ok, nil} -> true
+      {:ok, _} -> false
+      _ -> true
+    end
+  end
+
+  defp ageups_cache_empty? do
+    case Cachex.get(:wololo_cache, "ageups_options") do
+      {:ok, {:ok, _}} -> false
+      _ -> true
+    end
   end
 
   # Tell Phoenix to update the endpoint configuration

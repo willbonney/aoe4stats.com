@@ -121,9 +121,11 @@ defmodule Wololo.PlayerStatsAPI do
       total_count: total_count,
       rank_history: rank_history,
       total_seasons: total_seasons,
+      # Completed seasons only. total_seasons also counts the in-progress season,
+      # which is not in rank_history, so it must not be the divisor.
       average_rank:
-        if(total_seasons > 0,
-          do: calculate_average_rank(rank_history, total_seasons),
+        if(length(rank_history) > 0,
+          do: calculate_average_rank(rank_history, length(rank_history)),
           else: "N/A"
         ),
       rating_spread: calculate_rating_spread(rating_history),
@@ -152,8 +154,9 @@ defmodule Wololo.PlayerStatsAPI do
 
   def calculate_average_rating(rating_history, total_count) when total_count > 0 do
     round(
-      Enum.reduce(rating_history, 0, fn {_, %{"rating" => rating}}, acc ->
-        acc + (rating || 0)
+      Enum.reduce(rating_history, 0, fn
+        {_, %{"rating" => rating}}, acc when is_number(rating) -> acc + rating
+        _, acc -> acc
       end) / total_count
     )
   end
@@ -176,8 +179,10 @@ defmodule Wololo.PlayerStatsAPI do
       when is_map(rating_history) and map_size(rating_history) > 1 do
     ratings =
       rating_history
-      |> Enum.map(fn {_, %{"rating" => rating}} -> rating end)
-      |> Enum.reject(&is_nil/1)
+      |> Enum.flat_map(fn
+        {_, %{"rating" => rating}} when is_number(rating) -> [rating]
+        _ -> []
+      end)
 
     if length(ratings) > 1 do
       mean = Enum.sum(ratings) / length(ratings)
@@ -207,8 +212,12 @@ defmodule Wololo.PlayerStatsAPI do
 
     Enum.into(Wololo.Utils.get_rank_buckets(), %{}, fn {rank_bucket, rank_name} ->
       count =
-        Enum.count(rating_entries, fn {_, %{"rating" => rating}} ->
-          get_rank_bucket(rating) == rank_bucket
+        Enum.count(rating_entries, fn
+          {_, %{"rating" => rating}} when is_number(rating) ->
+            get_rank_bucket(rating) == rank_bucket
+
+          _ ->
+            false
         end)
 
       percentage = if total_count > 0, do: count / total_count * 100, else: 0

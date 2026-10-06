@@ -13,7 +13,17 @@ defmodule Wololo.PlayerGamesAPITest.HTTPStub do
   end
 
   def stop do
-    if pid = Process.whereis(__MODULE__), do: Agent.stop(pid)
+    case Process.whereis(__MODULE__) do
+      pid when is_pid(pid) ->
+        try do
+          Agent.stop(pid)
+        catch
+          :exit, _ -> :ok
+        end
+
+      _ ->
+        :ok
+    end
   end
 
   def game_pages do
@@ -34,6 +44,7 @@ defmodule Wololo.PlayerGamesAPITest.HTTPStub do
 
       case Agent.get(__MODULE__, &Map.get(&1.pages, page)) do
         nil -> {:error, "unexpected url: #{url}"}
+        {:raw, body} -> {:ok, body}
         payload -> {:ok, Jason.encode!(payload)}
       end
     else
@@ -113,6 +124,22 @@ defmodule Wololo.PlayerGamesAPITest do
     assert message =~ "No 1v1 ranked games"
   end
 
+  test "process_games returns an error instead of raising on invalid JSON" do
+    assert {:error, message} = PlayerGamesAPI.process_games("{", 42)
+    assert message =~ "invalid JSON"
+  end
+
+  test "10-game moving average starts once ten earlier games exist" do
+    games = for rating <- 1012..1001//-1, do: game(42, 99, "de", rating)
+
+    assert {:ok, %{ratings: ratings}} =
+             PlayerGamesAPI.process_games(Jason.encode!(%{"games" => games}), 42)
+
+    assert Enum.map(ratings, & &1.player_rating) == Enum.to_list(1001..1012)
+    assert Enum.at(ratings, 9).moving_average_10g == nil
+    assert Enum.at(ratings, 10).moving_average_10g == 1005.5
+  end
+
   describe "get_players_games_statistics pagination" do
     setup do
       previous = Application.get_env(:wololo, :http_client)
@@ -144,6 +171,51 @@ defmodule Wololo.PlayerGamesAPITest do
       assert {:ok, body} = PlayerGamesAPI.get_players_games_statistics(42, false)
       assert length(Jason.decode!(body)["games"]) == 1
       assert HTTPStub.game_pages() == ["1"]
+    end
+
+    test "a truncated games page is an error instead of a crash" do
+      {:ok, _} = HTTPStub.start(%{"1" => {:raw, "{\"games\":"}})
+
+      assert {:error, message} = PlayerGamesAPI.get_players_games_statistics(42, false)
+      assert message =~ "invalid JSON"
+    end
+
+    test "merges a next page that omits the games list" do
+      {:ok, _} =
+        HTTPStub.start(%{
+          "1" => %{
+            "games" => [game(42, 99, "de", 1400)],
+            "total" => 2,
+            "next_page" => 2
+          },
+          "2" => %{"total" => 2}
+        })
+
+      assert {:ok, body} = PlayerGamesAPI.get_players_games_statistics(42, false)
+      assert length(Jason.decode!(body)["games"]) == 1
+    end
+
+    test "win rates by length skip games that have no duration" do
+      short =
+        game(42, 99, "de", 1400)
+        |> Map.put("duration", 500)
+
+      long =
+        game(42, 100, "us", 1410)
+        |> Map.put("duration", 4000)
+        |> put_in(["teams", Access.at(0), Access.at(0), "player", "result"], "loss")
+
+      missing = Map.delete(game(42, 101, "fr", 1420), "duration")
+
+      {:ok, _} =
+        HTTPStub.start(%{
+          "1" => %{"games" => [short, long, missing], "total" => 3, "next_page" => nil}
+        })
+
+      assert {:ok, rates} = PlayerGamesAPI.get_player_wr_by_game_length(42)
+      assert rates._lt_600 == 100.0
+      assert rates._gte3600 == 0.0
+      assert rates._1500_to_1799 == 0
     end
 
     test "fetches and merges the page named by next_page" do

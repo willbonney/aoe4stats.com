@@ -101,8 +101,8 @@ defmodule WololoWeb.LeaderboardLive do
                 # 2000+ qualifies for both tiers
                 {[player | conq], [player | conq3]}
 
-              rating when is_integer(rating) and rating > 1400 ->
-                # 1400+ qualifies only for conqueror
+              rating when is_integer(rating) and rating >= 1400 ->
+                # Conqueror starts at 1400
                 {[player | conq], conq3}
 
               _ ->
@@ -202,7 +202,7 @@ defmodule WololoWeb.LeaderboardLive do
   defp calculate_avg_rank_by_country(players) do
     country_ranks =
       players
-      |> Enum.filter(fn player -> player.country && player.country != "unknown" end)
+      |> players_with_rank()
       |> Enum.group_by(fn player -> player.country end)
       |> Enum.filter(fn {_country, country_players} ->
         length(country_players) >= @min_players_for_average_rank_stats
@@ -226,7 +226,7 @@ defmodule WololoWeb.LeaderboardLive do
   defp calculate_rank_weighted_per_capita(players) do
     country_data =
       players
-      |> Enum.filter(fn player -> player.country && player.country != "unknown" end)
+      |> players_with_rank()
       |> Enum.group_by(fn player -> player.country end)
       |> Enum.filter(fn {country, country_players} ->
         length(country_players) >= @min_players_for_per_capita_stats &&
@@ -256,6 +256,13 @@ defmodule WololoWeb.LeaderboardLive do
       |> Enum.sort_by(& &1.prowess_score, :desc)
 
     %{ranked: country_data, total: length(country_data)}
+  end
+
+  defp players_with_rank(players) do
+    Enum.filter(players, fn player ->
+      is_binary(player.country) and player.country not in ["", "unknown"] and
+        is_integer(player.rank) and player.rank > 0
+    end)
   end
 
   defp format_timestamp(%DateTime{} = dt) do

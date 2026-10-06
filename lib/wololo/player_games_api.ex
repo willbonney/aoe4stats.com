@@ -14,48 +14,43 @@ defmodule Wololo.PlayerGamesAPI do
   }
 
   defp get_moving_average(ratings, games_count) do
-    current_index = length(ratings)
-    games_count_minus_one = games_count - 1
-
-    if length(ratings) <= games_count do
+    if length(ratings) < games_count do
       nil
     else
-      prev_x_ratings =
-        if current_index >= games_count_minus_one do
-          Enum.take(ratings, -games_count)
-        else
-          []
-        end
-
-      Enum.reduce(prev_x_ratings, 0, fn %{player_rating: rating}, acc ->
-        acc + rating
-      end) / games_count
+      ratings
+      |> Enum.take(-games_count)
+      |> Enum.reduce(0, fn %{player_rating: rating}, acc -> acc + rating end)
+      |> Kernel./(games_count)
     end
   end
 
   def get_player_wr_by_game_length(profile_id) do
     case get_players_games_statistics(profile_id, false) do
       {:ok, game_stats} ->
-        games = Jason.decode!(game_stats)["games"]
+        case Jason.decode(game_stats) do
+          {:ok, %{"games" => games}} when is_list(games) ->
+            {:ok, win_rates_by_length(games, profile_id)}
 
-        games_by_length = count_games_by_length(games)
-
-        wins_by_game_length = count_wins_by_game_length(games, profile_id)
-
-        {:ok,
-         Enum.into(@game_length_buckets, %{}, fn {bucket, _} ->
-           wins = Map.get(wins_by_game_length, bucket, 0)
-
-           total_games = Map.get(games_by_length, bucket, 0)
-
-           win_rate = if total_games > 0, do: wins / total_games * 100, else: 0
-           {bucket, win_rate}
-         end)}
+          _ ->
+            {:error, "Failed to retrieve player data"}
+        end
 
       {:error, reason} ->
         Logger.error("Failed to get player games statistics: #{reason}")
         {:error, "Failed to retrieve player data"}
     end
+  end
+
+  defp win_rates_by_length(games, profile_id) do
+    games_by_length = count_games_by_length(games)
+    wins_by_game_length = count_wins_by_game_length(games, profile_id)
+
+    Enum.into(@game_length_buckets, %{}, fn {bucket, _} ->
+      wins = Map.get(wins_by_game_length, bucket, 0)
+      total_games = Map.get(games_by_length, bucket, 0)
+      win_rate = if total_games > 0, do: wins / total_games * 100, else: 0
+      {bucket, win_rate}
+    end)
   end
 
   def get_players_games_statistics(profile_id, should_process \\ true) do
@@ -100,7 +95,10 @@ defmodule Wololo.PlayerGamesAPI do
 
     case http_client().get_with_retry(endpoint) do
       {:ok, body} ->
-        {:ok, Jason.decode!(body)}
+        case Jason.decode(body) do
+          {:ok, data} when is_map(data) -> {:ok, data}
+          _ -> {:error, "player_games_api fetch_page failed: invalid JSON"}
+        end
 
       {:error, reason} ->
         {:error, "player_games_api fetch_page failed: #{reason}"}
@@ -113,7 +111,7 @@ defmodule Wololo.PlayerGamesAPI do
 
   defp merge_page_data(page1_data, page2_data) do
     %{
-      "games" => page1_data["games"] ++ page2_data["games"],
+      "games" => List.wrap(page1_data["games"]) ++ List.wrap(page2_data["games"]),
       "total" => page1_data["total"]
     }
   end
@@ -150,11 +148,20 @@ defmodule Wololo.PlayerGamesAPI do
 
   def process_games(body, profile_id) do
     games =
-      body
-      |> Jason.decode!()
-      |> Map.get("games")
-      |> Enum.reverse()
+      case Jason.decode(body) do
+        {:ok, %{"games" => games}} when is_list(games) -> Enum.reverse(games)
+        {:ok, _} -> []
+        {:error, _} -> :invalid_json
+      end
 
+    if games == :invalid_json do
+      {:error, "player_games_api process_games failed: invalid JSON"}
+    else
+      do_process_games(games, profile_id)
+    end
+  end
+
+  defp do_process_games(games, profile_id) do
     if Enum.empty?(games) do
       {:error,
        "No 1v1 ranked games found for this player. They may not have played enough games this season."}
@@ -242,8 +249,10 @@ defmodule Wololo.PlayerGamesAPI do
 
   defp count_games_by_length(games) do
     Enum.reduce(games, @game_length_buckets, fn game, acc ->
-      bucket = get_duration_bucket(game["duration"])
-      Map.update(acc, bucket, 1, &(&1 + 1))
+      case get_duration_bucket(game["duration"]) do
+        nil -> acc
+        bucket -> Map.update(acc, bucket, 1, &(&1 + 1))
+      end
     end)
   end
 
@@ -251,9 +260,14 @@ defmodule Wololo.PlayerGamesAPI do
     Enum.reduce(games, @game_length_buckets, fn game, acc ->
       case extract_player_opponent(game, profile_id) do
         {:ok, player, _opponent} ->
-          won = if player["player"]["result"] == "win", do: 1, else: 0
-          bucket = get_duration_bucket(game["duration"])
-          Map.update(acc, bucket, won, &(&1 + won))
+          case get_duration_bucket(game["duration"]) do
+            nil ->
+              acc
+
+            bucket ->
+              won = if player["player"]["result"] == "win", do: 1, else: 0
+              Map.update(acc, bucket, won, &(&1 + won))
+          end
 
         {:error, _} ->
           acc
@@ -261,7 +275,7 @@ defmodule Wololo.PlayerGamesAPI do
     end)
   end
 
-  defp get_duration_bucket(duration) do
+  defp get_duration_bucket(duration) when is_number(duration) do
     cond do
       duration < 600 -> :_lt_600
       duration < 900 -> :_600_to_899
@@ -273,4 +287,6 @@ defmodule Wololo.PlayerGamesAPI do
       true -> :_gte3600
     end
   end
+
+  defp get_duration_bucket(_duration), do: nil
 end

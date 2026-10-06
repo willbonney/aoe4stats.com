@@ -72,6 +72,35 @@ defmodule Wololo.LeaderboardDumpCronTest do
     assert Wololo.HTTPClient.user_agent() == "aoe4stats/1.0"
   end
 
+  test "parse_csv keeps commas and escaped quotes inside names" do
+    csv = """
+    rank,name,profile_id,rating,games_count,wins_count,last_game_at,rank_level,country
+    1,"Smith, Jr.",10,2100,100,60,2026-01-01,conqueror,us\r
+    2,"Say ""Hi""",11,1400,10,5,2026-01-02,conqueror,de
+    not,a,valid,row
+    """
+
+    assert {:ok, [first, second]} = LeaderboardDumpCron.parse_csv(csv)
+    assert first.name == "Smith, Jr."
+    assert first.profile_id == "10"
+    assert first.rating == 2100
+    assert first.country == "us"
+    assert second.name == "Say \"Hi\""
+    assert second.country == "de"
+  end
+
+  test "get_player and sitemap ids read the cached dump" do
+    Cachex.put(:wololo_cache, :leaderboard_data, [
+      %{profile_id: "10", name: "Smith", rank: 1},
+      %{profile_id: "", name: "Blank", rank: 2},
+      %{profile_id: nil, name: "Missing", rank: 3}
+    ])
+
+    assert {:ok, %{name: "Smith"}} = LeaderboardDumpCron.get_player(10)
+    assert {:error, :not_found} = LeaderboardDumpCron.get_player("999")
+    assert LeaderboardDumpCron.sitemap_profile_ids() == ["10"]
+  end
+
   test "refresh_ageups returns the HTTP error when ageups is unreachable" do
     Application.put_env(:wololo, :http_client, Wololo.FakeHTTP.Failing)
     assert {:error, reason} = LeaderboardDumpCron.refresh_ageups()

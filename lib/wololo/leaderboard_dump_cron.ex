@@ -166,7 +166,8 @@ defmodule Wololo.LeaderboardDumpCron do
     end
   end
 
-  defp parse_csv(csv_content) do
+  @doc false
+  def parse_csv(csv_content) do
     Logger.info("[LeaderboardDumpCron] Parsing CSV data...")
 
     try do
@@ -232,20 +233,21 @@ defmodule Wololo.LeaderboardDumpCron do
     Enum.reverse([Enum.reverse(current_field) |> Enum.join() | fields])
   end
 
+  # RFC 4180: a doubled quote inside a quoted field is a literal quote.
+  defp parse_csv_fields(["\"", "\"" | rest], fields, current_field, true) do
+    parse_csv_fields(rest, fields, ["\"" | current_field], true)
+  end
+
+  defp parse_csv_fields(["\"" | rest], fields, current_field, in_quotes) do
+    parse_csv_fields(rest, fields, current_field, !in_quotes)
+  end
+
+  defp parse_csv_fields(["," | rest], fields, current_field, false) do
+    parse_csv_fields(rest, [Enum.reverse(current_field) |> Enum.join() | fields], [], false)
+  end
+
   defp parse_csv_fields([char | rest], fields, current_field, in_quotes) do
-    case {char, in_quotes} do
-      # Toggle quote state
-      {"\"", _} ->
-        parse_csv_fields(rest, fields, current_field, !in_quotes)
-
-      # Comma outside quotes = field separator
-      {",", false} ->
-        parse_csv_fields(rest, [Enum.reverse(current_field) |> Enum.join() | fields], [], false)
-
-      # Any other character = add to current field
-      {c, _} ->
-        parse_csv_fields(rest, fields, [c | current_field], in_quotes)
-    end
+    parse_csv_fields(rest, fields, [char | current_field], in_quotes)
   end
 
   defp parse_integer(str) do

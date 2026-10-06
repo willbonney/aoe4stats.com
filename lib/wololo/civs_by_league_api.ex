@@ -91,7 +91,7 @@ defmodule Wololo.CivsByLeagueAPI do
     url = "#{@base_url}/stats/rm_solo/civilizations?rank_level=#{URI.encode_www_form(league)}"
     Logger.info("Fetching civs_by_league data for #{league}")
 
-    case Wololo.HTTPClient.get_with_retry(url) do
+    case http_client().get_with_retry(url) do
       {:ok, body} ->
         case Jason.decode(body) do
           {:ok, %{"data" => data}} when is_list(data) ->
@@ -120,5 +120,9 @@ defmodule Wololo.CivsByLeagueAPI do
         Logger.warning("Skipping malformed civs_by_league entry: #{inspect(entry)}")
         acc
     end)
+  end
+
+  defp http_client do
+    Application.get_env(:wololo, :http_client, Wololo.HTTPClient)
   end
 end

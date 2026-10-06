@@ -75,4 +75,48 @@ defmodule Wololo.FlyCostTest do
     cost = FlyCost.estimate_from_resources(%{certificate_count: 12})
     assert cost.amount == 0.20
   end
+
+  test "prices extra shared CPUs from the per-second rate" do
+    cost =
+      FlyCost.estimate_from_resources(%{
+        machines: [
+          %{state: "started", region: "dfw", cpu_kind: "shared", cpus: 2, memory_mb: 512}
+        ]
+      })
+
+    assert cost.amount == 4.04
+  end
+
+  test "prices performance CPUs and extra RAM" do
+    cost =
+      FlyCost.estimate_from_resources(%{
+        machines: [
+          %{state: "started", region: "dfw", cpu_kind: "performance", cpus: 2, memory_mb: 6144}
+        ]
+      })
+
+    assert cost.amount == 72.0
+  end
+
+  test "uses the dallas rate when the region is unknown" do
+    cost =
+      FlyCost.estimate_from_resources(%{
+        machines: [
+          %{state: "started", region: "moon", cpu_kind: "shared", cpus: 1, memory_mb: 2048}
+        ]
+      })
+
+    assert cost.amount == 13.37
+  end
+
+  test "charges suspended machines for rootfs only" do
+    cost =
+      FlyCost.estimate_from_resources(%{
+        machines: [
+          %{state: "suspended", region: "dfw", cpu_kind: "shared", cpus: 1, memory_mb: 2048}
+        ]
+      })
+
+    assert cost.amount == 0.15
+  end
 end

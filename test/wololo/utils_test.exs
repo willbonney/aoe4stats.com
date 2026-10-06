@@ -6,9 +6,14 @@ defmodule Wololo.UtilsTest do
   test "maps ratings onto league colors" do
     assert Utils.rating_to_color_map("N/A") == "#DDDDDD"
     assert Utils.rating_to_color_map(400) == "#B87333"
+    assert Utils.rating_to_color_map(499) == "#B87333"
+    assert Utils.rating_to_color_map(500) == "#C0C0C0"
     assert Utils.rating_to_color_map(1600) == "#FF8C00"
+    assert Utils.rating_to_color_map(nil) == "#DDDDDD"
     assert Utils.full_rating_to_color_map(720) == "#B87333"
     assert Utils.full_rating_to_color_map(1450) == "#FFB84D"
+    assert Utils.full_rating_to_color_map("N/A") == "#DDDDDD"
+    assert Utils.full_rating_to_color_map(nil) == "#DDDDDD"
   end
 
   test "exposes rank thresholds and league ranges" do

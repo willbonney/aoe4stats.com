@@ -85,7 +85,7 @@ defmodule WololoWeb.CustomComponents do
             tabindex="-1"
           >
             <div>
-              <img class="mr-2" src={player["avatars"]["medium"]} />
+              <img class="mr-2" src={get_in(player, ["avatars", "medium"])} />
             </div>
             
             <div class="flex flex-col">

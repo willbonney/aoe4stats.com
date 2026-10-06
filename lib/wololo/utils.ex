@@ -49,9 +49,8 @@ defmodule Wololo.Utils do
   def get_league_ranges, do: @league_ranges
   def get_league_colors, do: @league_colors
 
-  def rating_to_color_map(rating) do
+  def rating_to_color_map(rating) when is_number(rating) do
     cond do
-      rating == "N/A" -> "#DDDDDD"
       rating <= 499 -> "#B87333"
       rating <= 699 -> "#C0C0C0"
       rating <= 999 -> "#FFC125"
@@ -61,9 +60,10 @@ defmodule Wololo.Utils do
     end
   end
 
-  def full_rating_to_color_map(rating) do
+  def rating_to_color_map(_rating), do: "#DDDDDD"
+
+  def full_rating_to_color_map(rating) when is_number(rating) do
     cond do
-      rating == "N/A" -> "#DDDDDD"
       rating < 700 -> "#C18A4A"
       rating < 750 -> "#B87333"
       rating < 800 -> "#A65C22"
@@ -84,4 +84,6 @@ defmodule Wololo.Utils do
       true -> "#F2991A"
     end
   end
+
+  def full_rating_to_color_map(_rating), do: "#DDDDDD"
 end
