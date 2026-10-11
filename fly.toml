@@ -4,7 +4,7 @@
 #
 
 app = 'wololo'
-primary_region = 'dfw'
+primary_region = 'iad'
 kill_signal = 'SIGTERM'
 
 [build]
@@ -16,7 +16,7 @@ kill_signal = 'SIGTERM'
   # Cron process runs once and exits, allowing the machine to auto-stop
   # To schedule: After deploying, create a scheduled machine with:
   #   fly scale count cron=0  # Remove existing cron machines
-  #   fly machine run . --schedule daily --name wololo-cron --region dfw
+  #   fly machine run . --schedule daily --name wololo-cron --region iad
   # Note: Schedule options are hourly/daily/weekly/monthly (no exact times)
   # For precise timing (e.g., 3 AM UTC), use Fly.io API or external scheduler
   cron = "/app/bin/cron-runner"
@@ -39,13 +39,13 @@ kill_signal = 'SIGTERM'
     soft_limit = 1000
 
 [[vm]]
-  memory = '2gb'
+  memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
   processes = ['app']
 
 [[vm]]
-  memory = '2gb'
+  memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
   processes = ['cron']
