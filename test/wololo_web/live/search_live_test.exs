@@ -34,6 +34,15 @@ defmodule WololoWeb.SearchLiveTest do
     :ok
   end
 
+  test "footer player stats opens search instead of the empty player page", %{conn: conn} do
+    {:ok, view, html} = live(conn, ~p"/")
+    refute html =~ "Search solo ladder"
+    refute html =~ ~s(href="/player")
+
+    html = view |> element("footer button", "Player stats") |> render_click()
+    assert html =~ "Search solo ladder"
+  end
+
   test "search shows a player and survives a bad response", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/")
     render_click(view, "show_search")

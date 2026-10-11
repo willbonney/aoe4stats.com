@@ -502,7 +502,13 @@ defmodule WololoWeb.CoreComponents do
         <a href="/meta" class="hover:underline">Pick rate vs win rate</a>
         <a href="/landmarks" class="hover:underline">Landmark paths</a>
         <a href="/leaderboard" class="hover:underline">Leaderboard</a>
-        <a href="/player" class="hover:underline">Player stats</a>
+        <button
+          type="button"
+          phx-click="show_search"
+          class="cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-inherit hover:underline"
+        >
+          Player stats
+        </button>
       </nav>
       
       <p class="mt-3 text-center text-sm text-stone-500 dark:text-zinc-500">
